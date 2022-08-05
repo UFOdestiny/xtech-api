@@ -7,6 +7,7 @@
 
 from functools import wraps
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
 
 class ResponseService:
@@ -131,17 +132,17 @@ class ResponseService:
 
 def check_exception(func):
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    async def wrapper(*args, **kwargs):
         response_service = ResponseService()
         try:
-            rst = func(*args, **kwargs)
+            rst = await func(*args, **kwargs)
         except Exception as e:
             print(str(e))
             if '400' in repr(e):
                 rst = response_service.return_param_error(str(e))
             else:
                 rst = response_service.return_service_error()
-        return JSONResponse(rst)
+        return JSONResponse(content=jsonable_encoder(rst))
 
     return wrapper
 
