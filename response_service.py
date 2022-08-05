@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 class ResponseService:
     def __init__(self):
+
         self.success_code = 200
         self.param_error_code = 400
         self.data_traffic_code = 400
