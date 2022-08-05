@@ -21,6 +21,11 @@ async def read_item(item_id: int, q: Union[str, None] = None):
     return {"item_id": item_id, "q": q}
 
 
+@app.post("/login")
+async def login():
+    pass
+
+
 if __name__ == '__main__':
     import uvicorn
 
