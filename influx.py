@@ -5,24 +5,13 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     : manipulate influxDB
 
-"""
-ID: 09cad76767b96000
-Description	Token:
-4p9Te6UFjL1slmPxyDehrqWcQuZpCbEPxTP1sHC4QsKIew_qowxW3GQw5wBKqJyt3UbSx6e-bjSnzNNwCn2jnQ== (all-access)
-T7FGylDVQRdD76SNbm2YCcbZZ_VnL-BYOPToMGTxUFOk1tRrxJLooDMCq6j_VZGumtspMze3g05_WhN8sccOkA== (operator)
-User Name: xtech
-User ID: 09cac465267c4000
-"""
 from influxdb_client import InfluxDBClient, Point
+from config import INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN
 
-bucket = "xtech"
-token = "a5BtBqQptxJeRFdlnWPyybLDTF9HASLvz0gtY0beZ6s0n2os6HWnBf_9YgJl6TXFFqCafHBkB3NovSiFXzNNyA=="
-org = "xtech"
-#175.25.50.116
 client = InfluxDBClient(
-    url="http://127.0.0.1:8080",
-    token=token,
-    org=org,
+    url=INFLUXDB_URL,
+    token=INFLUXDB_TOKEN,
+    org=INFLUXDB_ORG,
     verify_ssl=False,
     timeout=6000,
 )
