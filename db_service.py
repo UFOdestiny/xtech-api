@@ -11,7 +11,7 @@ from pymysql.cursors import DictCursor
 from dbutils.pooled_db import PooledDB
 from influxdb_client import InfluxDBClient
 from config import Mysql
-from config import InfluxDB_117
+from config import InfluxDB117 as InfluxDB
 
 
 class MysqlService:
@@ -54,7 +54,7 @@ class MysqlService:
 
 class InfluxdbService:
     def __init__(self):
-        self.fac_client = InfluxDBClient(url=InfluxDB_117.url, token=InfluxDB_117.token, org=InfluxDB_117.org)
+        self.fac_client = InfluxDBClient(url=InfluxDB.url, token=InfluxDB.token, org=InfluxDB.org)
 
     def get_influxdb_fac_data(self, sql):
         InfluxDB_fac = self.fac_client
