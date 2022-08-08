@@ -11,7 +11,7 @@ from pymysql.cursors import DictCursor
 from dbutils.pooled_db import PooledDB
 from influxdb import InfluxDBClient
 from config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DB
-from config import INFLUXDB_HOST, INFLUXDB_PORT, INFLUXDB_USER, INFLUXDB_PWD, INFLUXDB_FAC_DB
+from config import INFLUXDB_PORT, INFLUXDB_USER, INFLUXDB_PWD, INFLUXDB_FAC_DB
 
 
 class MysqlService:
