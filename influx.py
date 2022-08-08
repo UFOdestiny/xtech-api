@@ -6,15 +6,9 @@
 # @Desc     : manipulate influxDB
 
 from influxdb_client import InfluxDBClient, Point
-from config import INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN
+from config import InfluxDB_117
 
-client = InfluxDBClient(
-    url=INFLUXDB_URL,
-    token=INFLUXDB_TOKEN,
-    org=INFLUXDB_ORG,
-    verify_ssl=False,
-    timeout=6000,
-)
+client = InfluxDBClient(url=InfluxDB_117.url, token=InfluxDB_117.token, org=InfluxDB_117.org)
 
 # query_api = client.query_api()
 

@@ -9,15 +9,15 @@ import pandas as pd
 import pymysql
 from pymysql.cursors import DictCursor
 from dbutils.pooled_db import PooledDB
-from influxdb import InfluxDBClient
-from config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DB
-from config import INFLUXDB_PORT, INFLUXDB_USER, INFLUXDB_PWD, INFLUXDB_FAC_DB
+from influxdb_client import InfluxDBClient
+from config import Mysql
+from config import InfluxDB_117
 
 
 class MysqlService:
     def __init__(self):
-        self.pool = PooledDB(creator=pymysql, maxconnections=5, blocking=True, host=MYSQL_HOST, user=MYSQL_USER,
-                             password=MYSQL_PASSWORD, port=MYSQL_PORT, database=MYSQL_DB)
+        self.pool = PooledDB(creator=pymysql, maxconnections=5, blocking=True, host=Mysql.host, user=Mysql.user,
+                             password=Mysql.password, port=Mysql.port, database=Mysql.db)
 
     def get_data(self, sql):
         conn = self.pool.connection()
@@ -54,8 +54,7 @@ class MysqlService:
 
 class InfluxdbService:
     def __init__(self):
-        self.fac_client = InfluxDBClient(host=INFLUXDB_HOST, port=INFLUXDB_PORT, username=INFLUXDB_USER,
-                                         password=INFLUXDB_PWD, database=INFLUXDB_FAC_DB)
+        self.fac_client = InfluxDBClient(url=InfluxDB_117.url, token=InfluxDB_117.token, org=InfluxDB_117.org)
 
     def get_influxdb_fac_data(self, sql):
         InfluxDB_fac = self.fac_client
