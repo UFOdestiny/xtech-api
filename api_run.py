@@ -8,8 +8,8 @@
 from typing import Union
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-
-from db_service import MysqlService
+from config import InfluxDBLocal as InfluxDB
+from db_service import MysqlService, InfluxdbService
 from response_service import ResponseService, check_exception
 from model import UserLogin
 
@@ -33,6 +33,7 @@ app.add_middleware(
 )
 
 result = ResponseService()
+influxdbService = InfluxdbService(influxdb=InfluxDB)
 
 
 @app.get("/")
@@ -50,6 +51,13 @@ async def read_item(item_id: int, q: Union[str, None] = None):
 @app.post("/login")
 @check_exception
 async def login(user: UserLogin):
+    # mysql = MysqlService()
+    return result.return_success(user.username, user.password)
+
+
+@app.get("/Volatility20")
+@check_exception
+async def volatility20():
     # mysql = MysqlService()
     return result.return_success(user.username, user.password)
 
