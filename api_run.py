@@ -32,14 +32,11 @@ app.add_middleware(
     # max_age=1000
 )
 
+# 返回
 result = ResponseService()
+
+# InfluxDB
 influxdbService = InfluxdbService(influxdb=InfluxDB)
-
-
-@app.get("/")
-@check_exception
-async def read_root():
-    return {"Hello": "World"}
 
 
 @app.get("/items/{item_id}")
@@ -55,11 +52,12 @@ async def login(user: UserLogin):
     return result.return_success(user.username, user.password)
 
 
-@app.get("/Volatility20")
+@app.get("/targetquote/price")
 @check_exception
-async def volatility20():
-    # mysql = MysqlService()
-    return result.return_success(user.username, user.password)
+async def targetquote_price():
+    tables = influxdbService.query_data(start="-10d")
+    unpack = [table.get_value() for table in tables]
+    return result.return_success(unpack, len(unpack))
 
 
 if __name__ == '__main__':
