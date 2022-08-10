@@ -11,3 +11,8 @@ from pydantic import BaseModel
 class UserLogin(BaseModel):
     username: str
     password: str
+
+
+class TimeRange(BaseModel):
+    start: str
+    stop: str

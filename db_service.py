@@ -91,9 +91,9 @@ class InfluxdbService:
         pipe_forward = "|>"
 
         time_range = f"range(start: {start})"
-        stop_range = f", stop: {stop}"
+        stop_range = f", stop: {stop})"
         if stop:
-            time_range += stop_range
+            time_range.replace(")",stop_range)
 
         query = source + pipe_forward + time_range
 

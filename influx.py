@@ -43,7 +43,7 @@ class GetTestData:
         return influxdbService.query_data(start=self.start)
 
     def __call__(self, *args, **kwargs):
-        return [i.get_value() for i in self.get()]
+        return self.get()
 
 
 if __name__ == '__main__':
