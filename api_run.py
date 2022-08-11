@@ -4,17 +4,12 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     : start the api project
-import random
-from typing import Union
+
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from config import InfluxDBLocal as InfluxDB
-from db_service import MysqlService, InfluxdbService
-from response_service import ResponseService, check_exception
-from model import UserLogin, TimeRange
-from utils import InfluxTime
+from routers import user, targetquote
 
-app = FastAPI()
+app = FastAPI(title="X-TECH", version="0.0.1", )
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,37 +28,9 @@ app.add_middleware(
     # max_age=1000
 )
 
-# 返回服务
-result = ResponseService()
+app.include_router(user.router, prefix="/user", tags=["user"], )
 
-# InfluxDB
-influxdbService = InfluxdbService(influxdb=InfluxDB)
-
-
-@app.get("/items/{item_id}")
-@check_exception
-async def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
-
-
-@app.post("/login")
-@check_exception
-async def login(user: UserLogin):
-    # mysql = MysqlService()
-    return result.return_success(user.username, user.password)
-
-
-@app.post("/targetquote/price")
-@check_exception
-async def targetquote_price(time: TimeRange):
-    start = InfluxTime.to_influx_time(time.start)
-    stop = InfluxTime.to_influx_time(time.stop)
-    tables = influxdbService.query_data(start=start, stop=stop)
-
-    unpack = [[round(table.get_time().timestamp() * 1000), table.get_value(), random.random() * 5] for table in tables]
-
-    return result.return_success(unpack, len(unpack))
-
+app.include_router(targetquote.router, prefix="/targetquote", tags=["targetquote"], )
 
 if __name__ == '__main__':
     import uvicorn

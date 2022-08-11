@@ -16,3 +16,4 @@ class UserLogin(BaseModel):
 class TimeRange(BaseModel):
     start: str
     stop: str
+    type: int

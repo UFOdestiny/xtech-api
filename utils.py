@@ -17,7 +17,10 @@ class InfluxTime:
         yearmd_hourm_format = "%Y-%m-%d %H:%M"
 
         if type(t) == str:
-            if len(t) == 10:  # 2022-08-9
+            if t.isnumeric():
+                if len(t) >= 12:
+                    return time.strftime(influx_format, time.localtime(int(t) / 1000-3600*8))
+            if len(t) == 10:  # 2022-08-09
                 structure = time.strptime(t, yearmd_format)
                 return time.strftime(influx_format, structure)
             if len(t) == 16:
@@ -27,8 +30,8 @@ class InfluxTime:
                 # return time.strptime(t, influx_format)
                 return t
 
-        if type(t) == float:
-            return time.strftime(influx_format, time.localtime(t))
+        if type(t) == float or type(t) == int:
+            return time.strftime(influx_format, time.localtime(t / 1000))
 
 
 if __name__ == '__main__':
@@ -36,3 +39,5 @@ if __name__ == '__main__':
     print(InfluxTime.to_influx_time("2022-08-09 10:28"))
     print(InfluxTime.to_influx_time("2022-08-09T10:50:00Z"))
     print(InfluxTime.to_influx_time(time.time()))
+    print(InfluxTime.to_influx_time('1660026181729'))
+    print(InfluxTime.to_influx_time('1660026181729'))
