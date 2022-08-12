@@ -11,9 +11,8 @@ from fastapi import APIRouter
 
 from config import InfluxDBLocal as InfluxDB
 from db_service import InfluxdbService
-from model import TimeRange
 from response_service import check_exception
-from utils import InfluxTime
+from utils import InfluxTime, TimeRange
 
 router = APIRouter()
 

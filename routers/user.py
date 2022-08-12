@@ -13,10 +13,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt import ExpiredSignatureError
 
-from aes import Aes
+from utils import Aes, UserLogin
 from config import TokenConfig
 from db_service import MysqlService
-from model import UserLogin
 from response_service import check_exception
 
 mysql = MysqlService()
