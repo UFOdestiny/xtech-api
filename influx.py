@@ -5,11 +5,11 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     : manipulate influxDB
 
-from db_service import InfluxdbService
-from config import InfluxDBLocal as InfluxDB
-import time
-from utils import InfluxTime
 import random
+import time
+
+from config import InfluxDBLocal as InfluxDB
+from db_service import InfluxdbService
 
 influxdbService = InfluxdbService(influxdb=InfluxDB)
 

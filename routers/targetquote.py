@@ -7,14 +7,16 @@
 
 import random
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from config import InfluxDBLocal as InfluxDB
 from db_service import InfluxdbService
 from response_service import check_exception
 from utils import InfluxTime, TimeRange
 
-router = APIRouter()
+from routers.verify import verify_token
+
+router = APIRouter(dependencies=[Depends(verify_token)])
 
 # InfluxDB
 influxdbService = InfluxdbService(influxdb=InfluxDB)
