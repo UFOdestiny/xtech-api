@@ -28,6 +28,7 @@ app.add_middleware(
     # max_age=1000
 )
 
+
 app.include_router(user.router, prefix="/user", tags=["user"], )
 
 app.include_router(targetquote.router, prefix="/targetquote", tags=["targetquote"], )
