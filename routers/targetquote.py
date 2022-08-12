@@ -4,17 +4,18 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
-from fastapi import APIRouter
-from response_service import ResponseService, check_exception
-from model import TimeRange
-from db_service import MysqlService, InfluxdbService
-from config import InfluxDBLocal as InfluxDB
-from utils import InfluxTime
+
 import random
 
+from fastapi import APIRouter
+
+from config import InfluxDBLocal as InfluxDB
+from db_service import InfluxdbService
+from model import TimeRange
+from response_service import check_exception
+from utils import InfluxTime
+
 router = APIRouter()
-# 返回服务
-result = ResponseService()
 
 # InfluxDB
 influxdbService = InfluxdbService(influxdb=InfluxDB)
@@ -34,5 +35,5 @@ async def targetquote_price(time: TimeRange):
     elif time.type == 2:
         unpack = [[int(time.start) + i * 1000, random.random(), random.random()] for i in range(20)]
 
-    print(len(unpack))
-    return result.return_success(unpack, len(unpack))
+    # print(len(unpack))
+    return unpack

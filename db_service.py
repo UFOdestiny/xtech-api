@@ -39,11 +39,10 @@ class MysqlService:
         cur.close()
         conn.close()
 
-    def get_user(self, username):
-        sql = "select username,password,api_token,api_token_time from xtech_center_user where username='{}'".format(
-            username)
+    def get_user(self, username, password):
+        sql = f"select username,password from user where username='{username}' and password='{password}'"
         rst = self.get_data(sql)
-        return rst[0]
+        return len(rst) == 1
 
     def get_user_data_num(self, username):
         sql = "select api_level,api_data_num from xtech_center_user where username='{}'".format(username)
@@ -129,5 +128,8 @@ class InfluxdbService:
 
 
 if __name__ == "__main__":
-    influxdbService = InfluxdbService(influxdb=InfluxDB)
-    influxdbService.empty()
+    # influxdbService = InfluxdbService(influxdb=InfluxDB)
+    # influxdbService.empty()
+    mysqlService = MysqlService()
+    tip = mysqlService.get_user("ydh", "RL4kwrMu93ei28SDFZK/pQ==")
+    print(tip)

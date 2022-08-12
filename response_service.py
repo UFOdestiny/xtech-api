@@ -14,7 +14,6 @@ class ResponseService:
     def __init__(self):
         self.success_code = 200
         self.param_error_code = 400
-        self.data_traffic_code = 400
         self.verify_error_code = 401
         self.request_method_error_code = 405
         self.service_error_code = 500
@@ -91,21 +90,6 @@ class ResponseService:
         }
         return verify_error_return
 
-    def return_data_traffic(self, data_num, available_data_num):
-        verify_error_return = {
-            'header':
-                {
-                    'code': self.data_traffic_code,
-                    'msg': '请求数据量超过今日可使用流量，如需增加流量请联系工作人员！'
-                },
-            'body':
-                {
-                    '请求返回数据数量': data_num,
-                    '今日可用剩余流量': available_data_num
-                }
-        }
-        return verify_error_return
-
     def return_request_method_error(self, msg):
         verify_error_return = {
             'header':
@@ -129,6 +113,13 @@ class ResponseService:
 
         return request_success_return
 
+    def return_success_json(self, code, message, data):
+        return {
+            "code": code,
+            "message": message,
+            "data": data
+        }
+
 
 def check_exception(func):
     @wraps(func)
@@ -136,12 +127,15 @@ def check_exception(func):
         response_service = ResponseService()
         try:
             rst = await func(*args, **kwargs)
+            rst = response_service.return_success_json(code=200, message="", data=rst)
         except Exception as e:
-            print(str(e))
             if '400' in repr(e):
                 rst = response_service.return_param_error(str(e))
+            elif '401' in repr(e):
+                rst = response_service.return_verify_error(str(e))
             else:
                 rst = response_service.return_service_error()
+            print(rst)
         return JSONResponse(content=jsonable_encoder(rst))
 
     return wrapper

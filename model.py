@@ -17,3 +17,8 @@ class TimeRange(BaseModel):
     start: str
     stop: str
     type: int
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
