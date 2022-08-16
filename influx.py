@@ -8,7 +8,7 @@
 import random
 import time
 
-from config import InfluxDBLocal as InfluxDB
+from config import InfluxDB116 as InfluxDB
 from db_service import InfluxdbService
 
 influxdbService = InfluxdbService(influxdb=InfluxDB)
@@ -47,8 +47,8 @@ class GetTestData:
 
 
 if __name__ == '__main__':
-    # generate = GenerateTestData()
-    # generate.submit()
+    generate = GenerateTestData()
+    generate.submit()
 
-    get = GetTestData()
-    data = get()
+    # get = GetTestData()
+    # data = get()
