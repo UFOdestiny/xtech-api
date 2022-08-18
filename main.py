@@ -7,7 +7,7 @@
 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from routers import user, targetquote
+from routers import user, NotionalPrincipal
 
 app = FastAPI(title="X-TECH", version="0.0.1", )
 
@@ -30,7 +30,7 @@ app.add_middleware(
 
 app.include_router(user.router, prefix="/user", tags=["user"], )
 
-app.include_router(targetquote.router, prefix="/targetquote", tags=["targetquote"], )
+app.include_router(NotionalPrincipal.router, prefix="/NotionalPrincipal", tags=["data"], )
 
 if __name__ == '__main__':
     import uvicorn

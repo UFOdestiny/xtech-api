@@ -21,14 +21,15 @@ influxdbService = InfluxdbService(influxdb=InfluxDB)
 
 class GenerateTestData:
     def __init__(self):
+        self.oneday = int(8.64e13)
         self.now = time.time_ns()
-        self.timestamp_series = [i + self.now for i in range(-1000000000000, 0, 1000000000)]
+        self.timestamp_series = [i + self.now for i in range(-self.oneday * 50, 0, self.oneday)]
         # self.time_series = list(map(InfluxTime.to_influx_time, self.timestamp_series))
 
     def generate(self):
         sequence = [
             f"test1,code=a price={random.random() * 100} {self.timestamp_series[i]}" for
-            i in range(1000)]
+            i in range(len(self.timestamp_series))]
         return sequence
 
     def submit(self):

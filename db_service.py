@@ -10,7 +10,7 @@ from pymysql.cursors import DictCursor
 from dbutils.pooled_db import PooledDB
 from influxdb_client import InfluxDBClient, Point
 from config import Mysql
-from config import InfluxDBLocal as InfluxDB
+from config import InfluxDB116 as InfluxDB
 from influxdb_client.client.write_api import SYNCHRONOUS
 from utils import InfluxTime
 import time
@@ -128,8 +128,6 @@ class InfluxdbService:
 
 
 if __name__ == "__main__":
-    # influxdbService = InfluxdbService(influxdb=InfluxDB)
-    # influxdbService.empty()
-    mysqlService = MysqlService()
-    tip = mysqlService.get_user("ydh", "RL4kwrMu93ei28SDFZK/pQ==")
-    print(tip)
+    influxdbService = InfluxdbService(influxdb=InfluxDB)
+    influxdbService.empty()
+    # mysqlService = MysqlService()

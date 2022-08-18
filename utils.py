@@ -21,7 +21,10 @@ class UserLogin(BaseModel):
 class TimeRange(BaseModel):
     start: str
     stop: str
-    type: int
+
+
+class Day(BaseModel):
+    day: str
 
 
 class InfluxTime:
@@ -45,8 +48,11 @@ class InfluxTime:
                 # return time.strptime(t, influx_format)
                 return t
 
-        if type(t) == float or type(t) == int:
+        if type(t) == int:
             return time.strftime(influx_format, time.localtime(t / 1000))
+
+        if type(t) == float:
+            return time.strftime(influx_format, time.localtime(t))
 
 
 class Aes:
