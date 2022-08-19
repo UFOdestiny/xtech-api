@@ -28,6 +28,7 @@ app.add_middleware(
     # max_age=1000
 )
 
+# 引入路由
 app.include_router(user.router, prefix="/user", tags=["user"], )
 
 app.include_router(NotionalPrincipal.router, prefix="/NotionalPrincipal", tags=["data"], )

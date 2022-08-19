@@ -37,7 +37,7 @@ async def all_data(time: TimeRange):
         for _ in range(11):
             temp.append(random.random() * 100)
         fake.append(temp)
-    print(fake)
+    # print(fake)
     return fake
 
 
@@ -48,5 +48,5 @@ async def right(day: Day):
     for table in range(10):
         temp = [1]
         fake.append(temp)
-    print(fake)
+    # print(fake)
     return fake
