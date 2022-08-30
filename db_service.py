@@ -12,7 +12,7 @@ from influxdb_client import InfluxDBClient, Point
 from config import Mysql
 from config import InfluxDB116 as InfluxDB
 from influxdb_client.client.write_api import SYNCHRONOUS
-from utils import InfluxTime
+from utils.InfluxTime import InfluxTime
 import time
 from urllib3 import Retry
 

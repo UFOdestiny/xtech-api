@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Name     : WriteData.py
+# @Name     : write.py
 # @Date     : 2022/8/30 10:45
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
@@ -12,8 +12,8 @@ from fastapi import APIRouter
 from config import InfluxDB116 as InfluxDB
 from db_service import InfluxdbService
 from response_service import check_exception
-from utils import InfluxTime, TimeRange, Day
-
+from utils.Model import Data
+from utils.Model import Data
 router = APIRouter()
 
 # InfluxDB
@@ -22,7 +22,7 @@ influxdbService = InfluxdbService(influxdb=InfluxDB)
 
 @router.post("/write")
 @check_exception
-async def all_data(time: TimeRange):
+async def write_data(data: Data):
     start = InfluxTime.to_influx_time(time.start)
     stop = InfluxTime.to_influx_time(time.stop)
     tables = influxdbService.query_data(start=start, stop=stop)

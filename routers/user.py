@@ -13,7 +13,8 @@ from config import TokenConfig
 from db_service import MysqlService
 from response_service import check_exception
 from routers.verify import verify_token, create_access_token, password_exception
-from utils import Aes, UserLogin
+from utils.AES import Aes
+from utils.Model import UserLogin
 
 mysql = MysqlService()
 router = APIRouter()
