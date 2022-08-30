@@ -34,7 +34,6 @@ async def fmt(name):
 async def login_for_access_token(user: UserLogin):  # form_data通过表单数据来发送信息
     deciphered_username = aes.decrypt(user.username)
     success = mysql.get_user(deciphered_username, user.password)
-    print(success)
     if success:
         access_token = create_access_token(
             data={"username": user.username, "password": user.password},  # 这里的data字典内容随意，可以是用户名或用户ID

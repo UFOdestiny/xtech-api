@@ -17,10 +17,22 @@ import time
 from urllib3 import Retry
 
 
-class MysqlService:
+class Singleton(type):
+    def __call__(cls, *args, **kwargs):
+        if hasattr(cls, "_instance"):
+            return cls._instance
+        cls._instance = type.__call__(cls, *args, **kwargs)
+        return cls._instance
+
+
+class MysqlService(metaclass=Singleton):
     def __init__(self):
-        self.pool = PooledDB(creator=pymysql, maxconnections=5, blocking=True, host=Mysql.host, user=Mysql.user,
-                             password=Mysql.password, port=Mysql.port, database=Mysql.db)
+        self.pool = PooledDB(creator=pymysql, maxconnections=5, blocking=True,
+                             host=Mysql.host,
+                             user=Mysql.user,
+                             password=Mysql.password,
+                             port=Mysql.port,
+                             database=Mysql.db)
 
     def get_data(self, sql):
         conn = self.pool.connection()
@@ -54,7 +66,7 @@ class MysqlService:
         self.update_data(sql)
 
 
-class InfluxdbService:
+class InfluxdbService(metaclass=Singleton):
     def __init__(self, influxdb=InfluxDB):
         self.INFLUX = influxdb
         self.client = InfluxDBClient(url=self.INFLUX.url, token=self.INFLUX.token, org=self.INFLUX.org,
