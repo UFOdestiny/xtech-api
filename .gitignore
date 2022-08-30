@@ -1,5 +1,5 @@
 .idea
-config.py
 .vscode
 __pycache__
 test.py
+config.py
