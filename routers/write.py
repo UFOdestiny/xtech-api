@@ -8,8 +8,8 @@
 from fastapi import APIRouter
 
 from config import InfluxDBProduct as InfluxDB
-from service.db_service import InfluxdbService
-from service.response_service import check_exception
+from service.InfluxService import InfluxdbService
+from service.ResponseService import check_exception
 from utils.Model import Data
 
 router = APIRouter()
@@ -21,5 +21,5 @@ influxdbService = InfluxdbService(influxdb=InfluxDB)
 @router.post("/write")
 @check_exception
 async def write_data(data: Data):
-    pass
-    return
+    print(data.header)
+    print(data.body)

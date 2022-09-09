@@ -23,4 +23,5 @@ class Day(BaseModel):
 
 
 class Data(BaseModel):
-    content: str
+    header: dict
+    body: dict

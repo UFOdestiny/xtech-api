@@ -13,7 +13,7 @@ index = ["000300", "000852"]
 
 
 class OpTargetQuote(metaclass=Authentication):
-    code_pre = [510050, 510300, 159919]
+    code_pre = [510050]  # , 510300, 159919
 
     def __init__(self):
         self.code = normalize_code(self.code_pre)
@@ -25,9 +25,9 @@ class OpTargetQuote(metaclass=Authentication):
     def get_data(self):
         # 'open', 'close', 'low', 'high', 'volume', 'money', 'factor','high_limit', 'low_limit', 'avg', 'pre_close'
         self.df = get_price(security=self.code,
-                            start_date='2015-01-28 09:00:00',
-                            end_date='2015-01-30 14:00:00',
-                            fq='pre',
+                            start_date='2021-11-29 09:00:00',
+                            end_date='2021-11-29 14:00:00',
+                            fq='none',
                             frequency='minute',
                             fields=['close', 'pre_close'],
                             panel=False)
@@ -50,5 +50,5 @@ class OpTargetQuote(metaclass=Authentication):
 if __name__ == "__main__":
     op = OpTargetQuote()
     a = op.get()
-    for j in a[:100]:
+    for j in a[:10]:
         print(j)

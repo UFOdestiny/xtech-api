@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Name     : influx.py
+# @Name     : Influx.py
 # @Date     : 2022/8/3 15:02
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
@@ -9,7 +9,7 @@ import random
 import time
 
 from config import InfluxDBProduct as InfluxDB
-from service.db_service import InfluxdbService
+from service.InfluxService import InfluxdbService
 
 influxdbService = InfluxdbService(influxdb=InfluxDB)
 

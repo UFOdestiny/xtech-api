@@ -5,6 +5,22 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
 
+from service.InfluxService import InfluxdbService
+import requests
+
+
 class WriteData:
+    username = "ydh"
+    password = "123"
+    header = {"username": username, "password": password}
+
     def __init__(self):
-        pass
+        self.data = {"header": self.header, "body": None}
+        self.db = InfluxdbService()
+
+    def generate(self, data):
+        self.data["body"] = data
+
+    def send(self, data):
+        self.generate(data)
+        requests.post(url="", data=data)
