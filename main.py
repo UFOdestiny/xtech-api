@@ -7,7 +7,7 @@
 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from routers import user, NotionalPrincipal
+from routers import user, NotionalPrincipal,write
 
 app = FastAPI(title="X-TECH", version="0.0.1", )
 
@@ -30,6 +30,8 @@ app.add_middleware(
 
 # 引入路由
 app.include_router(user.router, prefix="/user", tags=["user"], )
+
+app.include_router(write.router, prefix="", tags=["write"], )
 
 app.include_router(NotionalPrincipal.router, prefix="/NotionalPrincipal", tags=["data"], )
 

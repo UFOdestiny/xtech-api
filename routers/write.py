@@ -12,6 +12,7 @@ from service.InfluxService import InfluxdbService
 from service.ResponseService import check_exception
 from utils.Model import Data
 
+
 router = APIRouter()
 
 # InfluxDB
@@ -21,5 +22,9 @@ influxdbService = InfluxdbService(influxdb=InfluxDB)
 @router.post("/write")
 @check_exception
 async def write_data(data: Data):
-    print(data.header)
-    print(data.body)
+    username = data.header["username"]
+    password = data.header["password"]
+    if username and password:
+        pass
+    content = data.body
+    print(content)

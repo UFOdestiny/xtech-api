@@ -9,7 +9,7 @@ import random
 
 from fastapi import APIRouter, Depends
 
-from config import InfluxDBTest as InfluxDB
+from config import InfluxDBProduct as InfluxDB
 from service.InfluxService import InfluxdbService
 from service.ResponseService import check_exception
 
