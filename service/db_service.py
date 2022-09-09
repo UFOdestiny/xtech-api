@@ -10,7 +10,7 @@ from pymysql.cursors import DictCursor
 from dbutils.pooled_db import PooledDB
 from influxdb_client import InfluxDBClient, Point
 from config import Mysql
-from config import InfluxDB116 as InfluxDB
+from config import InfluxDBTest as InfluxDB
 from influxdb_client.client.write_api import SYNCHRONOUS
 from utils.InfluxTime import InfluxTime
 import time

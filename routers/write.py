@@ -7,7 +7,7 @@
 
 from fastapi import APIRouter
 
-from config import InfluxDB116 as InfluxDB
+from config import InfluxDBProduct as InfluxDB
 from service.db_service import InfluxdbService
 from service.response_service import check_exception
 from utils.Model import Data

@@ -8,7 +8,7 @@
 import random
 import time
 
-from config import InfluxDB116 as InfluxDB
+from config import InfluxDBProduct as InfluxDB
 from service.db_service import InfluxdbService
 
 influxdbService = InfluxdbService(influxdb=InfluxDB)
