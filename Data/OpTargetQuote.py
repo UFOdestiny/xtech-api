@@ -56,6 +56,7 @@ class OpTargetQuote(metaclass=Authentication):
         return self.result
 
 
+
 if __name__ == "__main__":
     op = OpTargetQuote()
     a = op.get()
