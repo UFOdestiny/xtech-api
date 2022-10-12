@@ -8,6 +8,7 @@ from datetime import datetime
 
 from jqdatasdk import get_price, normalize_code
 
+
 from JoinQuant import Authentication
 
 index = ["000300", "000852"]
