@@ -8,7 +8,6 @@ from datetime import datetime
 
 from jqdatasdk import get_price, normalize_code
 
-
 from JoinQuant import Authentication
 
 index = ["000300", "000852"]
@@ -44,7 +43,7 @@ class OpTargetQuote(metaclass=Authentication):
 
             self.result[i].append(pct)
 
-            origin_time = datetime.timestamp(self.result[i][0])-60
+            origin_time = datetime.timestamp(self.result[i][0]) - 60
             print(origin_time)
             # time_ = InfluxTime.to_influx_time(origin_time)
             self.result[i][0] = f"{origin_time * 1e9:.0f}"
@@ -54,7 +53,6 @@ class OpTargetQuote(metaclass=Authentication):
         self.process_df()
         print(self.df)
         return self.result
-
 
 
 if __name__ == "__main__":
