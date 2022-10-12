@@ -37,7 +37,7 @@ if __name__ == '__main__':
     from OpTargetQuote import OpTargetQuote
 
     op = OpTargetQuote()
-    a = op.get()
+    a = op.get(start='2021-09-01 00:00:00', end='2021-09-30 00:00:00')
 
     w = WriteData()
     w.generate({"optargetquote": a})
