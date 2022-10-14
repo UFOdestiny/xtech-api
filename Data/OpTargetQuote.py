@@ -10,8 +10,6 @@ from jqdatasdk import get_price, normalize_code
 
 from JoinQuant import Authentication
 
-index = ["000300", "000852"]
-
 
 class OpTargetQuote(metaclass=Authentication):
     code_pre = [510050, 510300, 159919, ]

@@ -7,18 +7,36 @@
 
 from service.InfluxService import InfluxdbService
 
+# 不能删除下面的导入，因为用到了eval
+from OpTargetQuote import OpTargetQuote
+from OpContractInfo import OpContractInfo
+
 
 class WriteData:
     format_dict = {
         "optargetquote": "optargetquote,targetcode={1} price={2},pct={4} {0}",
         "opcontractinfo": "opcontractinfo,targetcode={1},opcode={2},type={5} price={4},days={8} {0}",
+        "opcontractquote": "opcontractquote,targetcode={1},opcode={2},type={5} price={4},days={8} {0}",
     }
 
     def __init__(self):
         self.db = InfluxdbService()
         self.q = []
+        self.source = None
+        self.S = None
+        self.data = None
 
-    def generate(self, data):
+    def set_source(self, source):
+        self.source = source
+        self.S = eval(f"{source}()")
+
+    def set_time(self, start, end):
+        d = self.S.get(start, end)
+        self.data = {self.source.lower(): d}
+
+    def generate(self):
+        data = self.data
+
         q = []
         keys = data.keys()
         for k in keys:
@@ -34,25 +52,16 @@ class WriteData:
         self.db.write_data_execute(self.q)
 
 
-class TargetQuote:
-    from OpTargetQuote import OpTargetQuote
-    op = OpTargetQuote()
-    a = op.get(start='2021-09-01 00:00:00', end='2021-09-30 00:00:00')
-
-    w = WriteData()
-    w.generate({"optargetquote": a})
-    w.send()
-
-
-class ContractInfo:
-    from OpContractInfo import OpContractInfo
-    op = OpContractInfo()
-    a = op.get(start='2022-09-01 00:00:00', end='2022-10-14 23:00:00')
-
-    w = WriteData()
-    w.generate({"opcontractinfo": a})
-    w.send()
+class Write(WriteData):
+    def __call__(self,
+                 source="OpContractInfo",
+                 start='2021-09-01 00:00:00',
+                 end='2021-09-30 00:00:00'):
+        self.set_source(source)
+        self.set_time(start=start, end=end)
+        self.generate()
+        self.send()
 
 
 if __name__ == '__main__':
-    ContractInfo()
+    Write()("OpContractInfo", "2021-09-01 00:00:00", "2021-09-30 00:00:00")

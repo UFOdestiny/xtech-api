@@ -8,7 +8,7 @@
 import datetime
 
 import pandas
-from jqdatasdk import opt, query, get_price
+from jqdatasdk import get_price, get_ticks
 
 from JoinQuant import Authentication
 
@@ -21,19 +21,20 @@ class OpContractQuote(metaclass=Authentication):
         self.df = None
         self.result = []
 
-    def one_code(self):
-        df = get_price('510050.XSHG', start_date='2022-10-13 00:00:00', end_date='2022-10-13 20:00:00',
-                       frequency='minute',
-                       fields=['open', 'close', 'low', 'high', 'volume', 'money', "pre_close"])
+    def get_data(self, code='510050.XSHG', start='2022-10-13 00:00:00', end='2022-10-14 20:00:00'):
+        # df = get_price(code, start_date=start, end_date=end,
+        #                frequency='minute',
+        #                fields=['open', 'close', 'low', 'high', 'volume', 'money', "pre_close"])
 
-        # df= get_ticks('510050.XSHG', start_dt='2022-10-13 00:00:00', end_dt='2022-10-13 20:00:00',
-        #                fields=['time','current','high', 'low', 'volume', 'money',"a1_v","a1_p","b1_v","b1_p"])
-        #
+        df = get_ticks(code, start_dt=start, end_dt=end,
+                       fields=['time', 'current', 'high', 'low', 'volume', 'money', "a1_v", "a1_p", "b1_v",
+                               "b1_p"])
+
+        self.df = df
         # writer = pandas.ExcelWriter("2022-10-13 510050XSHG.xlsx")  # 初始化一个writer
         # df.to_excel(writer, float_format='%.5f')  # table输出为excel, 传入writer
         # writer.save()
-        pandas.set_option('display.max_columns', None)
-        print(df)
+        # pandas.set_option('display.max_columns', None)
 
     def process_df(self):
         self.result = self.df.values.tolist()
@@ -50,12 +51,11 @@ class OpContractQuote(metaclass=Authentication):
             self.result[i][0] = f"{origin_time * 1e9:.0f}"
 
     def get(self):
-        self.all_code()
-        # self.one_code()
-        # print(self.df)
+        self.get_data()
 
-        # self.process_df()
-        # return self.result
+        self.process_df()
+
+        return self.result
 
 
 if __name__ == "__main__":
