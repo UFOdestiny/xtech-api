@@ -51,7 +51,6 @@ class OpTargetQuote(metaclass=Authentication):
     def get(self, start='2021-09-09 00:00:00', end='2021-09-14 00:00:00'):
         self.get_data(start, end)
         self.process_df()
-        print(self.df)
         return self.result
 
 

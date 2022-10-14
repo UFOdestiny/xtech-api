@@ -6,71 +6,67 @@
 # @Desc     :
 
 import datetime
-
-from jqdatasdk import opt, query
+import time
+import pandas
+from jqdatasdk import opt, query, get_price
 
 from JoinQuant import Authentication
 
 
 # xshg 1-4496
 class OpContractInfo(metaclass=Authentication):
-    code_pre = ['510050.XSHG', '510300.XSHG', '159919.XSHE', ]
-
     def __init__(self):
-        # self.code = normalize_code(self.code_pre)
-        self.code = self.code_pre
+        self.code = []
         self.today = str(datetime.date.today())
-
         self.df = None
-        # datetime targetcode price pct
-
         self.result = []
 
-    def all_code(self):
+    def get_data(self):
         q = query(opt.OPT_DAILY_PREOPEN.date,
                   opt.OPT_DAILY_PREOPEN.code,
                   opt.OPT_DAILY_PREOPEN.underlying_symbol,
-                  opt.OPT_DAILY_PREOPEN.contract_unit,
+                  opt.OPT_DAILY_PREOPEN.underlying_name,
                   opt.OPT_DAILY_PREOPEN.exercise_price,
                   opt.OPT_DAILY_PREOPEN.contract_type,
-                  opt.OPT_DAILY_PREOPEN.last_trade_date)  # .filter(opt.OPT_DAILY_PREOPEN.code == '10001313.XSHG')
-        self.df = opt.run_query(q)
+                  opt.OPT_DAILY_PREOPEN.list_date,
+                  opt.OPT_DAILY_PREOPEN.expire_date, ).filter(opt.OPT_DAILY_PREOPEN.date == self.today)
 
-    def one_code(self):
-        q = query(opt.OPT_DAILY_PREOPEN.date,
-                  opt.OPT_DAILY_PREOPEN.code,
-                  opt.OPT_DAILY_PREOPEN.underlying_symbol,
-                  opt.OPT_DAILY_PREOPEN.contract_unit,
-                  opt.OPT_DAILY_PREOPEN.exercise_price,
-                  opt.OPT_DAILY_PREOPEN.contract_type,
-                  opt.OPT_DAILY_PREOPEN.last_trade_date).filter(opt.OPT_DAILY_PREOPEN.date == self.today)
-        # .filter(opt.OPT_DAILY_PREOPEN.list_date <= self.today,opt.OPT_DAILY_PREOPEN.expire_date >= self.today)
-        df = opt.run_query(q)
-        return df
+        self.df = opt.run_query(q)
+        self.df['days'] = self.df["expire_date"] - self.df["date"]
+
+        self.code = list(self.df["underlying_symbol"].unique())
+
+        # pandas.set_option('display.max_rows', None)
+        # pandas.set_option('display.max_columns', None)
+
+        # print(self.df)
+
+        # writer = pandas.ExcelWriter("2022-10-13.xlsx")  # 初始化一个writer
+        # df.to_excel(writer, float_format='%.5f')  # table输出为excel, 传入writer
+        # writer.save()
 
     def process_df(self):
         self.result = self.df.values.tolist()
 
         for i in range(len(self.result)):
-            close = self.result[i][-2]
-            pre_close = self.result[i][-1]
-            pct = (close - pre_close) / pre_close
+            origin_time1 = time.mktime(self.result[i][0].timetuple())
+            self.result[i][0] = f"{origin_time1 * 1e9:.0f}"
 
-            self.result[i].append(pct)
+            origin_time2 = time.mktime(self.result[i][6].timetuple())
+            self.result[i][6] = f"{origin_time2 * 1e9:.0f}"
 
-            origin_time = datetime.timestamp(self.result[i][0])
-            # time_ = InfluxTime.to_influx_time(origin_time)
-            self.result[i][0] = f"{origin_time * 1e9:.0f}"
+            origin_time3 = time.mktime(self.result[i][7].timetuple())
+            self.result[i][7] = f"{origin_time3 * 1e9:.0f}"
 
-    def get(self):
-        print(self.one_code())
+            self.result[i][-1] = self.result[i][-1].days
 
-        # print(self.df)
-
-        # self.process_df()
-        # return self.result
+    def get(self, start='2022-10-13 00:00:00', end='2022-10-14 23:00:00'):
+        self.get_data()
+        self.process_df()
+        print(self.result)
+        return self.result
 
 
 if __name__ == "__main__":
     opc = OpContractInfo()
-    a = opc.get()
+    opc.get()

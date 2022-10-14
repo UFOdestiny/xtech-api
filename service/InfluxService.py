@@ -74,9 +74,12 @@ class InfluxdbService(metaclass=Singleton):
                 result.append(record)
         return result
 
-    def delete_data(self, start, stop):
+    def delete_data(self, start, stop, measurement=None, ):
+        if not measurement:
+            measurement = self.INFLUX.measurement
+
         self.delete_api.delete(start, stop,
-                               f'_measurement="{self.INFLUX.measurement}"',
+                               f'_measurement="{measurement}"',
                                bucket=self.INFLUX.bucket,
                                org=self.INFLUX.org)
 
@@ -94,5 +97,6 @@ if __name__ == "__main__":
     # print(f"{time.time() * 1000 * 1000 * 1000:.0f}")
     # q = ['test1,targetcode=510050.XSHG price=2.76,pct=2.754 1662706943248528896']
     # influxdbService.write_data_execute(q)
-    influxdbService.empty()
+    # influxdbService.empty()
     # mysqlService = MysqlService()
+    influxdbService.delete_data("2022-01-02T23:00:00Z", "2022-10-15T23:00:00Z", "opcontractinfo")
