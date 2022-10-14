@@ -7,13 +7,12 @@
 
 import datetime
 import time
-import pandas
-from jqdatasdk import opt, query, get_price
+
+from jqdatasdk import opt, query
 
 from JoinQuant import Authentication
 
 
-# xshg 1-4496
 class OpContractInfo(metaclass=Authentication):
     def __init__(self):
         self.code = []
@@ -21,7 +20,11 @@ class OpContractInfo(metaclass=Authentication):
         self.df = None
         self.result = []
 
-    def get_data(self):
+    def get_data(self, start=None, end=None):
+        if not start and not end:
+            start = self.today
+            end = self.today
+
         q = query(opt.OPT_DAILY_PREOPEN.date,
                   opt.OPT_DAILY_PREOPEN.code,
                   opt.OPT_DAILY_PREOPEN.underlying_symbol,
@@ -29,7 +32,8 @@ class OpContractInfo(metaclass=Authentication):
                   opt.OPT_DAILY_PREOPEN.exercise_price,
                   opt.OPT_DAILY_PREOPEN.contract_type,
                   opt.OPT_DAILY_PREOPEN.list_date,
-                  opt.OPT_DAILY_PREOPEN.expire_date, ).filter(opt.OPT_DAILY_PREOPEN.date == self.today)
+                  opt.OPT_DAILY_PREOPEN.expire_date, ).filter(opt.OPT_DAILY_PREOPEN.date >= start,
+                                                              opt.OPT_DAILY_PREOPEN.date <= end)
 
         self.df = opt.run_query(q)
         self.df['days'] = self.df["expire_date"] - self.df["date"]
@@ -60,13 +64,13 @@ class OpContractInfo(metaclass=Authentication):
 
             self.result[i][-1] = self.result[i][-1].days
 
-    def get(self, start='2022-10-13 00:00:00', end='2022-10-14 23:00:00'):
-        self.get_data()
+    def get(self, start=None, end=None):
+
+        self.get_data(start, end)
         self.process_df()
-        print(self.result)
         return self.result
 
 
 if __name__ == "__main__":
     opc = OpContractInfo()
-    opc.get()
+    opc.get(start='2022-10-10 00:00:00', end='2022-10-14 23:00:00')

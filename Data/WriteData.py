@@ -47,7 +47,7 @@ class TargetQuote:
 class ContractInfo:
     from OpContractInfo import OpContractInfo
     op = OpContractInfo()
-    a = op.get(start='2021-09-01 00:00:00', end='2021-09-30 00:00:00')
+    a = op.get(start='2022-09-01 00:00:00', end='2022-10-14 23:00:00')
 
     w = WriteData()
     w.generate({"opcontractinfo": a})
