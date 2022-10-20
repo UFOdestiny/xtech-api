@@ -15,8 +15,8 @@ from OpContractInfo import OpContractInfo
 class WriteData:
     format_dict = {
         "optargetquote": "optargetquote,targetcode={1} price={2},pct={4} {0}",
-        "opcontractinfo": "opcontractinfo,targetcode={1},opcode={2},type={5} price={4},days={8} {0}",
-        "opcontractquote": "opcontractquote,targetcode={1},opcode={2},type={5} price={4},days={8} {0}",
+        "opcontractinfo": "opcontractinfo,opcode={1},targetcode={2},type={5} multiplier={6},strikeprice={4},days={9} {0}",
+        "opcontractquote": "opcontractquote,targetcode={1},opcode={2},type={5} price={4},days={9},multiplier={6} {0}",
     }
 
     def __init__(self):
@@ -46,8 +46,6 @@ class WriteData:
             q.extend(sequence)
         self.q = q
 
-        # print(self.q)
-
     def send(self):
         self.db.write_data_execute(self.q)
 
@@ -55,8 +53,8 @@ class WriteData:
 class Write(WriteData):
     def __call__(self,
                  source="OpContractInfo",
-                 start='2021-09-01 00:00:00',
-                 end='2021-09-30 00:00:00'):
+                 start='2022-09-01 00:00:00',
+                 end='2022-09-30 00:00:00'):
         self.set_source(source)
         self.set_time(start=start, end=end)
         self.generate()
@@ -64,4 +62,4 @@ class Write(WriteData):
 
 
 if __name__ == '__main__':
-    Write()("OpContractInfo", "2021-09-01 00:00:00", "2021-09-30 00:00:00")
+    Write()("OpContractInfo", "2022-01-01 00:00:00", "2022-10-01 00:00:00")

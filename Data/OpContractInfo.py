@@ -31,6 +31,7 @@ class OpContractInfo(metaclass=Authentication):
                   opt.OPT_DAILY_PREOPEN.underlying_name,
                   opt.OPT_DAILY_PREOPEN.exercise_price,
                   opt.OPT_DAILY_PREOPEN.contract_type,
+                  opt.OPT_DAILY_PREOPEN.contract_unit,
                   opt.OPT_DAILY_PREOPEN.list_date,
                   opt.OPT_DAILY_PREOPEN.expire_date, ).filter(opt.OPT_DAILY_PREOPEN.date >= start,
                                                               opt.OPT_DAILY_PREOPEN.date <= end)
@@ -41,9 +42,6 @@ class OpContractInfo(metaclass=Authentication):
         self.code = list(self.df["underlying_symbol"].unique())
 
         # pandas.set_option('display.max_rows', None)
-        # pandas.set_option('display.max_columns', None)
-
-        # print(self.df)
 
         # writer = pandas.ExcelWriter("2022-10-13.xlsx")  # 初始化一个writer
         # df.to_excel(writer, float_format='%.5f')  # table输出为excel, 传入writer
@@ -56,11 +54,11 @@ class OpContractInfo(metaclass=Authentication):
             origin_time1 = time.mktime(self.result[i][0].timetuple())
             self.result[i][0] = f"{origin_time1 * 1e9:.0f}"
 
-            origin_time2 = time.mktime(self.result[i][6].timetuple())
-            self.result[i][6] = f"{origin_time2 * 1e9:.0f}"
+            origin_time2 = time.mktime(self.result[i][7].timetuple())
+            self.result[i][7] = f"{origin_time2 * 1e9:.0f}"
 
-            origin_time3 = time.mktime(self.result[i][7].timetuple())
-            self.result[i][7] = f"{origin_time3 * 1e9:.0f}"
+            origin_time3 = time.mktime(self.result[i][8].timetuple())
+            self.result[i][8] = f"{origin_time3 * 1e9:.0f}"
 
             self.result[i][-1] = self.result[i][-1].days
 
@@ -73,4 +71,4 @@ class OpContractInfo(metaclass=Authentication):
 
 if __name__ == "__main__":
     opc = OpContractInfo()
-    opc.get(start='2022-10-10 00:00:00', end='2022-10-14 23:00:00')
+    opc.get(start='2022-10-01 00:00:00', end='2022-10-17 23:00:00')

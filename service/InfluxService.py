@@ -99,4 +99,4 @@ if __name__ == "__main__":
     # influxdbService.write_data_execute(q)
     # influxdbService.empty()
     # mysqlService = MysqlService()
-    influxdbService.delete_data("2022-01-02T23:00:00Z", "2022-10-15T23:00:00Z", "opcontractinfo")
+    influxdbService.delete_data("2022-09-01T01:00:00Z", "2022-09-23T23:00:00Z", "opcontractinfo")
