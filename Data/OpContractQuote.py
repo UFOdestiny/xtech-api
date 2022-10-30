@@ -24,7 +24,7 @@ class OpContractQuote(metaclass=Authentication):
         self.final_result = None
         self.code = None
 
-    def get_data(self, code='10004496.XSHG', start='2022-08-01 00:00:00', end='2022-10-01 00:00:00'):
+    def get_data(self, code='10004496.XSHG', start='2022-09-01 00:00:00', end='2022-09-08 23:00:00'):
         df = get_ticks(code, start_dt=start, end_dt=end,
                        fields=['time', 'current', 'volume', 'money', "a1_v", "a1_p", "b1_v",
                                "b1_p"])
@@ -44,6 +44,24 @@ class OpContractQuote(metaclass=Authentication):
         time_series = pandas.date_range(start=start_time.replace(second=0, microsecond=0),
                                         end=end_time.replace(second=0, microsecond=0),
                                         freq='1Min')
+
+        time_series1_am = pandas.date_range(start=start_time.replace(hour=9, minute=30, second=0, microsecond=0),
+                                            end=start_time.replace(hour=11, minute=30, second=0, microsecond=0),
+                                            freq='1Min')
+
+        time_series1_pm = pandas.date_range(start=start_time.replace(hour=13, minute=00, second=0, microsecond=0),
+                                            end=start_time.replace(hour=15, minute=00, second=0, microsecond=0),
+                                            freq='1Min')
+
+        time_series = time_series1_am.append(time_series1_pm)
+        oneday = time_series.copy()
+
+        days_offset = {(i[0] - start_time).days for i in self.result}
+
+        for i in days_offset:
+            if i != 0:
+                time_series = time_series.append(oneday + datetime.timedelta(days=i))
+
         # time open close high low vol oi amount
         final_result = [[i, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ] for i in time_series]
 
