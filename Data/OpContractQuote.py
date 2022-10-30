@@ -36,13 +36,13 @@ class OpContractQuote(metaclass=Authentication):
         # pandas.set_option('display.max_columns', None)
 
     def process_df(self):
-        print(['time', 'current', 'volume', 'money', "a1_v", "a1_p", "b1_v", "b1_p"])
+        # print(['time', 'current', 'volume', 'money', "a1_v", "a1_p", "b1_v", "b1_p"])
         self.result = self.df.values.tolist()
 
         start_time = self.result[0][0]
         end_time = self.result[-1][0]
-        time_series = pandas.date_range(start=start_time.replace(second=0),
-                                        end=end_time.replace(second=0),
+        time_series = pandas.date_range(start=start_time.replace(second=0, microsecond=0),
+                                        end=end_time.replace(second=0, microsecond=0),
                                         freq='1Min')
         # time open close high low vol oi amount
         final_result = [[i, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ] for i in time_series]
@@ -121,9 +121,13 @@ class OpContractQuote(metaclass=Authentication):
             up = down
 
         self.final_result = final_result
+        # for i in self.final_result[:10]:
+        #     print(i)
 
     def write_excel(self):
-        writer = pandas.ExcelWriter(self.code.replace(".", ""))
+        filename = self.code.replace(".", "")
+        writer = pandas.ExcelWriter(filename + ".xlsx")
+
         df1 = pandas.DataFrame(self.final_result,
                                columns=['time', 'open', 'close', 'high', 'low', 'amount', 'vol', 'oi', 'a1_v', 'a1_p',
                                         'b1_v', 'b1_p'])
@@ -134,6 +138,7 @@ class OpContractQuote(metaclass=Authentication):
                                columns=['time', 'current', 'volume', 'money', "a1_v", "a1_p", "b1_v", "b1_p"])
 
         df2.to_excel(writer, sheet_name='sheet2', index=False)
+
         writer.save()
 
     def get(self):
