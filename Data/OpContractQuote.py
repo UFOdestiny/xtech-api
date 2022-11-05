@@ -6,7 +6,6 @@
 # @Desc     :
 
 import datetime
-import time
 
 import pandas
 from jqdatasdk import get_ticks
@@ -24,7 +23,7 @@ class OpContractQuote(metaclass=Authentication):
         self.final_result = None
         self.code = None
 
-    def get_data(self, code='10004496.XSHG', start='2022-09-01 00:00:00', end='2022-09-08 23:00:00'):
+    def get_data(self, code='10004496.XSHG', start='2022-08-01 00:00:00', end='2022-11-08 23:00:00'):
         df = get_ticks(code, start_dt=start, end_dt=end,
                        fields=['time', 'current', 'volume', 'money', "a1_v", "a1_p", "b1_v",
                                "b1_p"])
@@ -56,7 +55,10 @@ class OpContractQuote(metaclass=Authentication):
         time_series = time_series1_am.append(time_series1_pm)
         oneday = time_series.copy()
 
-        days_offset = {(i[0] - start_time).days for i in self.result}
+        days_offset = {
+            (i[0].replace(hour=0, minute=0, second=0, microsecond=0) - start_time.replace(hour=0, minute=0, second=0,
+                                                                                          microsecond=0)).days for i in
+            self.result}
 
         for i in days_offset:
             if i != 0:
@@ -173,12 +175,12 @@ class OpContractQuote(metaclass=Authentication):
                                columns=['time', 'open', 'close', 'high', 'low', 'amount', 'vol', 'oi', 'a1_v', 'a1_p',
                                         'b1_v', 'b1_p', 'pct'])
 
-        df1.to_excel(writer, sheet_name='sheet1', index=False)
+        df1.to_excel(writer, sheet_name='minute', index=False)
 
         df2 = pandas.DataFrame(self.result,
                                columns=['time', 'current', 'volume', 'money', "a1_v", "a1_p", "b1_v", "b1_p"])
 
-        df2.to_excel(writer, sheet_name='sheet2', index=False)
+        df2.to_excel(writer, sheet_name='tick', index=False)
 
         writer.save()
 

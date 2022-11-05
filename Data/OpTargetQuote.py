@@ -21,7 +21,7 @@ class OpTargetQuote(metaclass=Authentication):
 
         self.result = []
 
-    def get_data(self, start='2020-09-14 00:00:00', end='2021-09-14 00:00:00'):
+    def get_data(self, start='2020-08-01 00:00:00', end='2021-11-01 00:00:00'):
         # 'open', 'close', 'low', 'high', 'volume', 'money', 'factor','high_limit', 'low_limit', 'avg', 'pre_close'
         self.df = get_price(security=self.code,
                             start_date=start,
