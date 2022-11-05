@@ -41,9 +41,9 @@ class OpContractQuote(metaclass=Authentication):
 
         start_time = self.result[0][0]
         end_time = self.result[-1][0]
-        time_series = pandas.date_range(start=start_time.replace(second=0, microsecond=0),
-                                        end=end_time.replace(second=0, microsecond=0),
-                                        freq='1Min')
+        pandas.date_range(start=start_time.replace(second=0, microsecond=0),
+                          end=end_time.replace(second=0, microsecond=0),
+                          freq='1Min')
 
         time_series1_am = pandas.date_range(start=start_time.replace(hour=9, minute=30, second=0, microsecond=0),
                                             end=start_time.replace(hour=11, minute=30, second=0, microsecond=0),
@@ -63,7 +63,9 @@ class OpContractQuote(metaclass=Authentication):
                 time_series = time_series.append(oneday + datetime.timedelta(days=i))
 
         # time open close high low vol oi amount
-        final_result = [[i, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ] for i in time_series]
+        final_result = [[i, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] for i in time_series]
+
+        # pct 每天变化
 
         up = 0
         down = 0
@@ -88,13 +90,13 @@ class OpContractQuote(metaclass=Authentication):
                 high_p = max(high_p, current)
                 min_p = min(min_p, current)
 
-                amount += self.result[down][3]
+                amount = self.result[down][3]
                 # oi+=self.result[down][]
-                vol += self.result[down][2]
+                vol = self.result[down][2]
 
-                a1_v += self.result[down][4]
+                a1_v = self.result[down][4]
 
-                b1_v += self.result[down][6]
+                b1_v = self.result[down][6]
 
                 down += 1
 
@@ -121,26 +123,47 @@ class OpContractQuote(metaclass=Authentication):
                 final_result[i][10] = b1_v
                 # 11 b1_p
                 final_result[i][11] = self.result[down - 1][7]
+                # 12 pct
+                if i >= 1 and final_result[i - 1][2] != 0:
+                    final_result[i][12] = (final_result[i][2] - final_result[i - 1][2]) / final_result[i - 1][2]
+                else:
+                    final_result[i][12] = 0
+
             else:
+
                 final_result[i][1] = final_result[i - 1][1]
                 final_result[i][2] = final_result[i - 1][2]
                 final_result[i][3] = final_result[i - 1][3]
                 final_result[i][4] = final_result[i - 1][4]
 
-                final_result[i][5] = 0
-                final_result[i][6] = 0
+                if self.result[down - 1][0].day == this_minute.day:
 
-                final_result[i][7] = 0
-                final_result[i][8] = 0
-                final_result[i][9] = final_result[i - 1][9]
-                final_result[i][10] = 0
-                final_result[i][11] = final_result[i - 1][11]
+                    final_result[i][5] = final_result[i - 1][5]
+                    final_result[i][6] = final_result[i - 1][6]
+
+                    final_result[i][7] = 0
+                    final_result[i][8] = final_result[i - 1][8]
+                    final_result[i][9] = final_result[i - 1][9]
+                    final_result[i][10] = final_result[i - 1][10]
+                    final_result[i][11] = final_result[i - 1][11]
+
+                    final_result[i][12] = 0
+                else:
+
+                    final_result[i][5] = amount
+                    final_result[i][6] = vol
+
+                    final_result[i][7] = 0
+                    final_result[i][8] = a1_v
+                    final_result[i][9] = self.result[down - 1][5]
+                    final_result[i][10] = b1_v
+                    final_result[i][11] = self.result[down - 1][7]
+
+                    final_result[i][12] = 0
 
             up = down
 
         self.final_result = final_result
-        # for i in self.final_result[:10]:
-        #     print(i)
 
     def write_excel(self):
         filename = self.code.replace(".", "")
@@ -148,7 +171,7 @@ class OpContractQuote(metaclass=Authentication):
 
         df1 = pandas.DataFrame(self.final_result,
                                columns=['time', 'open', 'close', 'high', 'low', 'amount', 'vol', 'oi', 'a1_v', 'a1_p',
-                                        'b1_v', 'b1_p'])
+                                        'b1_v', 'b1_p', 'pct'])
 
         df1.to_excel(writer, sheet_name='sheet1', index=False)
 
