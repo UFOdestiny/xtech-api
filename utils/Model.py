@@ -3,7 +3,7 @@
 # @Date     : 2022/8/30 15:36
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     :
+# @Desc     : API模型
 
 from pydantic import BaseModel
 

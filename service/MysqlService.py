@@ -3,7 +3,7 @@
 # @Date     : 2022/9/9 12:31
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     :
+# @Desc     : Mysql服务连接
 
 import pymysql
 from dbutils.pooled_db import PooledDB

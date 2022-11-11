@@ -3,7 +3,7 @@
 # @Date     : 2022/8/3 15:03
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     : start the api project
+# @Desc     : 启动项目
 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware

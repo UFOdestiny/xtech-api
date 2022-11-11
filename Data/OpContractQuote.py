@@ -3,7 +3,7 @@
 # @Date     : 2022/9/14 9:09
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     :
+# @Desc     : 合约信息
 
 import datetime
 
@@ -48,8 +48,8 @@ class OpContractQuote(metaclass=Authentication):
                                             end=start_time.replace(hour=11, minute=30, second=0, microsecond=0),
                                             freq='1Min')
 
-        time_series1_pm = pandas.date_range(start=start_time.replace(hour=13, minute=00, second=0, microsecond=0),
-                                            end=start_time.replace(hour=15, minute=00, second=0, microsecond=0),
+        time_series1_pm = pandas.date_range(start=start_time.replace(hour=13, minute=0, second=0, microsecond=0),
+                                            end=start_time.replace(hour=15, minute=0, second=0, microsecond=0),
                                             freq='1Min')
 
         time_series = time_series1_am.append(time_series1_pm)
@@ -138,6 +138,8 @@ class OpContractQuote(metaclass=Authentication):
                 final_result[i][3] = final_result[i - 1][3]
                 final_result[i][4] = final_result[i - 1][4]
 
+                final_result[i][12] = final_result[i - 1][12]
+
                 if self.result[down - 1][0].day == this_minute.day:
 
                     final_result[i][5] = final_result[i - 1][5]
@@ -149,7 +151,7 @@ class OpContractQuote(metaclass=Authentication):
                     final_result[i][10] = final_result[i - 1][10]
                     final_result[i][11] = final_result[i - 1][11]
 
-                    final_result[i][12] = 0
+
                 else:
 
                     final_result[i][5] = amount
@@ -160,8 +162,6 @@ class OpContractQuote(metaclass=Authentication):
                     final_result[i][9] = self.result[down - 1][5]
                     final_result[i][10] = b1_v
                     final_result[i][11] = self.result[down - 1][7]
-
-                    final_result[i][12] = 0
 
             up = down
 

@@ -3,7 +3,7 @@
 # @Date     : 2022/8/3 15:02
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     : manipulate influxDB
+# @Desc     : influxDB测试数据生成
 
 import random
 import time

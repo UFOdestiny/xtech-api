@@ -3,7 +3,7 @@
 # @Date     : 2022/9/9 12:31
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     :
+# @Desc     : Influx服务连接
 
 import time
 

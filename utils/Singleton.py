@@ -3,7 +3,7 @@
 # @Date     : 2022/9/9 12:47
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     :
+# @Desc     : 单例
 
 class Singleton(type):
     def __call__(cls, *args, **kwargs):

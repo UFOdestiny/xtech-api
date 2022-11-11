@@ -3,7 +3,7 @@
 # @Date     : 2022/11/5 12:35
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     :
+# @Desc     : 希腊数字计算
 
 import datetime
 import time

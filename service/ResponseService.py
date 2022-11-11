@@ -3,7 +3,7 @@
 # @Date     : 2022/8/5 9:26
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     : service response
+# @Desc     : API返回操作服务
 
 from functools import wraps
 from fastapi.responses import JSONResponse

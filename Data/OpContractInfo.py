@@ -3,7 +3,7 @@
 # @Date     : 2022/9/14 9:09
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     :
+# @Desc     : 合约信息
 
 import datetime
 import time
@@ -52,13 +52,13 @@ class OpContractInfo(metaclass=Authentication):
 
         for i in range(len(self.result)):
             origin_time1 = time.mktime(self.result[i][0].timetuple())
-            self.result[i][0] = f"{origin_time1 * 1e9:.0f}"
+            #self.result[i][0] = f"{origin_time1 * 1e9:.0f}"
 
             origin_time2 = time.mktime(self.result[i][7].timetuple())
-            self.result[i][7] = f"{origin_time2 * 1e9:.0f}"
+            #self.result[i][7] = f"{origin_time2 * 1e9:.0f}"
 
             origin_time3 = time.mktime(self.result[i][8].timetuple())
-            self.result[i][8] = f"{origin_time3 * 1e9:.0f}"
+            #self.result[i][8] = f"{origin_time3 * 1e9:.0f}"
 
             self.result[i][-1] = self.result[i][-1].days
 
@@ -66,9 +66,14 @@ class OpContractInfo(metaclass=Authentication):
 
         self.get_data(start, end)
         self.process_df()
+
+        for i in range(100):
+            print(self.result[i])
+
+
         return self.result
 
 
 if __name__ == "__main__":
     opc = OpContractInfo()
-    opc.get(start='2022-10-01 00:00:00', end='2022-10-17 23:00:00')
+    opc.get(start='2022-08-01 00:00:00', end='2022-11-08 23:00:00')

@@ -3,7 +3,7 @@
 # @Date     : 2022/8/12 14:35
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     :
+# @Desc     : token认证
 
 from datetime import datetime, timedelta
 from typing import Optional

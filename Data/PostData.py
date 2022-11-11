@@ -3,7 +3,7 @@
 # @Date     : 2022/9/9 11:33
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     :
+# @Desc     : post传输
 
 import requests
 

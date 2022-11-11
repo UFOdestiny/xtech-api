@@ -3,7 +3,7 @@
 # @Date     : 2022/8/30 15:37
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     :
+# @Desc     : influxDB时间格式处理
 import time
 
 

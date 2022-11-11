@@ -3,7 +3,7 @@
 # @Date     : 2022/8/30 15:35
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     :
+# @Desc     : AES加密组件
 
 from config import AesConfig
 from Crypto.Cipher import AES

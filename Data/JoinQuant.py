@@ -3,7 +3,7 @@
 # @Date     : 2022/9/9 9:52
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     :
+# @Desc     : 登陆聚宽API，以便后续的查找。
 
 from jqdatasdk import JQDataClient, auth
 from config import JoinQuantSetting
