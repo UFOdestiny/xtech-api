@@ -3,14 +3,53 @@
 # @Date     : 2022/9/14 9:09
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     : 合约信息
+# @Desc     :
 
 import datetime
+import math
 
+import numpy as np
 import pandas
-from jqdatasdk import get_ticks
+from jqdatasdk import get_ticks, opt, query, get_price
 
 from JoinQuant import Authentication
+
+import scipy.stats as si
+
+
+class Greeks:
+    def __init__(self):
+        self.r = 0.03
+
+    # s股票价格 k行权价 r无风险利率 T年化期限 sigma历史波动率
+    def d(self, s, k, T, sigma):
+        d1 = (np.log(s / k) + (self.r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+        d2 = d1 - sigma * np.sqrt(T)
+        return d1, d2
+
+    def delta(self, s, k, T, sigma, n=1):
+        d1 = self.d(s, k, T, sigma)[0]
+        delta = n * si.norm.cdf(n * d1)
+        return delta
+
+    def gamma(self, s, k, T, sigma):
+        d1 = self.d(s, k, T, sigma)[0]
+        gamma = si.norm.pdf(d1) / (s * sigma * np.sqrt(T))
+        return gamma
+
+    def vega(self, s, k, T, sigma):
+        d1 = self.d(s, k, T, sigma)[0]
+        vega = (s * si.norm.pdf(d1) * np.sqrt(T)) / 100
+        return vega
+
+    def theta(self, s, k, T, sigma, n=1):
+        d1 = self.d(s, k, T, sigma)[0]
+        d2 = self.d(s, k, T, sigma)[1]
+
+        theta = (-1 * (s * si.norm.pdf(d1) * sigma) / (2 * np.sqrt(T)) - n * self.r * k * np.exp(
+            -self.r * T) * si.norm.cdf(
+            n * d2)) / 365
+        return theta
 
 
 class OpContractQuote(metaclass=Authentication):
@@ -23,7 +62,78 @@ class OpContractQuote(metaclass=Authentication):
         self.final_result = None
         self.code = None
 
-    def get_data(self, code='10004496.XSHG', start='2022-08-01 00:00:00', end='2022-11-08 23:00:00'):
+        self.underlying_symbol = None
+
+        self.his_vol = None
+        self.price_days = None
+        self.constant = None
+
+    def get_underlying_symbol(self, code='10004496.XSHG'):
+        q = query(opt.OPT_CONTRACT_INFO.underlying_symbol).filter(opt.OPT_CONTRACT_INFO.code == code)
+        df = opt.run_query(q)
+        self.underlying_symbol = df["underlying_symbol"][0]
+
+    def get_S(self):
+        df = get_price(self.underlying_symbol,
+                       fields=['close'],
+                       frequency='daily',
+                       start_date='2022-07-10 00:00:00',
+                       end_date='2022-11-08 23:00:00', )
+
+        close = df["close"].to_list()
+        length = len(close)
+        rts = [0]
+        avg = [0.0] * 21
+        for i in range(1, length):
+            rts.append(math.log(close[i] / close[i - 1]))
+
+        avg_total = sum(rts[1:]) / (length - 1)
+
+        avg0 = sum(rts[1:21]) / 20
+        avg.append(avg0)
+
+        for i in range(22, length):
+            avg_i = avg[-1] + (rts[i - 1] - rts[i - 21]) / 20
+            avg.append(avg_i)
+
+        variance = [0.0] * 21
+        for i in range(21, length):
+            v = 0
+
+            for j in range(i - 20, i):
+                v += (avg[j] - avg_total) ** 2
+
+            v = (v / (20 * 252)) ** 0.5
+
+            variance.append(v)
+
+        # df["rts"] = rts
+        # df["avg"]=avg
+        df["his_vol"] = variance
+
+        del close
+        self.his_vol = df
+
+        # pandas.set_option('display.max_rows', None)
+        # print(df)
+
+    def get_exercise_price(self, code='10004496.XSHG'):
+        q = query(opt.OPT_DAILY_PREOPEN.date,
+                  # opt.OPT_DAILY_PREOPEN.code,
+                  opt.OPT_DAILY_PREOPEN.exercise_price,
+                  opt.OPT_DAILY_PREOPEN.expire_date, ).filter(
+            opt.OPT_DAILY_PREOPEN.code == code,
+            opt.OPT_DAILY_PREOPEN.date >= '2022-07-10 00:00:00',
+            opt.OPT_DAILY_PREOPEN.date <= '2022-11-08 23:00:00')
+
+        df = opt.run_query(q)
+        df['days'] = df["expire_date"] - df["date"]
+        df['days'] = df['days'].apply(lambda x: x.days / 365)
+        del df["expire_date"]
+        df.set_index("date", inplace=True)
+        self.price_days = df
+
+    def get_data(self, code='10004496.XSHG', start='2022-07-10 00:00:00', end='2022-11-08 23:00:00'):
         df = get_ticks(code, start_dt=start, end_dt=end,
                        fields=['time', 'current', 'volume', 'money', "a1_v", "a1_p", "b1_v",
                                "b1_p"])
@@ -153,7 +263,6 @@ class OpContractQuote(metaclass=Authentication):
 
 
                 else:
-
                     final_result[i][5] = amount
                     final_result[i][6] = vol
 
@@ -184,11 +293,21 @@ class OpContractQuote(metaclass=Authentication):
 
         writer.save()
 
-    def get(self):
-        self.get_data()
-        self.process_df()
+    def process_constant(self):
+        df = self.his_vol.join(self.price_days, how="inner")
+        df.drop(df[df["his_vol"] == 0].index, inplace=True)
+        self.constant = df
 
-        self.write_excel()
+    def get(self):
+        self.get_underlying_symbol()
+        self.get_S()
+        self.get_exercise_price()
+        self.process_constant()
+
+        # self.get_data()
+        # self.process_df()
+
+        # self.write_excel()
 
 
 if __name__ == "__main__":

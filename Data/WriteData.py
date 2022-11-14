@@ -17,6 +17,7 @@ class WriteData:
         "optargetquote": "optargetquote,targetcode={1} price={2},pct={4} {0}",
         "opcontractinfo": "opcontractinfo,opcode={1},targetcode={2},type={5} multiplier={6},strikeprice={4},days={9} {0}",
         "opcontractquote": "opcontractquote,targetcode={1},opcode={2},type={5} price={4},days={9},multiplier={6} {0}",
+        "opcontractgreek": "opcontractquote,targetcode={1},opcode={2},type={5} price={4},days={9},multiplier={6} {0}",
     }
 
     def __init__(self):

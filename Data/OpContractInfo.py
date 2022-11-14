@@ -52,13 +52,13 @@ class OpContractInfo(metaclass=Authentication):
 
         for i in range(len(self.result)):
             origin_time1 = time.mktime(self.result[i][0].timetuple())
-            #self.result[i][0] = f"{origin_time1 * 1e9:.0f}"
+            self.result[i][0] = f"{origin_time1 * 1e9:.0f}"
 
             origin_time2 = time.mktime(self.result[i][7].timetuple())
-            #self.result[i][7] = f"{origin_time2 * 1e9:.0f}"
+            self.result[i][7] = f"{origin_time2 * 1e9:.0f}"
 
             origin_time3 = time.mktime(self.result[i][8].timetuple())
-            #self.result[i][8] = f"{origin_time3 * 1e9:.0f}"
+            self.result[i][8] = f"{origin_time3 * 1e9:.0f}"
 
             self.result[i][-1] = self.result[i][-1].days
 
@@ -66,10 +66,6 @@ class OpContractInfo(metaclass=Authentication):
 
         self.get_data(start, end)
         self.process_df()
-
-        for i in range(100):
-            print(self.result[i])
-
 
         return self.result
 
