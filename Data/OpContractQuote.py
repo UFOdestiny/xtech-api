@@ -8,53 +8,17 @@
 import datetime
 import math
 
-import numpy as np
 import pandas
 from jqdatasdk import get_ticks, opt, query, get_price
 
 from JoinQuant import Authentication
-
-import scipy.stats as si
-
-
-class Greeks:
-    def __init__(self):
-        self.r = 0.03
-
-    # s股票价格 k行权价 r无风险利率 T年化期限 sigma历史波动率
-    def d(self, s, k, T, sigma):
-        d1 = (np.log(s / k) + (self.r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
-        d2 = d1 - sigma * np.sqrt(T)
-        return d1, d2
-
-    def delta(self, s, k, T, sigma, n=1):
-        d1 = self.d(s, k, T, sigma)[0]
-        delta = n * si.norm.cdf(n * d1)
-        return delta
-
-    def gamma(self, s, k, T, sigma):
-        d1 = self.d(s, k, T, sigma)[0]
-        gamma = si.norm.pdf(d1) / (s * sigma * np.sqrt(T))
-        return gamma
-
-    def vega(self, s, k, T, sigma):
-        d1 = self.d(s, k, T, sigma)[0]
-        vega = (s * si.norm.pdf(d1) * np.sqrt(T)) / 100
-        return vega
-
-    def theta(self, s, k, T, sigma, n=1):
-        d1 = self.d(s, k, T, sigma)[0]
-        d2 = self.d(s, k, T, sigma)[1]
-
-        theta = (-1 * (s * si.norm.pdf(d1) * sigma) / (2 * np.sqrt(T)) - n * self.r * k * np.exp(
-            -self.r * T) * si.norm.cdf(
-            n * d2)) / 365
-        return theta
+from utils.Greeks import Greeks
 
 
 class OpContractQuote(metaclass=Authentication):
 
     def __init__(self):
+
         self.code = []
         self.today = str(datetime.date.today())
         self.df = None
@@ -67,6 +31,9 @@ class OpContractQuote(metaclass=Authentication):
         self.his_vol = None
         self.price_days = None
         self.constant = None
+        self.g = Greeks()
+
+        self.df_final = None
 
     def get_underlying_symbol(self, code='10004496.XSHG'):
         q = query(opt.OPT_CONTRACT_INFO.underlying_symbol).filter(opt.OPT_CONTRACT_INFO.code == code)
@@ -103,28 +70,30 @@ class OpContractQuote(metaclass=Authentication):
             for j in range(i - 20, i):
                 v += (avg[j] - avg_total) ** 2
 
-            v = (v / (20 * 252)) ** 0.5
+            v = (v * 252 / 20) ** 0.5
 
             variance.append(v)
 
         # df["rts"] = rts
-        # df["avg"]=avg
+        # df["avg"] = avg
+
         df["his_vol"] = variance
+        # pandas.set_option('display.max_rows', None)
+        # print(df)
 
         del close
         self.his_vol = df
 
-        # pandas.set_option('display.max_rows', None)
         # print(df)
 
     def get_exercise_price(self, code='10004496.XSHG'):
-        q = query(opt.OPT_DAILY_PREOPEN.date,
-                  # opt.OPT_DAILY_PREOPEN.code,
-                  opt.OPT_DAILY_PREOPEN.exercise_price,
-                  opt.OPT_DAILY_PREOPEN.expire_date, ).filter(
-            opt.OPT_DAILY_PREOPEN.code == code,
-            opt.OPT_DAILY_PREOPEN.date >= '2022-07-10 00:00:00',
-            opt.OPT_DAILY_PREOPEN.date <= '2022-11-08 23:00:00')
+        q = query(opt.OPT_CONTRACT_INFO.date,
+                  # opt.OPT_CONTRACT_INFO.code,
+                  opt.OPT_CONTRACT_INFO.exercise_price,
+                  opt.OPT_CONTRACT_INFO.expire_date, ).filter(
+            opt.OPT_CONTRACT_INFO.code == code,
+            opt.OPT_CONTRACT_INFO.date >= '2022-07-10 00:00:00',
+            opt.OPT_CONTRACT_INFO.date <= '2022-11-08 23:00:00')
 
         df = opt.run_query(q)
         df['days'] = df["expire_date"] - df["date"]
@@ -132,6 +101,11 @@ class OpContractQuote(metaclass=Authentication):
         del df["expire_date"]
         df.set_index("date", inplace=True)
         self.price_days = df
+
+    def process_constant(self):
+        df = self.his_vol.join(self.price_days, how="inner")
+        df.drop(df[df["his_vol"] == 0].index, inplace=True)
+        self.constant = df
 
     def get_data(self, code='10004496.XSHG', start='2022-07-10 00:00:00', end='2022-11-08 23:00:00'):
         df = get_ticks(code, start_dt=start, end_dt=end,
@@ -275,16 +249,44 @@ class OpContractQuote(metaclass=Authentication):
             up = down
 
         self.final_result = final_result
+        self.df_final = pandas.DataFrame(self.final_result,
+                                         columns=['time', 'open', 'close', 'high', 'low', 'amount', 'vol', 'oi', 'a1_v',
+                                                  'a1_p',
+                                                  'b1_v', 'b1_p', 'pct'])
+
+    def greek(self):
+        self.df_final.drop(self.df_final[self.df_final["close"] == 0].index, inplace=True)
+        self.df_final["exercise_price"] = 0
+        self.df_final["days"] = 0
+        self.df_final["his_vol"] = 0
+
+        self.df_final["delta"] = 0
+        self.df_final["gamma"] = 0
+        self.df_final["vega"] = 0
+        self.df_final["theta"] = 0
+
+        days = self.constant.index
+        for i in range(len(days)):
+            day = days[i]
+            index = (self.df_final["time"] > day) & (self.df_final["time"] < day + datetime.timedelta(days=1))
+            self.df_final.loc[index, "exercise_price"] = self.constant["exercise_price"][i]
+            self.df_final.loc[index, "days"] = self.constant["days"][i]
+            self.df_final.loc[index, "his_vol"] = self.constant["his_vol"][i]
+
+        self.df_final["delta"] = self.g.delta(self.df_final["close"], self.df_final["exercise_price"],
+                                              self.df_final["days"], self.df_final["his_vol"])
+        self.df_final["gamma"] = self.g.gamma(self.df_final["close"], self.df_final["exercise_price"],
+                                              self.df_final["days"], self.df_final["his_vol"])
+        self.df_final["vega"] = self.g.vega(self.df_final["close"], self.df_final["exercise_price"],
+                                            self.df_final["days"], self.df_final["his_vol"])
+        self.df_final["theta"] = self.g.theta(self.df_final["close"], self.df_final["exercise_price"],
+                                              self.df_final["days"], self.df_final["his_vol"])
 
     def write_excel(self):
         filename = self.code.replace(".", "")
         writer = pandas.ExcelWriter(filename + ".xlsx")
 
-        df1 = pandas.DataFrame(self.final_result,
-                               columns=['time', 'open', 'close', 'high', 'low', 'amount', 'vol', 'oi', 'a1_v', 'a1_p',
-                                        'b1_v', 'b1_p', 'pct'])
-
-        df1.to_excel(writer, sheet_name='minute', index=False)
+        self.df_final.to_excel(writer, sheet_name='minute', index=False)
 
         df2 = pandas.DataFrame(self.result,
                                columns=['time', 'current', 'volume', 'money', "a1_v", "a1_p", "b1_v", "b1_p"])
@@ -293,21 +295,17 @@ class OpContractQuote(metaclass=Authentication):
 
         writer.save()
 
-    def process_constant(self):
-        df = self.his_vol.join(self.price_days, how="inner")
-        df.drop(df[df["his_vol"] == 0].index, inplace=True)
-        self.constant = df
-
     def get(self):
         self.get_underlying_symbol()
         self.get_S()
         self.get_exercise_price()
         self.process_constant()
 
-        # self.get_data()
-        # self.process_df()
+        self.get_data()
+        self.process_df()
+        self.greek()
 
-        # self.write_excel()
+        self.write_excel()
 
 
 if __name__ == "__main__":
