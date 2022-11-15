@@ -36,8 +36,9 @@ class OpContractQuote(metaclass=Authentication):
         self.df_final = None
 
     def get_underlying_symbol(self, code='10004496.XSHG'):
-        q = query(opt.OPT_CONTRACT_INFO.underlying_symbol).filter(opt.OPT_CONTRACT_INFO.code == code)
+        q = query(opt.OPT_CONTRACT_INFO.underlying_symbol,opt.OPT_CONTRACT_INFO.exercise_price).filter(opt.OPT_CONTRACT_INFO.code == code)
         df = opt.run_query(q)
+        print(df)
         self.underlying_symbol = df["underlying_symbol"][0]
 
     def get_S(self):
@@ -68,9 +69,9 @@ class OpContractQuote(metaclass=Authentication):
             v = 0
 
             for j in range(i - 20, i):
-                v += (avg[j] - avg_total) ** 2
+                v += (rts[j] - avg[i]) ** 2
 
-            v = (v * 252 / 20) ** 0.5
+            v = (v * 250 / 20) ** 0.5
 
             variance.append(v)
 
@@ -80,6 +81,7 @@ class OpContractQuote(metaclass=Authentication):
         df["his_vol"] = variance
         # pandas.set_option('display.max_rows', None)
         # print(df)
+        # df.to_excel("close.xlsx")
 
         del close
         self.his_vol = df
@@ -87,13 +89,13 @@ class OpContractQuote(metaclass=Authentication):
         # print(df)
 
     def get_exercise_price(self, code='10004496.XSHG'):
-        q = query(opt.OPT_CONTRACT_INFO.date,
-                  # opt.OPT_CONTRACT_INFO.code,
-                  opt.OPT_CONTRACT_INFO.exercise_price,
-                  opt.OPT_CONTRACT_INFO.expire_date, ).filter(
-            opt.OPT_CONTRACT_INFO.code == code,
-            opt.OPT_CONTRACT_INFO.date >= '2022-07-10 00:00:00',
-            opt.OPT_CONTRACT_INFO.date <= '2022-11-08 23:00:00')
+        q = query(opt.OPT_DAILY_PREOPEN.date,
+                  # opt.OPT_DAILY_PREOPEN.code,
+                  opt.OPT_DAILY_PREOPEN.exercise_price,
+                  opt.OPT_DAILY_PREOPEN.expire_date, ).filter(
+            opt.OPT_DAILY_PREOPEN.code == code,
+            opt.OPT_DAILY_PREOPEN.date >= '2022-07-10 00:00:00',
+            opt.OPT_DAILY_PREOPEN.date <= '2022-11-08 23:00:00')
 
         df = opt.run_query(q)
         df['days'] = df["expire_date"] - df["date"]
@@ -113,6 +115,7 @@ class OpContractQuote(metaclass=Authentication):
                                "b1_p"])
         self.code = code
         self.df = df
+
         # writer = pandas.ExcelWriter("2022-10-13 510050XSHG.xlsx")  # 初始化一个writer
         # df.to_excel(writer, float_format='%.5f')  # table输出为excel, 传入writer
         # writer.save()

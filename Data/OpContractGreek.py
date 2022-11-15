@@ -39,6 +39,8 @@ class OpContractGreek(metaclass=Authentication):
         df = opt.run_query(q)
         self.code = code
         self.df = df
+        print(self.df)
+
 
     def process_df(self):
         self.result = self.df.values.tolist()
