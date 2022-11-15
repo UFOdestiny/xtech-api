@@ -7,12 +7,11 @@
 
 import numpy as np
 import scipy.stats as si
-import pandas as pd
 
 
 class Greeks:
     def __init__(self):
-        self.r = 0.05
+        self.r = 0.015
 
     # s 股票价格 k行权价 r无风险利率 T年化期限 sigma历史波动率
     def d(self, s, k, T, sigma):
@@ -47,6 +46,8 @@ class Greeks:
 
 
 if __name__ == "__main__":
+    import pandas as pd
+
     # df = pd.read_excel("D:\\COURSE\\X-tech\\api\\Data\\10004496XSHG.xlsx")
     g = Greeks()
     # a = df.iloc[0]
