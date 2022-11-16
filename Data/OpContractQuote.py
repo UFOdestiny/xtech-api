@@ -12,7 +12,7 @@ import pandas
 from jqdatasdk import get_ticks, opt, query, get_price
 
 from JoinQuant import Authentication
-from utils.Greeks import Greeks
+from utils.GreeksIV import Greeks
 
 
 class OpContractQuote(metaclass=Authentication):
