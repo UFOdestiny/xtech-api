@@ -64,7 +64,7 @@ class OpContractGreek(metaclass=Authentication):
         self.get_data()
         self.process_df()
 
-        self.write_excel()
+        # self.write_excel()
 
 
 if __name__ == "__main__":

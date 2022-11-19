@@ -12,12 +12,13 @@ import pandas
 from jqdatasdk import get_ticks, opt, query, get_price
 
 from JoinQuant import Authentication
-from utils.GreeksIV import Greeks
+from utils.GreeksIV import Greeks, ImpliedVolatility
 
 
 class OpContractQuote(metaclass=Authentication):
 
     def __init__(self):
+        self.df_minute = None
         self.today = str(datetime.date.today())
         self.df = None
         self.result = []
@@ -28,20 +29,37 @@ class OpContractQuote(metaclass=Authentication):
         self.price_days = None
         self.constant = None
         self.g = Greeks()
+        self.iv = ImpliedVolatility()
         self.df_final = None
 
     def get_underlying_symbol(self, code='10004496.XSHG'):
         """
-        根据合约代码获取期权代码，如10004496.XSHG→510300.XSHG
+        根据合约代码获取期权代码，如10004496.XSHG→510300.XSHG，和标的价格
         :param code: 合约代码
         :return: 期权代码
         """
-        q = query(opt.OPT_CONTRACT_INFO.underlying_symbol,  # opt.OPT_CONTRACT_INFO.exercise_price
-                  ).filter(opt.OPT_CONTRACT_INFO.code == code)
+        q = query(opt.OPT_CONTRACT_INFO.underlying_symbol,
+                  opt.OPT_CONTRACT_INFO.exercise_price).filter(opt.OPT_CONTRACT_INFO.code == code)
         df = opt.run_query(q)
-        # print(df)
         self.underlying_symbol = df["underlying_symbol"][0]
         # print(self.underlying_symbol)
+
+    def get_underlying_symbol_price(self, start_date='2022-07-10 00:00:00', end_date='2022-11-08 23:00:00', ):
+        """
+        根据期权代码获取日频的历史波动率
+        :param start_date:
+        :param end_date:
+        :return:
+        """
+        df = get_price(self.underlying_symbol,
+                       fields=['close'],
+                       frequency='minute',
+                       start_date=start_date,
+                       end_date=end_date, )
+
+        df.columns = ["minute"]
+        df.index -= pandas.Timedelta(minutes=1)
+        self.df_minute = df
 
     def get_his_vol(self, start_date='2022-07-10 00:00:00', end_date='2022-11-08 23:00:00', ):
         """
@@ -50,6 +68,9 @@ class OpContractQuote(metaclass=Authentication):
         :param end_date:
         :return:
         """
+
+        b = datetime.datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S") - datetime.timedelta(days=35)
+        start_date = str(b)
 
         """
         # 1、获取制定时间段内的日频价格
@@ -107,6 +128,7 @@ class OpContractQuote(metaclass=Authentication):
 
         del close
         self.his_vol = df
+        # print(self.his_vol)
 
         # print(df)
 
@@ -122,12 +144,14 @@ class OpContractQuote(metaclass=Authentication):
         q = query(opt.OPT_DAILY_PREOPEN.date,
                   # opt.OPT_DAILY_PREOPEN.code,
                   opt.OPT_DAILY_PREOPEN.exercise_price,
-                  opt.OPT_DAILY_PREOPEN.expire_date, ).filter(
+                  opt.OPT_DAILY_PREOPEN.expire_date,
+                  opt.OPT_DAILY_PREOPEN.pre_close_underlying, ).filter(
             opt.OPT_DAILY_PREOPEN.code == code,
             opt.OPT_DAILY_PREOPEN.date >= start_date,
             opt.OPT_DAILY_PREOPEN.date <= end_date)
 
         df = opt.run_query(q)
+
         df['days'] = df["expire_date"] - df["date"]
         # 年化，日数除365
         df['days'] = df['days'].apply(lambda x: x.days / 365)
@@ -314,21 +338,22 @@ class OpContractQuote(metaclass=Authentication):
                                          columns=['time', 'open', 'close', 'high', 'low', 'amount', 'vol', 'oi', 'a1_v',
                                                   'a1_p', 'b1_v', 'b1_p', 'pct'])
 
-    def greek(self):
+    def greekiv(self):
         """
         希腊数字指标计算
         :return:
         """
         # 除去开头几行价格为0的数据
         self.df_final.drop(self.df_final[self.df_final["close"] == 0].index, inplace=True)
+        self.df_final = self.df_final.reset_index(drop=True)
+        self.df_final = self.df_final.join(self.df_minute, how="inner", on="time")
+
         self.df_final["exercise_price"] = 0
         self.df_final["days"] = 0
         self.df_final["his_vol"] = 0
+        self.df_final["pre_close_underlying"] = 0
 
-        self.df_final["delta"] = 0
-        self.df_final["gamma"] = 0
-        self.df_final["vega"] = 0
-        self.df_final["theta"] = 0
+        # self.df_final["iv"] = 0
 
         # 将行权价，年化到期日和历史波动率写入dataframe
         days = self.constant.index
@@ -338,16 +363,27 @@ class OpContractQuote(metaclass=Authentication):
             self.df_final.loc[index, "exercise_price"] = self.constant["exercise_price"][i]
             self.df_final.loc[index, "days"] = self.constant["days"][i]
             self.df_final.loc[index, "his_vol"] = self.constant["his_vol"][i]
+            self.df_final.loc[index, "pre_close_underlying"] = self.constant["pre_close_underlying"][i]
 
         # 使用Greek类进行计算
-        self.df_final["delta"] = self.g.delta(self.df_final["close"], self.df_final["exercise_price"],
+        self.df_final["delta+"] = self.g.delta(self.df_final["minute"], self.df_final["exercise_price"],
+                                               self.df_final["days"], self.df_final["his_vol"], n=1)
+        self.df_final["delta-"] = self.g.delta(self.df_final["minute"], self.df_final["exercise_price"],
+                                               self.df_final["days"], self.df_final["his_vol"], n=-1)
+        self.df_final["gamma"] = self.g.gamma(self.df_final["minute"], self.df_final["exercise_price"],
                                               self.df_final["days"], self.df_final["his_vol"])
-        self.df_final["gamma"] = self.g.gamma(self.df_final["close"], self.df_final["exercise_price"],
-                                              self.df_final["days"], self.df_final["his_vol"])
-        self.df_final["vega"] = self.g.vega(self.df_final["close"], self.df_final["exercise_price"],
+        self.df_final["vega"] = self.g.vega(self.df_final["minute"], self.df_final["exercise_price"],
                                             self.df_final["days"], self.df_final["his_vol"])
-        self.df_final["theta"] = self.g.theta(self.df_final["close"], self.df_final["exercise_price"],
-                                              self.df_final["days"], self.df_final["his_vol"])
+        self.df_final["theta+"] = self.g.theta(self.df_final["minute"], self.df_final["exercise_price"],
+                                               self.df_final["days"], self.df_final["his_vol"], n=1)
+        self.df_final["theta-"] = self.g.theta(self.df_final["minute"], self.df_final["exercise_price"],
+                                               self.df_final["days"], self.df_final["his_vol"], n=-1)
+
+        # for i in range(len(self.df_final)):
+        #     self.df_final.iloc[i, -1] = self.iv.find_vol(self.df_final.iloc[i]["close"], "c",
+        #                                                  self.df_final.iloc[i]["pre_close_underlying"],
+        #                                                  self.df_final.iloc[i]["exercise_price"],
+        #                                                  self.df_final.iloc[i]["days"])
 
     def write_excel(self):
         """
@@ -366,23 +402,70 @@ class OpContractQuote(metaclass=Authentication):
 
         writer.save()
 
-    def get(self):
+    def write_excel_add(self):
+        file_name = "202201.csv"
+
+        self.df_final.to_csv(file_name, mode="a", index=False)
+
+    def get(self, **kwargs):
         """
         按流程执行
         :return:
         """
-        self.get_underlying_symbol()
-        self.get_his_vol()
-        self.get_exercise_price()
+        code = kwargs["code"]
+        start = kwargs["start"]
+        end = kwargs["end"]
+
+        self.get_underlying_symbol(code)
+        self.get_underlying_symbol_price(start, end)
+        self.get_his_vol(start, end)
+        self.get_exercise_price(code, start, end)
         self.process_constant()
 
-        self.get_data()
+        self.get_data(code, start, end)
         self.process_df()
-        self.greek()
+        self.greekiv()
 
-        self.write_excel()
+        self.df_final["code"] = code
+        self.df_final["underlying_symbol"] = self.underlying_symbol
+
+        self.df_final.insert(1, 'code', self.df_final.pop("code"))
+        self.df_final.insert(2, 'underlying_symbol', self.df_final.pop("underlying_symbol"))
+
+        self.df_final.drop(["minute", "exercise_price", "days", "his_vol", "pre_close_underlying"],
+                           axis=1, inplace=True)
+        self.df_final["iv"] = 0
+        self.df_final["timevalue"] = 0
+
+        # self.write_excel()
+
+        self.df_final["time"] = pandas.to_datetime(self.df_final["time"]).values.astype(object)
+        self.df_final.fillna(-1, inplace=True)
+        res = self.df_final.values.tolist()
+        return res
+
+    def get_add(self, code, start_time, end_time):
+        """
+        按流程执行
+        :return:
+        """
+        self.get_underlying_symbol(code)
+        self.get_underlying_symbol_price(start_time, end_time)
+        self.get_his_vol(start_time, end_time)
+        self.get_exercise_price(code, start_time, end_time)
+        self.process_constant()
+
+        self.get_data(code, start_time, end_time)
+        self.process_df()
+        self.greekiv()
+
+        self.df_final["code"] = code
+        d = self.df_final.pop("code")
+        self.df_final.insert(0, 'code', d)
+
+        self.write_excel_add()
 
 
 if __name__ == "__main__":
     opc = OpContractQuote()
-    opc.get()
+    opc.get(code="10004237.XSHG", start='2022-11-01 00:00:00', end='2022-11-30 23:00:00')

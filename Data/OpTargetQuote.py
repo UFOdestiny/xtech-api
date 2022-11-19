@@ -4,8 +4,8 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
-from datetime import datetime
 
+import pandas
 from jqdatasdk import get_price, normalize_code
 
 from JoinQuant import Authentication
@@ -14,45 +14,30 @@ from JoinQuant import Authentication
 class OpTargetQuote(metaclass=Authentication):
     code_pre = [510050, 510300, 159919, ]
 
+    # 0:time 1:code 2:close 3:pct
+
     def __init__(self):
         self.code = normalize_code(self.code_pre)
         self.df = None
-        # datetime targetcode price pct
-
         self.result = []
 
-    def get_data(self, start='2020-08-01 00:00:00', end='2021-11-01 00:00:00'):
-        # 'open', 'close', 'low', 'high', 'volume', 'money', 'factor','high_limit', 'low_limit', 'avg', 'pre_close'
-        self.df = get_price(security=self.code,
-                            start_date=start,
-                            end_date=end,
-                            fq='pre',
-                            frequency='minute',
-                            fields=['close', 'pre_close'],
-                            panel=False)
+    def get_data(self, start, end):
+        self.df = get_price(security=self.code, start_date=start, end_date=end, fq='pre', frequency='minute',
+                            fields=['close', 'pre_close'], panel=False)
 
     def process_df(self):
+        self.df["time"] -= pandas.Timedelta(minutes=1)
+        self.df["time"] = pandas.to_datetime(self.df["time"]).values.astype(object)
+        self.df["pct"] = (self.df["close"] - self.df["pre_close"]) / self.df["pre_close"]
+        del self.df["pre_close"]
         self.result = self.df.values.tolist()
 
-        for i in range(len(self.result)):
-            close = self.result[i][-2]
-            pre_close = self.result[i][-1]
-            pct = (close - pre_close) / pre_close
-
-            self.result[i].append(pct)
-
-            origin_time = datetime.timestamp(self.result[i][0]) - 60
-            print(origin_time)
-            # time_ = InfluxTime.to_influx_time(origin_time)
-            self.result[i][0] = f"{origin_time * 1e9:.0f}"
-
-    def get(self, start='2021-09-09 00:00:00', end='2021-09-14 00:00:00'):
-        self.get_data(start, end)
+    def get(self, **kwargs):
+        self.get_data(kwargs["start"], kwargs["end"])
         self.process_df()
         return self.result
 
 
 if __name__ == "__main__":
     op = OpTargetQuote()
-    a = op.get()
-    print(len(a))
+    a = op.get(start='2022-11-01 00:00:00', end='2022-11-30 00:00:00')

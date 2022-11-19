@@ -83,10 +83,11 @@ class InfluxdbService(metaclass=Singleton):
                                bucket=self.INFLUX.bucket,
                                org=self.INFLUX.org)
 
-    def empty(self):
+    def empty(self, measurement):
         self.delete_api.delete(start="1970-01-01T00:00:00Z",
                                stop=InfluxTime.to_influx_time(time.time()),
-                               predicate=f'_measurement="{self.INFLUX.measurement}"',
+                               # predicate=f'_measurement="{self.INFLUX.measurement}"',
+                               predicate=f'_measurement="{measurement}"',
                                bucket=self.INFLUX.bucket,
                                org=self.INFLUX.org)
         print("清空！")
@@ -97,6 +98,6 @@ if __name__ == "__main__":
     # print(f"{time.time() * 1000 * 1000 * 1000:.0f}")
     # q = ['test1,targetcode=510050.XSHG price=2.76,pct=2.754 1662706943248528896']
     # influxdbService.write_data_execute(q)
-    # influxdbService.empty()
+    # influxdbService.empty("optargetquote")
     # mysqlService = MysqlService()
-    influxdbService.delete_data("2022-09-01T01:00:00Z", "2022-09-23T23:00:00Z", "opcontractinfo")
+    influxdbService.delete_data("2022-11-01T01:00:00Z", "2022-11-30T23:00:00Z", "opcontractquote")

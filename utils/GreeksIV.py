@@ -13,7 +13,7 @@ class Greeks:
     def __init__(self):
         self.r = 0.015
 
-    # s 股票价格 k行权价 r无风险利率 T年化期限 sigma历史波动率
+    # s价格 k行权价 r无风险利率 T年化期限 sigma历史波动率
     def d(self, s, k, T, sigma):
         d1 = (np.log(s / k) + (self.r + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
         d2 = d1 - sigma * np.sqrt(T)
@@ -53,29 +53,34 @@ class ImpliedVolatility:
         self.MAX_ITERATIONS = 100
         self.PRECISION = 1.0e-5
 
-    def bs_price(self, cp_flag, S, K, T, r, v, q=0.0):
-        d1 = (np.log(S / K) + (r + v * v / 2.) * T) / (v * np.sqrt(T))
+        self.r = 0.015
+
+    def bs_price(self, cp_flag, S, K, T, v, q=0.0):
+        d1 = (np.log(S / K) + (self.r + v * v / 2.) * T) / (v * np.sqrt(T))
         d2 = d1 - v * np.sqrt(T)
         if cp_flag == 'c':
-            price = S * np.exp(-q * T) * self.N(d1) - K * np.exp(-r * T) * self.N(d2)
+            price = S * np.exp(-q * T) * self.N(d1) - K * np.exp(-self.r * T) * self.N(d2)
         else:
-            price = K * np.exp(-r * T) * self.N(-d2) - S * np.exp(-q * T) * self.N(-d1)
+            price = K * np.exp(-self.r * T) * self.N(-d2) - S * np.exp(-q * T) * self.N(-d1)
         return price
 
-    def bs_vega(self, S, K, T, r, v):
-        d1 = (np.log(S / K) + (r + v * v / 2.) * T) / (v * np.sqrt(T))
+    def bs_vega(self, S, K, T, v):
+        d1 = (np.log(S / K) + (self.r + v * v / 2.) * T) / (v * np.sqrt(T))
         return S * np.sqrt(T) * self.n(d1)
 
-    def find_vol(self, target_value, call_put, S, K, T, r):
+    def find_vol(self, target_value, call_put, S, K, T):
         sigma = 0.5
         for i in range(0, self.MAX_ITERATIONS):
-            price = self.bs_price(call_put, S, K, T, r, sigma)
-            vega = self.bs_vega(S, K, T, r, sigma)
+            price = self.bs_price(call_put, S, K, T, sigma)
+            vega = self.bs_vega(S, K, T, sigma)
             diff = target_value - price  # 我们的根
 
             if abs(diff) < self.PRECISION:
                 return sigma
+
             sigma = sigma + diff / vega  # f(x) / f'(x)
+            print(sigma)
+
 
         return sigma
 
@@ -85,16 +90,19 @@ if __name__ == "__main__":
     import datetime
 
     # df = pd.read_excel("D:\\COURSE\\X-tech\\api\\Data\\10004496XSHG.xlsx")
-    # g = Greeks()
+    g = Greeks()
     # a = df.iloc[0]
     # print(a["close"], a["exercise_price"], a["days"], a["his_vol"])
-    # print(g.delta(4.6, 4.6, 0.167123, 0.1637))
+    print(g.delta(4.12, 4.6, 0.167123, 0.1637))
 
-    V_market = 17.5
-    K = 585
-    T = (datetime.date(2014, 10, 18) - datetime.date(2014, 9, 8)).days / 365.
-    S = 586.08
-    r = 0.0002
-    cp = 'c'  # 看涨期权
-    implied_vol = ImpliedVolatility().find_vol(V_market, cp, S, K, T, r)
-    print('Implied vol: %.2f%%' % (implied_vol * 100))
+    # V_market = 0.8079
+    # K = 4.6
+    # T = 0.039
+    #
+    # S = 3.786
+
+
+    # cp = 'c'  # 看涨期权
+    # for i in range(1):
+    #     implied_vol = ImpliedVolatility().find_vol(V_market, cp, S, K, T)
+    #     print('Implied vol: %.2f%%' % (implied_vol * 100))
