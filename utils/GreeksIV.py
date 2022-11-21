@@ -91,7 +91,7 @@ if __name__ == "__main__":
     g = Greeks()
     # a = df.iloc[0]
     # print(a["close"], a["exercise_price"], a["days"], a["his_vol"])
-    print(g.delta(4.12, 4.6, 0.167123, 0.1637))
+    print(g.delta(0.4, 4.6, 0.167123, 0.1637))
 
     # V_market = 0.8079
     # K = 4.6

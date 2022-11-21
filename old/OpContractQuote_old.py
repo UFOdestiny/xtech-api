@@ -20,7 +20,10 @@ class OpContractQuote(metaclass=Authentication):
 
     def __init__(self):
         self.symbol_minute = None
+        self.today = str(datetime.date.today())
         self.tick = None
+        self.result = []
+        self.final_result = None
         self.code = None
         self.underlying_symbol = None
         self.his_vol = None
@@ -180,7 +183,162 @@ class OpContractQuote(metaclass=Authentication):
         df.fillna(method='ffill', inplace=True)
         self.code_minute[["his_vol", "exercise_price", "contract_type", "days"]] = df
 
+    def process_df2(self):
+        """
+        处理tick行情，输出分钟频次的数据
+        :return:
+        """
+
+        # 转为list，提高处理速度
+        self.result = self.tick.values.tolist()
+        # 取出开始时间与结束时间
+        start_time = self.result[0][0]
+        end_time = self.result[-1][0]
+
+        # 构造从开始时间到结束时间的分钟频次时间序列，其中时间是交易日9:30-11:30,13:00-15:00，除去周末
+        pandas.date_range(start=start_time.replace(second=0, microsecond=0),
+                          end=end_time.replace(second=0, microsecond=0),
+                          freq='1Min')
+
+        time_series1_am = pandas.date_range(start=start_time.replace(hour=9, minute=30, second=0, microsecond=0),
+                                            end=start_time.replace(hour=11, minute=30, second=0, microsecond=0),
+                                            freq='1Min')
+
+        time_series1_pm = pandas.date_range(start=start_time.replace(hour=13, minute=0, second=0, microsecond=0),
+                                            end=start_time.replace(hour=15, minute=0, second=0, microsecond=0),
+                                            freq='1Min')
+
+        time_series = time_series1_am.append(time_series1_pm)
+        oneday = time_series.copy()
+
+        days_offset = {
+            (i[0].replace(hour=0, minute=0, second=0, microsecond=0) - start_time.replace(hour=0, minute=0, second=0,
+                                                                                          microsecond=0)).days for i in
+            self.result}
+
+        for i in days_offset:
+            if i != 0:
+                time_series = time_series.append(oneday + datetime.timedelta(days=i))
+
+        # 构造结果合集 time open close high low vol oi amount
+        final_result = [[i, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] for i in time_series]
+
+        # 双指针
+        up = 0  # 上指针
+        down = 0  # 下指针
+
+        len_self_result = len(self.result)
+
+        """
+        # 核心部分：迭代计算
+        # 迭代构造好的分钟频时间序列（此时数据为空，开始填充的是0）
+        """
+        for i in range(len(final_result)):
+            # 取出当前分钟
+            this_minute = final_result[i][0]
+
+            high_p = 0  # 最高价格
+            min_p = float("inf")  # 最低价格
+
+            amount = 0  # 成交额
+            oi = 0  # 持仓量
+            vol = 0  # 成交量
+
+            a1_v = 0
+            b1_v = 0
+
+            """
+            # 1、当下指针不越界，并且还在当前分钟时，进入循环
+            """
+            while down < len_self_result and self.result[down][0] - this_minute < datetime.timedelta(minutes=1):
+                current = self.result[down][1]
+
+                # 迭代寻找最大最小值
+                high_p = max(high_p, current)
+                min_p = min(min_p, current)
+
+                # 这四个数以最后的一个tick为准
+                amount = self.result[down][3]
+                vol = self.result[down][2]
+                a1_v = self.result[down][4]
+                b1_v = self.result[down][6]  # oi+=self.result[down][]
+
+                # 下指针移动
+                down += 1
+
+            """
+            # 2、如果上下指针不相同，即这一分钟内有数据时进入执行
+            """
+            if up != down:
+                # 1 open
+                final_result[i][1] = self.result[up][1]
+                # 2 close
+                final_result[i][2] = self.result[down - 1][1]
+                # 3 high
+                final_result[i][3] = high_p
+                # 4 low
+                final_result[i][4] = min_p
+                # 5 amount
+                final_result[i][5] = amount
+                # 6 vol
+                final_result[i][6] = vol
+                # 7 oi
+                final_result[i][7] = 0
+                # 8 a1_v
+                final_result[i][8] = a1_v
+                # 9 a1_p
+                final_result[i][9] = self.result[down - 1][5]
+                # 10 b1_v
+                final_result[i][10] = b1_v
+                # 11 b1_p
+                final_result[i][11] = self.result[down - 1][7]
+                # 12 pct
+                if i >= 1 and final_result[i - 1][2] != 0:
+                    final_result[i][12] = (final_result[i][2] - final_result[i - 1][2]) / final_result[i - 1][2]
+                else:
+                    final_result[i][12] = 0
+
+            else:  # 如果上下指针相同，即这一分钟没有数据时进入执行，沿用上一分钟的数据
+                final_result[i][1] = final_result[i - 1][1]
+                final_result[i][2] = final_result[i - 1][2]
+                final_result[i][3] = final_result[i - 1][3]
+                final_result[i][4] = final_result[i - 1][4]
+
+                final_result[i][12] = final_result[i - 1][12]
+
+                # 如果下指针与该分钟在同一天
+                if self.result[down - 1][0].day == this_minute.day:
+                    final_result[i][5] = final_result[i - 1][5]
+                    final_result[i][6] = final_result[i - 1][6]
+
+                    final_result[i][7] = 0
+                    final_result[i][8] = final_result[i - 1][8]
+                    final_result[i][9] = final_result[i - 1][9]
+                    final_result[i][10] = final_result[i - 1][10]
+                    final_result[i][11] = final_result[i - 1][11]
+
+                # 如果下指针与该分钟不在同一天
+                else:
+                    final_result[i][5] = amount
+                    final_result[i][6] = vol
+
+                    final_result[i][7] = 0
+                    final_result[i][8] = a1_v
+                    final_result[i][9] = self.result[down - 1][5]
+                    final_result[i][10] = b1_v
+                    final_result[i][11] = self.result[down - 1][7]
+
+            # 处理完这一分钟后，指针归位，从下一分钟开始
+            up = down
+
+        self.final_result = final_result
+        self.code_minute = pandas.DataFrame(self.final_result,
+                                            columns=['time', 'open', 'close', 'high', 'low', 'amount', 'vol', 'oi',
+                                                     'a1_v',
+                                                     'a1_p', 'b1_v', 'b1_p', 'pct'])
+
     def greekiv(self):
+
         self.code_minute["delta"] = self.g.delta(self.code_minute["symbol_price"], self.code_minute["exercise_price"],
                                                  self.code_minute["days"], self.code_minute["his_vol"],
                                                  self.code_minute["contract_type"])
@@ -210,7 +368,13 @@ class OpContractQuote(metaclass=Authentication):
         """
         filename = self.code.replace(".", "")
         writer = pandas.ExcelWriter(filename + ".xlsx")
+
         self.code_minute.to_excel(writer, sheet_name='minute', index=False)
+
+        # df2 = pandas.DataFrame(self.result,
+        #                        columns=['time', 'current', 'volume', 'money', "a1_v", "a1_p", "b1_v", "b1_p"])
+        #
+        # df2.to_excel(writer, sheet_name='tick', index=False)
 
         writer.save()
 
@@ -240,6 +404,7 @@ class OpContractQuote(metaclass=Authentication):
                                'timevalue']]
 
         return df.values.tolist()
+
 
 
 if __name__ == "__main__":
