@@ -8,7 +8,7 @@
 import pandas
 from jqdatasdk import get_price, normalize_code
 
-from JoinQuant import Authentication
+from Data.JoinQuant import Authentication
 
 
 class OpTargetQuote(metaclass=Authentication):

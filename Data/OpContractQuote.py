@@ -11,7 +11,7 @@ import math
 import pandas
 from jqdatasdk import get_ticks, opt, query, get_price
 
-from JoinQuant import Authentication
+from Data.JoinQuant import Authentication
 from utils.GreeksIV import Greeks, ImpliedVolatility
 
 
@@ -432,6 +432,8 @@ class OpContractQuote(metaclass=Authentication):
         self.df_final.insert(1, 'code', self.df_final.pop("code"))
         self.df_final.insert(2, 'underlying_symbol', self.df_final.pop("underlying_symbol"))
 
+        print(self.df[["close", "pre_close_underlying"]])
+
         self.df_final.drop(["minute", "exercise_price", "days", "his_vol", "pre_close_underlying"],
                            axis=1, inplace=True)
         self.df_final["iv"] = 0
@@ -442,6 +444,8 @@ class OpContractQuote(metaclass=Authentication):
         self.df_final["time"] = pandas.to_datetime(self.df_final["time"]).values.astype(object)
         self.df_final.fillna(-1, inplace=True)
         res = self.df_final.values.tolist()
+
+
         return res
 
     def get_add(self, code, start_time, end_time):

@@ -8,7 +8,7 @@
 import datetime
 import pandas
 from jqdatasdk import opt, query
-from JoinQuant import Authentication
+from Data.JoinQuant import Authentication
 
 
 class OpContractInfo(metaclass=Authentication):

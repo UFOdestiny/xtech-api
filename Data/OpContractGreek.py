@@ -6,12 +6,11 @@
 # @Desc     : 希腊数字计算
 
 import datetime
-import time
 
 import pandas
-from jqdatasdk import get_ticks, query, opt
+from jqdatasdk import query, opt
 
-from JoinQuant import Authentication
+from Data.JoinQuant import Authentication
 
 
 class OpContractGreek(metaclass=Authentication):
@@ -39,8 +38,7 @@ class OpContractGreek(metaclass=Authentication):
         df = opt.run_query(q)
         self.code = code
         self.df = df
-        print(self.df)
-
+        # print(self.df)
 
     def process_df(self):
         self.result = self.df.values.tolist()
