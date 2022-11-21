@@ -5,7 +5,7 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     : Influx服务连接
 
-import time
+import datetime, time
 
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
@@ -78,10 +78,27 @@ class InfluxdbService(metaclass=Singleton):
         if not measurement:
             measurement = self.INFLUX.measurement
 
-        self.delete_api.delete(start, stop,
-                               f'_measurement="{measurement}"',
-                               bucket=self.INFLUX.bucket,
-                               org=self.INFLUX.org)
+        start_ = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%SZ")
+        stop_ = datetime.datetime.strptime(stop, "%Y-%m-%dT%H:%M:%SZ")
+        time_interval = []
+        while start_ + datetime.timedelta(days=1) < stop_:
+            time_interval.append([start_, start_ + datetime.timedelta(days=1)])
+            start_ = start_ + datetime.timedelta(days=1)
+        time_interval.append([start_, stop_])
+        for i in range(len(time_interval)):
+            time_interval[i][0] = datetime.datetime.strftime(time_interval[i][0], "%Y-%m-%dT%H:%M:%SZ")
+            time_interval[i][1] = datetime.datetime.strftime(time_interval[i][1], "%Y-%m-%dT%H:%M:%SZ")
+
+        for i in time_interval:
+            print(i)
+            self.delete_api.delete(i[0], i[1],
+                                   f'_measurement="{measurement}"',
+                                   bucket=self.INFLUX.bucket,
+                                   org=self.INFLUX.org)
+        # self.delete_api.delete(start, stop,
+        #                        f'_measurement="{measurement}"',
+        #                        bucket=self.INFLUX.bucket,
+        #                        org=self.INFLUX.org)
 
     def empty(self, measurement):
         self.delete_api.delete(start="1970-01-01T00:00:00Z",
@@ -100,4 +117,4 @@ if __name__ == "__main__":
     # influxdbService.write_data_execute(q)
     # influxdbService.empty("optargetquote")
     # mysqlService = MysqlService()
-    influxdbService.delete_data("2022-11-01T01:00:00Z", "2022-11-30T23:00:00Z", "opcontractquote")
+    influxdbService.delete_data("2022-11-01T00:00:00Z", "2022-11-30T23:00:00Z", "opcontractquote")

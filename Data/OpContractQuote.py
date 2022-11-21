@@ -38,9 +38,11 @@ class OpContractQuote(metaclass=Authentication):
         :param code: 合约代码
         :return: 期权代码
         """
-        q = query(opt.OPT_CONTRACT_INFO.underlying_symbol,
-                  opt.OPT_CONTRACT_INFO.exercise_price).filter(opt.OPT_CONTRACT_INFO.code == code)
+        q = query(opt.OPT_DAILY_PREOPEN.underlying_symbol,
+                  opt.OPT_DAILY_PREOPEN.exercise_price,
+                  ).filter(opt.OPT_DAILY_PREOPEN.code == code)
         df = opt.run_query(q)
+
         self.underlying_symbol = df["underlying_symbol"][0]
         # print(self.underlying_symbol)
 
@@ -69,7 +71,7 @@ class OpContractQuote(metaclass=Authentication):
         :return:
         """
 
-        b = datetime.datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S") - datetime.timedelta(days=35)
+        b = datetime.datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S") - datetime.timedelta(days=40)
         start_date = str(b)
 
         """
@@ -145,7 +147,8 @@ class OpContractQuote(metaclass=Authentication):
                   # opt.OPT_DAILY_PREOPEN.code,
                   opt.OPT_DAILY_PREOPEN.exercise_price,
                   opt.OPT_DAILY_PREOPEN.expire_date,
-                  opt.OPT_DAILY_PREOPEN.pre_close_underlying, ).filter(
+                  # opt.OPT_DAILY_PREOPEN.pre_close_underlying,
+                  opt.OPT_DAILY_PREOPEN.contract_type, ).filter(
             opt.OPT_DAILY_PREOPEN.code == code,
             opt.OPT_DAILY_PREOPEN.date >= start_date,
             opt.OPT_DAILY_PREOPEN.date <= end_date)
@@ -351,9 +354,7 @@ class OpContractQuote(metaclass=Authentication):
         self.df_final["exercise_price"] = 0
         self.df_final["days"] = 0
         self.df_final["his_vol"] = 0
-        self.df_final["pre_close_underlying"] = 0
-
-        # self.df_final["iv"] = 0
+        self.df_final["contract_type"] = 0
 
         # 将行权价，年化到期日和历史波动率写入dataframe
         days = self.constant.index
@@ -363,27 +364,29 @@ class OpContractQuote(metaclass=Authentication):
             self.df_final.loc[index, "exercise_price"] = self.constant["exercise_price"][i]
             self.df_final.loc[index, "days"] = self.constant["days"][i]
             self.df_final.loc[index, "his_vol"] = self.constant["his_vol"][i]
-            self.df_final.loc[index, "pre_close_underlying"] = self.constant["pre_close_underlying"][i]
+            self.df_final.loc[index, "contract_type"] = self.constant["contract_type"][i]
 
         # 使用Greek类进行计算
-        self.df_final["delta+"] = self.g.delta(self.df_final["minute"], self.df_final["exercise_price"],
-                                               self.df_final["days"], self.df_final["his_vol"], n=1)
-        self.df_final["delta-"] = self.g.delta(self.df_final["minute"], self.df_final["exercise_price"],
-                                               self.df_final["days"], self.df_final["his_vol"], n=-1)
+        self.df_final["contract_type"].replace("CO", 1, inplace=True)
+        self.df_final["contract_type"].replace("PO", -1, inplace=True)
+        self.df_final["delta"] = self.g.delta(self.df_final["minute"], self.df_final["exercise_price"],
+                                              self.df_final["days"], self.df_final["his_vol"],
+                                              self.df_final["contract_type"])
         self.df_final["gamma"] = self.g.gamma(self.df_final["minute"], self.df_final["exercise_price"],
                                               self.df_final["days"], self.df_final["his_vol"])
         self.df_final["vega"] = self.g.vega(self.df_final["minute"], self.df_final["exercise_price"],
                                             self.df_final["days"], self.df_final["his_vol"])
-        self.df_final["theta+"] = self.g.theta(self.df_final["minute"], self.df_final["exercise_price"],
-                                               self.df_final["days"], self.df_final["his_vol"], n=1)
-        self.df_final["theta-"] = self.g.theta(self.df_final["minute"], self.df_final["exercise_price"],
-                                               self.df_final["days"], self.df_final["his_vol"], n=-1)
+        self.df_final["theta"] = self.g.theta(self.df_final["minute"], self.df_final["exercise_price"],
+                                              self.df_final["days"], self.df_final["his_vol"],
+                                              self.df_final["contract_type"])
+        self.df_final["iv"] = 0
 
-        # for i in range(len(self.df_final)):
-        #     self.df_final.iloc[i, -1] = self.iv.find_vol(self.df_final.iloc[i]["close"], "c",
-        #                                                  self.df_final.iloc[i]["pre_close_underlying"],
-        #                                                  self.df_final.iloc[i]["exercise_price"],
-        #                                                  self.df_final.iloc[i]["days"])
+        self.df_final["iv"] = self.df_final.apply(
+            lambda x: self.iv.find_vol(x["close"], x["contract_type"], x["minute"], x["exercise_price"], x["days"]),
+            axis=1)
+
+        self.df_final["timevalue"] = self.df_final.apply(
+            lambda x: max(0, x["close"] - x["contract_type"] * (x["minute"] - x["exercise_price"])), axis=1)
 
     def write_excel(self):
         """
@@ -395,10 +398,10 @@ class OpContractQuote(metaclass=Authentication):
 
         self.df_final.to_excel(writer, sheet_name='minute', index=False)
 
-        df2 = pandas.DataFrame(self.result,
-                               columns=['time', 'current', 'volume', 'money', "a1_v", "a1_p", "b1_v", "b1_p"])
-
-        df2.to_excel(writer, sheet_name='tick', index=False)
+        # df2 = pandas.DataFrame(self.result,
+        #                        columns=['time', 'current', 'volume', 'money', "a1_v", "a1_p", "b1_v", "b1_p"])
+        #
+        # df2.to_excel(writer, sheet_name='tick', index=False)
 
         writer.save()
 
@@ -432,19 +435,17 @@ class OpContractQuote(metaclass=Authentication):
         self.df_final.insert(1, 'code', self.df_final.pop("code"))
         self.df_final.insert(2, 'underlying_symbol', self.df_final.pop("underlying_symbol"))
 
-        print(self.df[["close", "pre_close_underlying"]])
-
-        self.df_final.drop(["minute", "exercise_price", "days", "his_vol", "pre_close_underlying"],
+        self.df_final.drop(["minute", "exercise_price", "days", "his_vol", "contract_type"],
                            axis=1, inplace=True)
-        self.df_final["iv"] = 0
-        self.df_final["timevalue"] = 0
+        # self.df_final["iv"] = 0
+        # self.df_final["timevalue"] = 0
 
         # self.write_excel()
 
         self.df_final["time"] = pandas.to_datetime(self.df_final["time"]).values.astype(object)
         self.df_final.fillna(-1, inplace=True)
         res = self.df_final.values.tolist()
-
+        print(res[0])
 
         return res
 
