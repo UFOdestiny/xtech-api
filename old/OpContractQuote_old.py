@@ -355,6 +355,7 @@ class OpContractQuote(metaclass=Authentication):
             lambda x: self.iv.find_vol(x["close"], x["contract_type"], x["symbol_price"], x["exercise_price"],
                                        x["days"]), axis=1)
 
+
         self.code_minute["timevalue"] = self.code_minute.apply(
             lambda x: max(0, x["close"] - x["contract_type"] * (x["symbol_price"] - x["exercise_price"])), axis=1)
 
@@ -403,8 +404,10 @@ class OpContractQuote(metaclass=Authentication):
                                'pct', 'a1_p', 'a1_v', 'b1_p', 'b1_v', 'delta', 'gamma', 'vega', 'theta', 'iv',
                                'timevalue']]
 
-        return df.values.tolist()
-
+        if not df.isnull().values.any():
+            return df.values.tolist()
+        else:
+            print(code, "error")
 
 
 if __name__ == "__main__":

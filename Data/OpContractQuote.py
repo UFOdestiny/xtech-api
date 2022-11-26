@@ -156,13 +156,16 @@ class OpContractQuote(metaclass=Authentication):
         """
         self.tick = get_ticks(code, start_dt=start_date, end_dt=end_date,
                               fields=['time', "a1_p", "a1_v", "b1_p", "b1_v"])  # 'current', 'volume', 'money',
+
         self.tick.set_index('time', inplace=True)
 
         self.code_minute[["a1_p", "b1_p"]] = self.tick[["a1_p", "b1_p"]].resample(rule='1Min').last()
         self.code_minute[["a1_v", "b1_v"]] = self.tick[["a1_v", "b1_v"]].resample(rule='1Min').sum()
 
         df = self.code_minute[["a1_p", "b1_p", "a1_v", "b1_v"]].replace(np.float64(0), np.nan)
+
         df.fillna(method='ffill', inplace=True)
+        df.fillna(method='bfill', inplace=True)
         self.code_minute[["a1_p", "b1_p", "a1_v", "b1_v"]] = df
 
         del self.tick
@@ -239,9 +242,16 @@ class OpContractQuote(metaclass=Authentication):
                                'pct', 'a1_p', 'a1_v', 'b1_p', 'b1_v', 'delta', 'gamma', 'vega', 'theta', 'iv',
                                'timevalue']]
 
-        return df.values.tolist()
+        # pandas.set_option('display.max_rows', None)
+        # pandas.set_option('display.max_columns', None)
+        # df.fillna(method='ffill', inplace=True)
+        # df.fillna(method='bfill', inplace=True)
+        if not df.isnull().values.any():
+            return df.values.tolist()
+        else:
+            print(code, "error")
 
 
 if __name__ == "__main__":
     opc = OpContractQuote()
-    opc.get(code="10004237.XSHG", start='2022-11-11 00:00:00', end='2022-11-21 23:00:00')
+    opc.get(code="10004242.XSHG", start='2022-11-01 00:00:00', end='2022-11-30 23:00:00')

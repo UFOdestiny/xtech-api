@@ -78,7 +78,10 @@ class ImpliedVolatility:
             if abs(diff) < self.PRECISION:
                 return sigma
 
-            sigma = sigma + diff / vega  # f(x) / f'(x)
+            if vega != 0:
+                sigma = sigma + diff / vega  # f(x) / f'(x)
+            else:
+                sigma = 0.5
 
         return sigma
 
@@ -88,18 +91,18 @@ if __name__ == "__main__":
     import datetime
 
     # df = pd.read_excel("D:\\COURSE\\X-tech\\api\\Data\\10004496XSHG.xlsx")
-    g = Greeks()
+    # g = Greeks()
     # a = df.iloc[0]
     # print(a["close"], a["exercise_price"], a["days"], a["his_vol"])
-    print(g.delta(0.4, 4.6, 0.167123, 0.1637))
+    # print(g.delta(0.4, 4.6, 0.167123, 0.1637))
 
-    # V_market = 0.8079
-    # K = 4.6
-    # T = 0.039
-    #
-    # S = 3.786
+    V_market = 0.8079
+    K = 4.6
+    T = 0.039
 
-    # cp = 'c'  # 看涨期权
-    # for i in range(1):
-    #     implied_vol = ImpliedVolatility().find_vol(V_market, cp, S, K, T)
-    #     print('Implied vol: %.2f%%' % (implied_vol * 100))
+    S = 3.786
+
+    cp = 'c'  # 看涨期权
+    for i in range(1):
+        implied_vol = ImpliedVolatility().find_vol(V_market, cp, S, K, T)
+        print('Implied vol: %.2f%%' % (implied_vol * 100))
