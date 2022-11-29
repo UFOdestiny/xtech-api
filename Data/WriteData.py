@@ -11,6 +11,7 @@ from service.InfluxService import InfluxdbService
 from Data.OpTargetQuote import OpTargetQuote
 from Data.OpContractInfo import OpContractInfo
 from Data.OpContractQuote import OpContractQuote
+from Data.OpNominalAmount import OpNominalAmount
 
 
 class WriteData:
@@ -20,6 +21,8 @@ class WriteData:
         "opcontractquote": "opcontractquote,opcode={1},targetcode={2} open={3},close={4},high={5},low={6},amount={7},"
                            "vol={8},pct={9},a1_p={10},a1_v={11},b1_p={12},b1_v={13},delta={14},"
                            "gamma={15},vega={16},theta={17},iv={18},timevalue={19} {0}",
+        "opnominalamount": "opnominalamount,targetcode={1} vol_c={2},vol_p={3},vol={4},"
+                           "vol_c_00={5},vol_p_00={6},vol_00={7},vol_c_01={8},vol_p_01={9},vol_01={10} {0}",
     }
 
     def __init__(self):
@@ -62,9 +65,10 @@ class Write(WriteData):
 
 
 if __name__ == '__main__':
-    start = "2022-11-14 00:00:00"
-    end = "2022-11-30 23:00:00"
+    start = "2022-11-01 00:00:00"
+    end = "2022-11-10 23:00:00"
 
     # Write()(source="OpContractInfo", start=start, end=end)
     # Write()(source="OpTargetQuote", start=start, end=end)
-    Write()(source="OpContractQuote", start=start, end=end, code="10004237.XSHG")
+    # Write()(source="OpContractQuote", start=start, end=end, code="10004237.XSHG")
+    Write()(source="OpNominalAmount", start=start, end=end, code="510050.XSHG")

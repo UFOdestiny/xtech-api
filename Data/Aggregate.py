@@ -12,7 +12,7 @@ from Data.OpContractQuote import OpContractQuote
 
 
 class Aggregate:
-    def __init__(self, start='2022-11-01 00:00:00', end='2022-11-30 23:00:00'):
+    def __init__(self, start='2022-01-01 00:00:00', end='2022-11-30 23:00:00'):
         self.start = start
         self.end = end
         self.info = OpContractInfo()
