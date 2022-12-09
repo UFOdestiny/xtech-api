@@ -9,6 +9,7 @@ import pandas
 from jqdatasdk import opt, query, get_price
 
 from Data.JoinQuant import Authentication
+from datetime import datetime, timedelta
 
 
 class OpNominalAmount(metaclass=Authentication):
@@ -31,6 +32,19 @@ class OpNominalAmount(metaclass=Authentication):
         self.month1 = None
         self.month1_expire = None
         self.result = None
+
+        self.final_result = None
+
+    def aggravate(self, start, end):
+        start_date = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+        end_date = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+        res = []
+        while start_date != end_date:
+            res.append([])
+            res[-1].append(start_date.strftime("%Y-%m-%d %H:%M:%S"))
+            start_date += timedelta(days=1)
+            res[-1].append(start_date.strftime("%Y-%m-%d %H:%M:%S"))
+        return res
 
     def pre_set(self, code, start, end):
         self.result = get_price(code, fields=['close'], frequency='60m', start_date=start, end_date=end, )
@@ -63,14 +77,22 @@ class OpNominalAmount(metaclass=Authentication):
             opt.OPT_DAILY_PREOPEN.date <= end)
 
         self.daily = opt.run_query(q)
+
+        if len(self.daily) == 0:
+            self.code = None
+            return None
+
         self.daily["date"] = pandas.to_datetime(self.daily["date"])
         self.daily["date"] += pandas.Timedelta(hours=10, minutes=30)
         self.daily.set_index('date', inplace=True)
 
         date = sorted(self.daily["expire_date"].unique())
-        time0 = self.daily.index[0]
-        date = [i for i in date if i.month != time0.month]
+        # print(date)
 
+        # time0 = self.daily.index[0]
+        # date = [i for i in date if i.month != time0.month]
+
+        # print(date)
         self.month0 = date[0]
         # self.month0_expire = self.month0 + timedelta(days=1)
         # self.month0_expire = (self.month0 + timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
@@ -83,19 +105,20 @@ class OpNominalAmount(metaclass=Authentication):
 
         self.dic = {i[0]: i[1] for i in self.daily[["code", "contract_type"]].values}
         self.code = list(set((self.dic.keys())))
+
         self.dic_00 = {i[0]: i[1] for i in self.daily_00[["code", "contract_type"]].values}
         self.code_00 = list(set((self.dic_00.keys())))
+
         self.dic_01 = {i[0]: i[1] for i in self.daily_01[["code", "contract_type"]].values}
         self.code_01 = list(set((self.dic_01.keys())))
 
     def vol(self, code, start, end, types):
-        df = get_price(code, start, end, frequency='60m', fields=['close'])
-
+        df = get_price(code, start, end, frequency='60m', fields=['close', 'volume'])
         unit = self.daily[self.daily["code"] == code]["contract_unit"]
 
         df["unit"] = unit
         df.fillna(method='ffill', inplace=True)
-        df["close"] = df["close"] * df["unit"]
+        df["close"] = df["close"] * df["unit"] * df["volume"]
         del df["unit"]
 
         if types == 0:
@@ -104,6 +127,7 @@ class OpNominalAmount(metaclass=Authentication):
             res_seg = "_00"
         else:
             res_seg = "_01"
+            # print(df)
 
         index_c = f"vol_c{res_seg}"
         index_p = f"vol_p{res_seg}"
@@ -114,6 +138,8 @@ class OpNominalAmount(metaclass=Authentication):
             self.result[index_p] = self.result[index_p].add(df["close"], fill_value=0)
 
     def vol_aggregate(self, start, end):
+        if self.code is None:
+            return
 
         for i in self.code:
             self.vol(i, start, end, 0)
@@ -128,22 +154,31 @@ class OpNominalAmount(metaclass=Authentication):
         self.result["vol_00"] = self.result["vol_c_00"] + self.result["vol_p_00"]
         self.result["vol_01"] = self.result["vol_c_01"] + self.result["vol_p_01"]
 
-        # self.result.to_excel("Nov.xlsx")
+        if self.final_result is None:
+            self.final_result = self.result
+        else:
+            self.final_result = pandas.concat([self.final_result, self.result])
 
     def process_df(self):
-        self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
-        self.result = self.result[['time', "targetcode", 'vol_c', 'vol_p', 'vol', 'vol_c_00', 'vol_p_00',
-                                   "vol_00", 'vol_c_01', 'vol_p_01', "vol_01"]]
+        self.final_result.dropna(inplace=True)
+        self.final_result.to_excel("sep.xlsx")
+
+        self.final_result["time"] = pandas.to_datetime(self.final_result.index).values.astype(object)
+        self.final_result = self.final_result[['time', "targetcode", 'vol_c', 'vol_p', 'vol', 'vol_c_00', 'vol_p_00',
+                                               "vol_00", 'vol_c_01', 'vol_p_01', "vol_01"]]
 
     def get(self, **kwargs):
-
         code = kwargs["code"]
         start = kwargs["start"]
         end = kwargs["end"]
 
-        self.pre_set(code, start, end)
-        self.daily_info(code, start, end)
-        self.vol_aggregate(start, end)
+        times = self.aggravate(start, end)
+        for t in times:
+            print(t)
+            self.pre_set(code, t[0], t[1])
+            self.daily_info(code, t[0], t[1])
+            self.vol_aggregate(t[0], t[1])
+
         self.process_df()
         if not self.result.isnull().values.any():
             return self.result.values.tolist()
@@ -153,4 +188,4 @@ class OpNominalAmount(metaclass=Authentication):
 
 if __name__ == "__main__":
     opc = OpNominalAmount()
-    opc.get(code="510050.XSHG", start='2022-09-01 00:00:00', end='2022-10-01 00:00:00')
+    opc.get(code="510050.XSHG", start='2022-09-01 00:00:00', end='2022-09-02 00:00:00')
