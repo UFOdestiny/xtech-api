@@ -5,13 +5,6 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
 
-
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Dec 26 21:27:35 2022
-
-@author: xinyue
-"""
 from datetime import datetime, timedelta
 from utils.InfluxTime import InfluxTime
 import pandas
@@ -22,46 +15,7 @@ from service.InfluxService import InfluxdbService
 import scipy.interpolate as spi
 
 
-#
-# ts = sorted(list(set(df_new['Time'].to_list())))
-#
-# l = []
-# for t in ts:
-#     # 取次月合约
-#     df_t = df_new[df_new['Time'] == t]
-#     Tset = sorted(list(set(df_t['T'].to_list())))
-#     T_active = Tset[1]
-#     df_active = df_t[df_t['T'] == T_active]
-#     # 取有效次月认沽、认购合约
-#     put = sqldf(
-#         '''select * from df_active where option_name not like '%A%' and option_name like '%沽%' and delta not in (0,1) and IV<>0''').sort_values(
-#         by='delta').drop_duplicates(subset=['delta'], keep='first', inplace=False)
-#     call = sqldf(
-#         '''select * from df_active where option_name not like '%A%' and option_name like '%购%' and delta not in (0,1) and IV<>0''').sort_values(
-#         by='delta').drop_duplicates(subset=['delta'], keep='first', inplace=False)
-#
-#     if len(put) == 0 or len(call) == 0:
-#         put = sqldf(
-#             '''select * from df_active where option_name like '%沽%' and delta not in (0,1) and IV<>0''').sort_values(
-#             by='delta').drop_duplicates(subset=['delta'], keep='first', inplace=False)
-#         call = sqldf(
-#             '''select * from df_active where option_name like '%购%' and delta not in (0,1) and IV<>0''').sort_values(
-#             by='delta').drop_duplicates(subset=['delta'], keep='first', inplace=False)
-#
-#     # delta-iv插值，得到正负0.25、正负0.5 delta对应IV
-#     tck1 = spi.splrep(call['delta'].to_list(), call['iv'].to_list(), k=1)
-#     ivc0 = spi.splev([0.25, 0.5], tck1, ext=0)
-#     tck2 = spi.splrep(put['delta'].to_list(), put['iv'].to_list(), k=1)
-#     ivp0 = spi.splev([-0.25, -0.5], tck2, ext=0)
-#     # 计算putd-calld
-#     v = ivp0[0] - ivp0[1] - (ivc0[0] - ivc0[1])
-#
-#     l.append([ivp0[0] - ivp0[1], ivc0[0] - ivc0[1], v])
-#
-# df_PutdMinusCalld = pd.DataFrame(l, index=ts)
-
-
-class OpNominalAmount(metaclass=Authentication):
+class PutdMinusCalld(metaclass=Authentication):
     def __init__(self):
         self.db = InfluxdbService()
 
@@ -243,5 +197,5 @@ class OpNominalAmount(metaclass=Authentication):
 
 
 if __name__ == "__main__":
-    opc = OpNominalAmount()
+    opc = PutdMinusCalld()
     opc.get(code="510050.XSHG", start='2022-09-01 00:00:00', end='2022-09-27 00:00:00')
