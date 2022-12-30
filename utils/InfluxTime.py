@@ -13,18 +13,22 @@ class InfluxTime:
         influx_format = "%Y-%m-%dT%H:%M:%SZ"
         yearmd_format = '%Y-%m-%d'
         yearmd_hourm_format = "%Y-%m-%d %H:%M"
+        yearmd_hourms_format= "%Y-%m-%d %H:%M:%S"
 
         if type(t) == str:
             if t.isnumeric():
                 if len(t) >= 12:
                     return time.strftime(influx_format, time.localtime(int(t) / 1000 - 3600 * 8))
-            if len(t) == 10:  # 2022-08-09
+            elif len(t) == 10:  # 2022-08-09
                 structure = time.strptime(t, yearmd_format)
                 return time.strftime(influx_format, structure)
-            if len(t) == 16:
+            elif len(t) == 16:
                 structure = time.strptime(t, yearmd_hourm_format)
                 return time.strftime(influx_format, structure)
-            if len(t) == 20:
+            elif len(t) == 19:
+                structure = time.strptime(t, yearmd_hourms_format)
+                return time.strftime(influx_format, structure)
+            elif len(t) == 20:
                 # return time.strptime(t, influx_format)
                 return t
 

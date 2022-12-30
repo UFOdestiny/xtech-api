@@ -81,7 +81,7 @@ class ImpliedVolatility:
             if vega != 0:
                 sigma = sigma + diff / vega  # f(x) / f'(x)
             else:
-                sigma = 0.5
+                return 0.5
 
         return sigma
 

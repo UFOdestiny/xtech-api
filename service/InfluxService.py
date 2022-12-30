@@ -7,7 +7,7 @@
 
 import datetime, time
 
-from influxdb_client import InfluxDBClient, Point
+from influxdb_client import InfluxDBClient, Point, WriteOptions
 from influxdb_client.client.write_api import SYNCHRONOUS
 from urllib3 import Retry
 
@@ -27,7 +27,13 @@ class InfluxdbService(metaclass=Singleton):
         else:
             print("InfluxDB连接失败！")
 
-        self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
+        self.write_api = self.client.write_api(write_options=WriteOptions(batch_size=500,
+                                                                          flush_interval=10_000,
+                                                                          jitter_interval=2_000,
+                                                                          retry_interval=5_000,
+                                                                          max_retries=5,
+                                                                          max_retry_delay=30_000,
+                                                                          exponential_base=2))
 
         self.query_api = self.client.query_api()
 
@@ -64,6 +70,13 @@ class InfluxdbService(metaclass=Singleton):
 
         print(query)
         tables = self.query_api.query(query, org=self.INFLUX.org)
+
+        return self.process_result(tables)
+
+    def query_data_raw(self, raw_query):
+
+        print(raw_query)
+        tables = self.query_api.query(raw_query, org=self.INFLUX.org)
 
         return self.process_result(tables)
 

@@ -241,6 +241,7 @@ class OpContractQuote(metaclass=Authentication):
         df = self.code_minute[['time', "code", "underlying_symbol", 'open', 'close', 'high', 'low', 'money', "volume",
                                'pct', 'a1_p', 'a1_v', 'b1_p', 'b1_v', 'delta', 'gamma', 'vega', 'theta', 'iv',
                                'timevalue']]
+        df.dropna(how="any", inplace=True)
 
         # pandas.set_option('display.max_rows', None)
         # pandas.set_option('display.max_columns', None)

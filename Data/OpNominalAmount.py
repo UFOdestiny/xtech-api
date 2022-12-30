@@ -112,6 +112,10 @@ class OpNominalAmount(metaclass=Authentication):
         self.dic_01 = {i[0]: i[1] for i in self.daily_01[["code", "contract_type"]].values}
         self.code_01 = list(set((self.dic_01.keys())))
 
+        print(self.code)
+        # print(self.code_00)
+        # print(self.code_01)
+
     def vol(self, code, start, end, types):
         df = get_price(code, start, end, frequency='60m', fields=['close', 'volume'])
         unit = self.daily[self.daily["code"] == code]["contract_unit"]
@@ -131,6 +135,9 @@ class OpNominalAmount(metaclass=Authentication):
 
         index_c = f"vol_c{res_seg}"
         index_p = f"vol_p{res_seg}"
+
+        print(code)
+        print(df)
 
         if self.dic[code] == "CO":
             self.result[index_c] = self.result[index_c].add(df["close"], fill_value=0)
@@ -161,7 +168,7 @@ class OpNominalAmount(metaclass=Authentication):
 
     def process_df(self):
         self.final_result.dropna(inplace=True)
-        self.final_result.to_excel("sep.xlsx")
+        # self.final_result.to_excel("sep.xlsx")
 
         self.final_result["time"] = pandas.to_datetime(self.final_result.index).values.astype(object)
         self.final_result = self.final_result[['time', "targetcode", 'vol_c', 'vol_p', 'vol', 'vol_c_00', 'vol_p_00',
