@@ -25,3 +25,7 @@ class Day(BaseModel):
 class Data(BaseModel):
     header: dict
     body: dict
+
+
+class QueryData(BaseModel):
+    query: dict

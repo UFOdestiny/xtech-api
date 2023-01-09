@@ -5,7 +5,7 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     : 合约信息
 
-import datetime
+from datetime import datetime, timedelta, date
 import pandas
 from jqdatasdk import opt, query
 from Data.JoinQuant import Authentication
@@ -15,9 +15,11 @@ class OpContractInfo(metaclass=Authentication):
     def __init__(self):
         self.underlying_symbol = None
         self.code = []
-        self.today = str(datetime.date.today())
+        self.today = str(date.today())
         self.df = None
         self.result = []
+
+        self.final_results = []
 
     def get_data(self, start, end):
         q = query(opt.OPT_DAILY_PREOPEN.date,
@@ -53,15 +55,34 @@ class OpContractInfo(metaclass=Authentication):
         self.df["date"] = pandas.to_datetime(self.df["date"]).values.astype(object)
         del self.df["expire_date"]
         self.result = self.df.values.tolist()
+        print(len(self.result))
 
     def get(self, **kwargs):
-        self.get_data(kwargs["start"], kwargs["end"])
-        # self.get_code_expire(kwargs["start"], kwargs["end"])
-        self.process_df()
-
+        times = self.aggravate(kwargs["start"], kwargs["end"])
+        for t in times:
+            print(t)
+            self.get_data(t[0], t[1])
+            self.process_df()
+            self.final_results.extend(self.result)
+        print(len(self.final_results))
         return self.result
+
+    def aggravate(self, start, end):
+        start_date = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+        end_date = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+        res = []
+        while start_date != end_date:
+            res.append([])
+            res[-1].append(start_date.strftime("%Y-%m-%d %H:%M:%S"))
+            right = start_date + timedelta(days=7)
+            if right <= end_date:
+                start_date = right
+            else:
+                start_date = end_date
+            res[-1].append(start_date.strftime("%Y-%m-%d %H:%M:%S"))
+        return res
 
 
 if __name__ == "__main__":
     opc = OpContractInfo()
-    opc.get(start='2022-11-01 00:00:00', end='2022-11-05 23:00:00')
+    opc.get(start='2022-11-01 00:00:00', end='2022-11-30 00:00:00')
