@@ -23,9 +23,9 @@ class InfluxdbService(metaclass=Singleton):
                                      retries=Retry(connect=5, read=2, redirect=5))
 
         if self.client.ping():
-            print("InfluxDB连接成功！")
+            print("InfluxDB ok!")
         else:
-            print("InfluxDB连接失败！")
+            print("InfluxDB fail!")
 
         self.write_api = self.client.write_api(write_options=WriteOptions(batch_size=500,
                                                                           flush_interval=10_000,
@@ -46,11 +46,11 @@ class InfluxdbService(metaclass=Singleton):
         if record:
             record.time(time)
         self.write_api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
-        print("写入成功")
+        print("write ok")
 
     def write_data_execute(self, record):
         self.write_api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
-        print("写入成功")
+        print("write ok")
 
     def query_data(self, start="-1h", stop='', filters=''):
         source = f"from(bucket:\"{self.INFLUX.bucket}\")"
@@ -120,7 +120,7 @@ class InfluxdbService(metaclass=Singleton):
                                predicate=f'_measurement="{measurement}"',
                                bucket=self.INFLUX.bucket,
                                org=self.INFLUX.org)
-        print("清空！")
+        print("clear!")
 
 
 if __name__ == "__main__":

@@ -6,6 +6,9 @@
 # @Desc     :
 
 from datetime import datetime, timedelta
+
+import numpy as np
+
 from utils.InfluxTime import InfluxTime
 import pandas
 from jqdatasdk import opt, query, get_price
@@ -47,7 +50,8 @@ class PutdMinusCalld(metaclass=Authentication):
         return res
 
     def pre_set(self, code, start, end):
-        self.result = get_price(code, fields=['close'], frequency='1d', start_date=start, end_date=end, )
+        self.result = get_price(code, fields=['close'], frequency='1m', start_date=start, end_date=end, )
+        self.result.index -= pandas.Timedelta(minutes=1)
         self.result["targetcode"] = code
         self.result["putd"] = 0
         self.result["calld"] = 0
@@ -61,7 +65,11 @@ class PutdMinusCalld(metaclass=Authentication):
                   opt.OPT_DAILY_PREOPEN.underlying_symbol,
                   opt.OPT_DAILY_PREOPEN.contract_unit,
                   opt.OPT_DAILY_PREOPEN.expire_date,
-                  opt.OPT_DAILY_PREOPEN.contract_type, ).filter(
+                  opt.OPT_DAILY_PREOPEN.contract_type,
+
+                  opt.OPT_DAILY_PREOPEN.name,
+
+                  ).filter(
             opt.OPT_DAILY_PREOPEN.underlying_symbol == code,
             opt.OPT_DAILY_PREOPEN.date >= start,
             opt.OPT_DAILY_PREOPEN.date <= end)
@@ -74,16 +82,21 @@ class PutdMinusCalld(metaclass=Authentication):
 
         self.daily["date"] = pandas.to_datetime(self.daily["date"])
         self.daily["date"] += pandas.Timedelta(hours=10, minutes=30)
+
         self.daily.set_index('date', inplace=True)
 
+        print(self.daily["name"].values.tolist())
+
         date = sorted(self.daily["expire_date"].unique())
-        # print(date)
+        print(date)
         self.month1 = date[1]
         self.CO = self.daily[(self.daily["expire_date"] == self.month1) & (self.daily["contract_type"] == "CO")]
         self.PO = self.daily[(self.daily["expire_date"] == self.month1) & (self.daily["contract_type"] == "PO")]
 
         self.CO_code = self.CO["code"].values
         self.PO_code = self.PO["code"].values
+
+        print(len(self.CO_code), len(self.PO_code))
 
         CO = [f"r[\"opcode\"] == \"{i}\"" for i in self.CO_code]
         self.CO_code_all = " or ".join(CO)
@@ -131,6 +144,7 @@ class PutdMinusCalld(metaclass=Authentication):
         df = self.db.query_api.query_data_frame(delta2)
         if len(df) == 0:
             return None, None
+
         df.drop(["result", "table", ], axis=1, inplace=True)
         df.drop(df[(df.iv == 0) & (df.delta == 1) & (df.delta == 0)].index, inplace=True)
         df.drop_duplicates(subset=['delta'], keep="first", inplace=True)
@@ -142,34 +156,38 @@ class PutdMinusCalld(metaclass=Authentication):
     def vol_aggregate(self, start, end):
         if self.CO is None:
             return None
-        start_, end_ = InfluxTime.to_influx_time(start), InfluxTime.to_influx_time(end)
-        CO_delta, CO_iv = self.vol(start_, end_, mode="CO")
-        if CO_delta is None:
-            return None
-        PO_delta, PO_iv = self.vol(start_, end_, mode="PO")
-        if PO_delta is None:
-            return None
 
-        tck1 = spi.splrep(CO_delta, CO_iv, k=1)
+        indexs = self.result.index[(self.result.index > start) & (self.result.index < end)]
+        pairs = [(str(indexs[i]), str(indexs[i + 1])) for i in range(len(indexs) - 1)]
+        for s, e in pairs:
+            # print(s)
+            start_, end_ = InfluxTime.to_influx_time(s), InfluxTime.to_influx_time(e)
+            CO_delta, CO_iv = self.vol(start_, end_, mode="CO")
+            PO_delta, PO_iv = self.vol(start_, end_, mode="PO")
 
-        ivc0 = spi.splev([0.25, 0.5], tck1, ext=0)
+            tck1 = spi.splrep(CO_delta, CO_iv, k=1)
+            ivc0 = spi.splev([0.25, 0.5], tck1, ext=0)
 
-        tck2 = spi.splrep(PO_delta, PO_iv, k=1)
+            # print(len(CO_delta), len(PO_delta))
+            if len(CO_delta) <= 1 or len(PO_delta) <= 1:
+                putd, calld, putd_calld = np.nan, np.nan, np.nan
+            else:
+                tck2 = spi.splrep(PO_delta, PO_iv, k=1)
+                ivp0 = spi.splev([-0.25, -0.5], tck2, ext=0)
+                putd = ivp0[0] - ivp0[1]
+                calld = ivc0[0] - ivc0[1]
+                putd_calld = putd - calld
 
-        ivp0 = spi.splev([-0.25, -0.5], tck2, ext=0)
+            self.result.loc[s, "putd"] = putd
+            self.result.loc[s, "calld"] = calld
+            self.result.loc[s, "putd_calld"] = putd_calld
 
-        putd = ivp0[0] - ivp0[1]
-        calld = ivc0[0] - ivc0[1]
-        putd_calld = putd - calld
-
-        self.result.loc[start, "putd"] = putd
-        self.result.loc[start, "calld"] = calld
-        self.result.loc[start, "putd_calld"] = putd_calld
+            # print(putd, calld, putd_calld)
         # print(self.result)
 
     def process_df(self):
         self.result.dropna(inplace=True)
-        print(self.result)
+        # print(self.result)
         self.result.to_excel("sep2.xlsx")
 
         # self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
@@ -184,6 +202,7 @@ class PutdMinusCalld(metaclass=Authentication):
         times = self.aggravate(start, end)
 
         self.pre_set(code, start, end)
+
         for t in times:
             print(t)
             self.daily_info(code, t[0], t[1])
@@ -198,4 +217,4 @@ class PutdMinusCalld(metaclass=Authentication):
 
 if __name__ == "__main__":
     opc = PutdMinusCalld()
-    opc.get(code="510050.XSHG", start='2022-09-01 00:00:00', end='2022-09-27 00:00:00')
+    opc.get(code="510050.XSHG", start='2022-12-01 00:00:00', end='2022-12-05 00:00:00')
