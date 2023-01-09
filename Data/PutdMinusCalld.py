@@ -145,6 +145,7 @@ class PutdMinusCalld(metaclass=Authentication):
         if len(df) == 0:
             return None, None
 
+
         df.drop(["result", "table", ], axis=1, inplace=True)
         df.drop(df[(df.iv == 0) & (df.delta == 1) & (df.delta == 0)].index, inplace=True)
         df.drop_duplicates(subset=['delta'], keep="first", inplace=True)
