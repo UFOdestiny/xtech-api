@@ -85,10 +85,10 @@ class PutdMinusCalld(metaclass=Authentication):
 
         self.daily.set_index('date', inplace=True)
 
-        #print(self.daily["name"].values.tolist())
+        # print(self.daily["name"].values.tolist())
 
         date = sorted(self.daily["expire_date"].unique())
-        #print(date)
+        # print(date)
         self.month1 = date[1]
         self.CO = self.daily[(self.daily["expire_date"] == self.month1) & (self.daily["contract_type"] == "CO")]
         self.PO = self.daily[(self.daily["expire_date"] == self.month1) & (self.daily["contract_type"] == "PO")]
@@ -96,7 +96,7 @@ class PutdMinusCalld(metaclass=Authentication):
         self.CO_code = self.CO["code"].values
         self.PO_code = self.PO["code"].values
 
-        #print(len(self.CO_code), len(self.PO_code))
+        # print(len(self.CO_code), len(self.PO_code))
 
         CO = [f"r[\"opcode\"] == \"{i}\"" for i in self.CO_code]
         self.CO_code_all = " or ".join(CO)
@@ -142,9 +142,9 @@ class PutdMinusCalld(metaclass=Authentication):
                 """
 
         df = self.db.query_api.query_data_frame(delta2)
+
         if len(df) == 0:
             return None, None
-
 
         df.drop(["result", "table", ], axis=1, inplace=True)
         df.drop(df[(df.iv == 0) & (df.delta == 1) & (df.delta == 0)].index, inplace=True)
@@ -209,14 +209,14 @@ class PutdMinusCalld(metaclass=Authentication):
             self.daily_info(code, t[0], t[1])
             self.vol_aggregate(t[0], t[1])
 
-        print(self.result)
-        self.process_df()
-        # if not self.result.isnull().values.any():
-        #     return self.result.values.tolist()
-        # else:
-        #     print("error")
+        # print(len(self.result))
+        # self.process_df()
+        if not self.result.isnull().values.any():
+            return self.result.values.tolist()
+        else:
+            print("error")
 
 
 if __name__ == "__main__":
     opc = PutdMinusCalld()
-    opc.get(code="510050.XSHG", start='2022-12-01 00:00:00', end='2022-12-05 00:00:00')
+    opc.get(code="510050.XSHG", start='2023-01-04 00:00:00', end='2023-01-05 00:00:00')

@@ -179,12 +179,15 @@ class OpNominalAmount(metaclass=Authentication):
         start = kwargs["start"]
         end = kwargs["end"]
 
-        times = self.aggravate(start, end)
-        for t in times:
-            print(t)
-            self.pre_set(code, t[0], t[1])
-            self.daily_info(code, t[0], t[1])
-            self.vol_aggregate(t[0], t[1])
+        codes = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
+                 '159922.XSHE', '000852.XSHE', '000016.XSHE', '000300.XSHG', ]
+        for c in codes:
+            times = self.aggravate(start, end)
+            for t in times:
+                print(c, t)
+                self.pre_set(c, t[0], t[1])
+                self.daily_info(c, t[0], t[1])
+                self.vol_aggregate(t[0], t[1])
 
         self.process_df()
         if not self.result.isnull().values.any():
@@ -195,4 +198,4 @@ class OpNominalAmount(metaclass=Authentication):
 
 if __name__ == "__main__":
     opc = OpNominalAmount()
-    opc.get(code="510050.XSHG", start='2022-09-01 00:00:00', end='2022-09-02 00:00:00')
+    opc.get(code="510050.XSHG", start='2022-12-20 00:00:00', end='2023-01-10 00:00:00')
