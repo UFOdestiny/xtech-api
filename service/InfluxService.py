@@ -15,9 +15,12 @@ from config import InfluxDBProduct as InfluxDB
 from utils.InfluxTime import InfluxTime
 from utils.Singleton import Singleton
 
+from utils.Logger import Logger
+
 
 class InfluxdbService(metaclass=Singleton):
     def __init__(self, influxdb=InfluxDB):
+        self.log = Logger(path="../logger")
         self.INFLUX = influxdb
         self.client = InfluxDBClient(url=self.INFLUX.url, token=self.INFLUX.token, org=self.INFLUX.org,
                                      retries=Retry(connect=5, read=2, redirect=5))
@@ -49,11 +52,11 @@ class InfluxdbService(metaclass=Singleton):
         if record:
             record.time(time)
         self.write_api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
-        print("write ok")
+        self.log.info("write ok")
 
     def write_data_execute(self, record):
         self.write_api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
-        print("write ok")
+        self.log.info("write ok")
 
     def query_data(self, start="-1h", stop='', filters=''):
         source = f"from(bucket:\"{self.INFLUX.bucket}\")"

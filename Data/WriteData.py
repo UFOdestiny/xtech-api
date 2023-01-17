@@ -6,6 +6,7 @@
 # @Desc     :
 
 from service.InfluxService import InfluxdbService
+from utils.Logger import Logger
 
 # 不能删除下面的导入！因为用到了eval！
 from Data.OpTargetQuote import OpTargetQuote
@@ -13,6 +14,8 @@ from Data.OpContractInfo import OpContractInfo
 from Data.OpContractQuote import OpContractQuote
 from Data.OpNominalAmount import OpNominalAmount
 from Data.PutdMinusCalld import PutdMinusCalld
+
+log = Logger(path="../logger")
 
 
 class WriteData:
@@ -62,6 +65,8 @@ class WriteData:
 
 class Write(WriteData):
     def __call__(self, **kwargs):
+        log.info(f"{kwargs['source']} {kwargs['start']} {kwargs['end']}")
+
         self.set_source(kwargs["source"])
         self.set_time(**kwargs)
         self.generate()

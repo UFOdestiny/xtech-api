@@ -14,12 +14,16 @@ from utils.Singleton import Singleton
 
 
 class Logger(LogSetting, metaclass=Singleton):
-    def __init__(self, file_name="project", mode="all"):
+    def __init__(self, file_name="project", mode="all", path=""):
         self.LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
         self.logger = logging.getLogger(name=file_name)
         self.logger.setLevel(logging.DEBUG)
 
         self.file_name = f"{self.path}/{file_name}.log"
+
+        if path:
+            self.path = path
+            print(self.path)
 
         if mode == "console":
             self.stand_mode()
