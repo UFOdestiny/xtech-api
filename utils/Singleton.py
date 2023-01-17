@@ -8,6 +8,7 @@
 class Singleton(type):
     def __call__(cls, *args, **kwargs):
         if hasattr(cls, "_instance"):
+            # print("repeat")
             return cls._instance
         cls._instance = type.__call__(cls, *args, **kwargs)
         return cls._instance

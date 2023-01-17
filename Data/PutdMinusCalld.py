@@ -184,7 +184,7 @@ class PutdMinusCalld(metaclass=Authentication):
             self.result.loc[s, "putd_calld"] = putd_calld
 
             # print(putd, calld, putd_calld)
-        # print(self.result)
+        self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
 
     def process_df(self):
         self.result.dropna(inplace=True)
@@ -212,6 +212,7 @@ class PutdMinusCalld(metaclass=Authentication):
         # print(len(self.result))
         # self.process_df()
         if not self.result.isnull().values.any():
+            # print(self.result.values.tolist()[:20])
             return self.result.values.tolist()
         else:
             print("error")
@@ -219,4 +220,4 @@ class PutdMinusCalld(metaclass=Authentication):
 
 if __name__ == "__main__":
     opc = PutdMinusCalld()
-    opc.get(code="510050.XSHG", start='2023-01-04 00:00:00', end='2023-01-05 00:00:00')
+    opc.get(code="510050.XSHG", start='2022-12-05 00:00:00', end='2022-12-06 00:00:00')
