@@ -9,8 +9,9 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from routers import user, NotionalPrincipal, write, data
 from routers.tasks import repeat_task
+from Data.Update import Update
 
-app = FastAPI(title="X-TECH", version="0.0.1", )
+app = FastAPI(title="X-TECH", version="1.0.0", )
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,7 +41,7 @@ app.include_router(NotionalPrincipal.router, prefix="/NotionalPrincipal", tags=[
 
 
 @app.on_event('startup')
-@repeat_task(seconds=2, wait_first=True)
+@repeat_task(seconds=60, wait_first=True)
 def repeat_task_aggregate_request_records() -> None:
     print('触发重复任务: 聚合请求记录')
 

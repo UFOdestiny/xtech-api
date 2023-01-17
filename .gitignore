@@ -1,6 +1,4 @@
 .idea
-.vscode
 __pycache__
-test.py
+logger
 config.py
-test2.py

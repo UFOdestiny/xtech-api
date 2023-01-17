@@ -12,7 +12,14 @@ from logging.handlers import RotatingFileHandler
 from config import LogSetting
 
 
-class Logger(LogSetting):
+class Singleton(type):
+    def __call__(cls, *args, **kwargs):
+        if not hasattr(cls, "_instance"):
+            cls._instance = type.__call__(cls, *args, **kwargs)
+        return cls._instance
+
+
+class Logger(LogSetting, metaclass=Singleton):
     def __init__(self, file_name="project", mode="all"):
         self.LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
         self.logger = logging.getLogger(name=file_name)
