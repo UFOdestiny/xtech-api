@@ -30,3 +30,5 @@ class Data(BaseModel):
 class QueryData(BaseModel):
     name: str
     time: list
+    targetcode: str
+    opcode: str

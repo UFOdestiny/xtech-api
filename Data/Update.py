@@ -6,7 +6,7 @@
 # @Desc     :
 
 from utils.Logger import Logger
-from WriteData import Write
+from Data.WriteData import Write
 import time
 
 
