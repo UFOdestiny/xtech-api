@@ -8,6 +8,7 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from routers import user, NotionalPrincipal, write, data
+from routers.tasks import repeat_task
 
 app = FastAPI(title="X-TECH", version="0.0.1", )
 
@@ -36,6 +37,13 @@ app.include_router(write.router, prefix="/write", tags=["write"], )
 app.include_router(data.router, prefix="/data", tags=["data"], )
 
 app.include_router(NotionalPrincipal.router, prefix="/NotionalPrincipal", tags=["panel"], )
+
+
+@app.on_event('startup')
+@repeat_task(seconds=2, wait_first=True)
+def repeat_task_aggregate_request_records() -> None:
+    print('触发重复任务: 聚合请求记录')
+
 
 if __name__ == '__main__':
     import uvicorn

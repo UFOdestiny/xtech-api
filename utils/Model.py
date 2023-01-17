@@ -28,4 +28,5 @@ class Data(BaseModel):
 
 
 class QueryData(BaseModel):
-    query: dict
+    name: str
+    time: list
