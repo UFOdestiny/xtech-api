@@ -27,13 +27,16 @@ class InfluxdbService(metaclass=Singleton):
         else:
             print("InfluxDB fail!")
 
-        self.write_api = self.client.write_api(write_options=WriteOptions(batch_size=500,
+        self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
+        """
+        WriteOptions(batch_size=500,
                                                                           flush_interval=10_000,
                                                                           jitter_interval=2_000,
                                                                           retry_interval=5_000,
                                                                           max_retries=5,
                                                                           max_retry_delay=30_000,
-                                                                          exponential_base=2))
+                                                                          exponential_base=2),
+        """
 
         self.query_api = self.client.query_api()
 
@@ -130,4 +133,9 @@ if __name__ == "__main__":
     # influxdbService.write_data_execute(q)
     # influxdbService.empty("optargetquote")
     # mysqlService = MysqlService()
-    influxdbService.delete_data("2022-11-01T00:00:00Z", "2022-11-30T23:00:00Z", "opcontractquote")
+    # influxdbService.delete_data("2022-11-01T00:00:00Z", "2022-11-30T23:00:00Z", "opcontractquote")
+    q = [
+        'test1,targetcode=510050.XSHG price=2.76,pct=2.754 1673956372162814720',
+    ]
+    influxdbService.write_data("test", "a", 1, "b", 2, "2023-01-16T09:30:05.000Z")
+    influxdbService.query_data()

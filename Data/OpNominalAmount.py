@@ -112,7 +112,7 @@ class OpNominalAmount(metaclass=Authentication):
         self.dic_01 = {i[0]: i[1] for i in self.daily_01[["code", "contract_type"]].values}
         self.code_01 = list(set((self.dic_01.keys())))
 
-        print(self.code)
+        # print(self.code)
         # print(self.code_00)
         # print(self.code_01)
 
@@ -136,8 +136,8 @@ class OpNominalAmount(metaclass=Authentication):
         index_c = f"vol_c{res_seg}"
         index_p = f"vol_p{res_seg}"
 
-        print(code)
-        print(df)
+        # print(code)
+        # print(df)
 
         if self.dic[code] == "CO":
             self.result[index_c] = self.result[index_c].add(df["close"], fill_value=0)
@@ -161,12 +161,14 @@ class OpNominalAmount(metaclass=Authentication):
         self.result["vol_00"] = self.result["vol_c_00"] + self.result["vol_p_00"]
         self.result["vol_01"] = self.result["vol_c_01"] + self.result["vol_p_01"]
 
+        # print(self.result)
         if self.final_result is None:
             self.final_result = self.result
         else:
             self.final_result = pandas.concat([self.final_result, self.result])
 
     def process_df(self):
+
         self.final_result.dropna(inplace=True)
         # self.final_result.to_excel("sep.xlsx")
 
@@ -178,9 +180,9 @@ class OpNominalAmount(metaclass=Authentication):
         code = kwargs["code"]
         start = kwargs["start"]
         end = kwargs["end"]
-
-        codes = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
-                 '159922.XSHE', '000852.XSHE', '000016.XSHE', '000300.XSHG', ]
+        # , '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
+        # '159922.XSHE', '000852.XSHE', '000016.XSHE', '000300.XSHG',
+        codes = ['510050.XSHG']
         for c in codes:
             times = self.aggravate(start, end)
             for t in times:
@@ -190,12 +192,12 @@ class OpNominalAmount(metaclass=Authentication):
                 self.vol_aggregate(t[0], t[1])
 
         self.process_df()
-        if not self.result.isnull().values.any():
-            return self.result.values.tolist()
+        if not self.final_result.isnull().values.any():
+            return self.final_result.values.tolist()
         else:
             print("error")
 
 
 if __name__ == "__main__":
     opc = OpNominalAmount()
-    opc.get(code="510050.XSHG", start='2022-12-20 00:00:00', end='2023-01-10 00:00:00')
+    opc.get(code="510050.XSHG", start='2022-12-20 00:00:00', end='2022-12-21 00:00:00')

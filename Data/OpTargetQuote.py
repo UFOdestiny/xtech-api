@@ -36,6 +36,7 @@ class OpTargetQuote(metaclass=Authentication):
         self.df["time"] = pandas.to_datetime(self.df["time"]).values.astype(object)
         self.df["pct"] = (self.df["close"] - self.df["pre_close"]) / self.df["pre_close"]
         del self.df["pre_close"]
+        # print(self.df)
         self.result = self.df.values.tolist()
         print(len(self.result))
 
@@ -69,4 +70,4 @@ class OpTargetQuote(metaclass=Authentication):
 
 if __name__ == "__main__":
     op = OpTargetQuote()
-    a = op.get(start='2022-01-29 00:00:00', end='2022-02-25 00:00:00')
+    a = op.get(start='2023-01-01 00:00:00', end='2023-01-18 00:00:00')
