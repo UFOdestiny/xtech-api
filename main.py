@@ -41,9 +41,10 @@ app.include_router(NotionalPrincipal.router, prefix="/NotionalPrincipal", tags=[
 
 
 @app.on_event('startup')
-@repeat_task(seconds=60, wait_first=True)
+@repeat_task(seconds=2, wait_first=True)
 def repeat_task_aggregate_request_records() -> None:
-    print('触发重复任务: 聚合请求记录')
+    u = Update()
+    u.run()
 
 
 if __name__ == '__main__':

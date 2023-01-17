@@ -5,6 +5,12 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
 
+from utils.Logger import Logger
+
+
 class Update:
     def __init__(self):
-        pass
+        self.logger = Logger(path="logger")
+
+    def run(self):
+        self.logger.info("数据更新")

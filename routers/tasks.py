@@ -70,7 +70,7 @@ def repeat_task(
                         repetitions += 1
                     except Exception as exc:
                         # logger.error(f'执行重复任务异常: {exc}')
-                        print("执行重复任务异常")
+                        print(exc)
                         if raise_exceptions:
                             raise exc
                     await asyncio.sleep(seconds)

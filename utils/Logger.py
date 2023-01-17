@@ -10,20 +10,17 @@ from datetime import date
 from logging.handlers import TimedRotatingFileHandler
 from logging.handlers import RotatingFileHandler
 from config import LogSetting
-
-
-class Singleton(type):
-    def __call__(cls, *args, **kwargs):
-        if not hasattr(cls, "_instance"):
-            cls._instance = type.__call__(cls, *args, **kwargs)
-        return cls._instance
+from utils.Singleton import Singleton
 
 
 class Logger(LogSetting, metaclass=Singleton):
-    def __init__(self, file_name="project", mode="all"):
+    def __init__(self, file_name="project", mode="all", path=""):
         self.LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
         self.logger = logging.getLogger(name=file_name)
         self.logger.setLevel(logging.DEBUG)
+
+        if path:
+            self.path = path
 
         self.file_name = f"{self.path}/{file_name}.log"
 
@@ -65,6 +62,7 @@ class Logger(LogSetting, metaclass=Singleton):
         else:  # 按时间输出
 
             today = str(date.today())
+            print(self.path)
             file_handler = TimedRotatingFileHandler(filename=f"{self.path}/{today}.log",
                                                     when="D", interval=1, backupCount=30, encoding='utf-8')
 
