@@ -10,7 +10,7 @@ from utils.Logger import Logger
 
 class Update:
     def __init__(self):
-        self.logger = Logger(path="logger")
+        self.logger = Logger()
 
     def run(self):
         self.logger.info("数据更新")

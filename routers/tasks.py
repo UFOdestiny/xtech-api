@@ -11,6 +11,7 @@ from asyncio import ensure_future
 from starlette.concurrency import run_in_threadpool
 from typing import Any, Callable, Coroutine, Optional, Union
 
+
 NoArgsNoReturnFuncT = Callable[[], None]
 NoArgsNoReturnAsyncFuncT = Callable[[], Coroutine[Any, Any, None]]
 NoArgsNoReturnDecorator = Callable[
