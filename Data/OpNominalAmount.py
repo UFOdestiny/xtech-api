@@ -63,7 +63,6 @@ class OpNominalAmount(metaclass=Authentication):
         self.result["vol_01"] = 0
 
         del self.result["close"]
-        # print(self.result)
 
     def daily_info(self, code, start, end):
         q = query(opt.OPT_DAILY_PREOPEN.date,
@@ -177,12 +176,14 @@ class OpNominalAmount(metaclass=Authentication):
                                                "vol_00", 'vol_c_01', 'vol_p_01', "vol_01"]]
 
     def get(self, **kwargs):
-        code = kwargs["code"]
+        # code = kwargs["code"]
         start = kwargs["start"]
         end = kwargs["end"]
         # , '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
         # '159922.XSHE', '000852.XSHE', '000016.XSHE', '000300.XSHG',
-        codes = ['510050.XSHG']
+        codes = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
+                 '159922.XSHE', '000852.XSHE', '000016.XSHE', '000300.XSHG', ]
+
         for c in codes:
             times = self.aggravate(start, end)
             for t in times:
@@ -192,6 +193,7 @@ class OpNominalAmount(metaclass=Authentication):
                 self.vol_aggregate(t[0], t[1])
 
         self.process_df()
+        # print(self.final_result)
         if not self.final_result.isnull().values.any():
             return self.final_result.values.tolist()
         else:
@@ -200,4 +202,4 @@ class OpNominalAmount(metaclass=Authentication):
 
 if __name__ == "__main__":
     opc = OpNominalAmount()
-    opc.get(code="510050.XSHG", start='2022-12-20 00:00:00', end='2022-12-21 00:00:00')
+    opc.get(start='2023-01-04 00:00:00', end='2023-01-20 00:00:00')

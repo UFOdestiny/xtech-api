@@ -75,10 +75,10 @@ class Write(WriteData):
 
 if __name__ == '__main__':
     start = "2023-01-01 00:00:00"
-    end = "2023-01-18 00:00:00"
+    end = "2023-01-30 00:00:00"
 
-    Write()(source="OpContractInfo", start=start, end=end)
+    # Write()(source="OpContractInfo", start=start, end=end)
     # Write()(source="OpTargetQuote", start=start, end=end)
     # Write()(source="OpContractQuote", start=start, end=end, code="10004237.XSHG")
-    # Write()(source="OpNominalAmount", start=start, end=end, code="510050.XSHG")
+    Write()(source="OpNominalAmount", start=start, end=end)
     # Write()(source="PutdMinusCalld", start=start, end=end, code="510050.XSHG")
