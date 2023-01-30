@@ -23,7 +23,7 @@ class Logger(LogSetting, metaclass=Singleton):
 
         if path:
             self.path = path
-            print(self.path)
+            # print(self.path)
 
         if mode == "console":
             self.stand_mode()

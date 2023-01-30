@@ -65,7 +65,7 @@ class WriteData:
 
 class Write(WriteData):
     def __call__(self, **kwargs):
-        log.info(f"{kwargs['source']} {kwargs['start']} {kwargs['end']}")
+        log.info(" ".join(kwargs.values()))
 
         self.set_source(kwargs["source"])
         self.set_time(**kwargs)

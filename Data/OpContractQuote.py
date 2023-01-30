@@ -17,7 +17,6 @@ from utils.GreeksIV import Greeks, ImpliedVolatility
 
 
 class OpContractQuote(metaclass=Authentication):
-
     def __init__(self):
         self.symbol_minute = None
         self.tick = None
@@ -255,4 +254,4 @@ class OpContractQuote(metaclass=Authentication):
 
 if __name__ == "__main__":
     opc = OpContractQuote()
-    opc.get(code="10004242.XSHG", start='2022-11-01 00:00:00', end='2022-11-30 23:00:00')
+    opc.get(code="10004242.XSHG", start='2022-11-01 00:00:00', end='2023-01-30 23:00:00')

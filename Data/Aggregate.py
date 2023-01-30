@@ -12,7 +12,7 @@ from Data.OpContractQuote import OpContractQuote
 
 
 class Aggregate:
-    def __init__(self, start='2022-01-01 00:00:00', end='2022-11-30 23:00:00'):
+    def __init__(self, start='2022-01-01 00:00:00', end='2023-01-30 00:00:00'):
         self.start = start
         self.end = end
         self.info = OpContractInfo()
@@ -41,8 +41,7 @@ class Aggregate:
     def get_contractquote(self):
         for i in self.code_expire:
             w = Write()
-            w(source="OpContractQuote", start=self.start, end=i[1].strftime('%Y-%m-%d'), code=i[0])
-            print(i[0])
+            w(source="OpContractQuote", start=self.start, end=i[1].strftime('%Y-%m-%d %H:%M:%S'), code=i[0])
 
     def run(self):
         self.split_time()
