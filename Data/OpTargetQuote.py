@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 import pandas
 from jqdatasdk import get_price, normalize_code
 
-from Data.JoinQuant import Authentication
+from utils.JoinQuant import Authentication
 
 
 class OpTargetQuote(metaclass=Authentication):

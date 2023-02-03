@@ -5,6 +5,7 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     : influxDB时间格式处理
 import time
+from pandas._libs.tslibs.timestamps import Timestamp
 
 
 class InfluxTime:
@@ -13,7 +14,7 @@ class InfluxTime:
         influx_format = "%Y-%m-%dT%H:%M:%SZ"
         yearmd_format = '%Y-%m-%d'
         yearmd_hourm_format = "%Y-%m-%d %H:%M"
-        yearmd_hourms_format= "%Y-%m-%d %H:%M:%S"
+        yearmd_hourms_format = "%Y-%m-%d %H:%M:%S"
 
         if type(t) == str:
             if t.isnumeric():
@@ -32,11 +33,18 @@ class InfluxTime:
                 # return time.strptime(t, influx_format)
                 return t
 
-        if type(t) == int:
-            return time.strftime(influx_format, time.localtime(t / 1000))
+        elif type(t) == int:
+            return time.strftime(influx_format, time.localtime(t / 10 ** 3))
 
-        if type(t) == float:
+        elif type(t) == float:
             return time.strftime(influx_format, time.localtime(t))
+
+        elif type(t) == Timestamp:
+            return time.strftime(yearmd_hourms_format, time.localtime(t.value / 10 ** 9))
+
+    @staticmethod
+    def now():
+        return InfluxTime.to_influx_time(time.time())
 
 
 if __name__ == '__main__':
@@ -47,3 +55,6 @@ if __name__ == '__main__':
     print(InfluxTime.to_influx_time(time.time()))
     print(InfluxTime.to_influx_time('1660026181729'))
     print(InfluxTime.to_influx_time('1660026181729'))
+
+    print(InfluxTime.now())
+    print(time.time())

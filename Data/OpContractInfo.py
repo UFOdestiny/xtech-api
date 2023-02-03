@@ -8,7 +8,7 @@
 from datetime import datetime, timedelta, date
 import pandas
 from jqdatasdk import opt, query
-from Data.JoinQuant import Authentication
+from utils.JoinQuant import Authentication
 
 
 class OpContractInfo(metaclass=Authentication):
@@ -85,4 +85,4 @@ class OpContractInfo(metaclass=Authentication):
 
 if __name__ == "__main__":
     opc = OpContractInfo()
-    opc.get(start='2022-11-01 00:00:00', end='2022-11-30 00:00:00')
+    opc.get(start='2022-01-01 00:00:00', end='2023-01-30 00:00:00')

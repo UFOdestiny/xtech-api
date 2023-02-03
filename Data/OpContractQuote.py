@@ -12,8 +12,10 @@ import numpy as np
 import pandas
 from jqdatasdk import get_ticks, opt, query, get_price
 
-from Data.JoinQuant import Authentication
+from utils.JoinQuant import Authentication
+from service.InfluxService import InfluxdbService
 from utils.GreeksIV import Greeks, ImpliedVolatility
+from utils.InfluxTime import InfluxTime
 
 
 class OpContractQuote(metaclass=Authentication):
@@ -240,18 +242,52 @@ class OpContractQuote(metaclass=Authentication):
         df = self.code_minute[['time', "code", "underlying_symbol", 'open', 'close', 'high', 'low', 'money', "volume",
                                'pct', 'a1_p', 'a1_v', 'b1_p', 'b1_v', 'delta', 'gamma', 'vega', 'theta', 'iv',
                                'timevalue']]
+
+        df = df.copy()
         df.dropna(how="any", inplace=True)
 
         # pandas.set_option('display.max_rows', None)
         # pandas.set_option('display.max_columns', None)
         # df.fillna(method='ffill', inplace=True)
         # df.fillna(method='bfill', inplace=True)
+
         if not df.isnull().values.any():
             return df.values.tolist()
         else:
             print(code, "error")
 
+    def collect_info(self, **kwargs):
+        end = InfluxTime.now() if "end" not in kwargs else InfluxTime.to_influx_time(kwargs["end"])
+        start = "-30d" if "start" not in kwargs else InfluxTime.to_influx_time(kwargs["start"])
+
+        q = f"""
+                    from(bucket: "xtech")
+                        |> range(start: {start}, stop: {end})
+                        |> filter(fn: (r) => r["_measurement"] == "opcontractinfo")
+                        |> filter(fn: (r) => r["_field"] == "days")
+                        |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+                        |> keep(columns: ["_time","days", "opcode"])
+                """
+        db = InfluxdbService()
+
+        df = db.query_api.query_data_frame(q)
+        df.drop(["result", "table", ], axis=1, inplace=True)
+        df.drop_duplicates(subset=["opcode"], inplace=True)
+        df["days"] = df["days"].apply(lambda x: datetime.timedelta(days=int(x)))
+        df["end"] = df["_time"] + df["days"]
+        df = df[["opcode", "_time", "end"]]
+        result = df.values.tolist()
+        result = sorted(result, key=lambda x: x[0])
+
+        for i in range(len(result)):
+            for j in [1, 2]:
+                result[i][j] = InfluxTime.to_influx_time(result[i][j])
+
+        # print(result[:10])
+        return result
+
 
 if __name__ == "__main__":
     opc = OpContractQuote()
-    opc.get(code="10004242.XSHG", start='2022-11-01 00:00:00', end='2023-01-30 23:00:00')
+    opc.get(code="10004419.XSHG", start='2023-01-01 00:00:00', end='2023-02-05 23:00:00')
+    # opc.collect_info()

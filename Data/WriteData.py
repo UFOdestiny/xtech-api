@@ -7,15 +7,15 @@
 
 from service.InfluxService import InfluxdbService
 from utils.Logger import Logger
-
-# 不能删除下面的导入！因为用到了eval！
+from utils.JoinQuant import Authentication
 from Data.OpTargetQuote import OpTargetQuote
 from Data.OpContractInfo import OpContractInfo
 from Data.OpContractQuote import OpContractQuote
 from Data.OpNominalAmount import OpNominalAmount
 from Data.PutdMinusCalld import PutdMinusCalld
 
-log = Logger(path="../logger")
+from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
+from threading import Lock
 
 
 class WriteData:
@@ -30,55 +30,61 @@ class WriteData:
         "putdminuscalld": "putdminuscalld,targetcode={1} putd={2},calld={3},putd_calld={4} {0}",
     }
 
-    def __init__(self):
+    def __init__(self, source):
         self.db = InfluxdbService()
-        self.q = []
-        self.source = None
-        self.S = None
-        self.data = None
-
-    def set_source(self, source):
         self.source = source
-        self.S = eval(f"{source}()")
+        self.log = Logger()
+        self.count = 0
+        self.lock = Lock()
 
-    def set_time(self, **kwargs):
-        d = self.S.get(**kwargs)
-        self.data = {self.source.lower(): d}
+    def get_data(self, **kwargs):
+        s = self.source()
+        if self.source == OpContractQuote and "code" not in kwargs:
+            lst = s.collect_info(**kwargs)
+            return lst
+        data = s.get(**kwargs)
+        return data
 
-    def generate(self):
-        data = self.data
-        q = []
-        keys = data.keys()
+    def generate(self, **kwargs):
+        data = self.get_data(**kwargs)
+        fmt = self.format_dict[self.source.__name__.lower()]
+        sequence = [fmt.format(*i) for i in data]
+        return sequence
 
-        for k in keys:
-            fmt = self.format_dict[k]
-            data = data[k]
-            sequence = [fmt.format(*i) for i in data]
-            q.extend(sequence)
-
-        # print(q)
-        self.q = q
-
-    def send(self):
-        self.db.write_data_execute(self.q)
+    def send(self, **kwargs):
+        q = self.generate(**kwargs)
+        self.db.write_data_execute(q)
 
 
 class Write(WriteData):
-    def __call__(self, **kwargs):
-        log.info(" ".join(kwargs.values()))
+    def thread(self, **kw):
+        self.send(**kw)
+        self.lock.acquire()
+        self.count += 1
+        self.log.info(f"{kw['code']} {kw['start']} {kw['end']} {self.count}/{kw['length']}")
+        self.lock.release()
 
-        self.set_source(kwargs["source"])
-        self.set_time(**kwargs)
-        self.generate()
-        self.send()
+    def __call__(self, **kwargs):
+        if self.source == OpContractQuote and "code" not in kwargs:
+            lst = self.get_data(**kwargs)
+            length = len(lst)
+
+            lst_kw = [{"code": c, "start": s, "end": e, "length": length} for c, s, e in lst]
+            with ThreadPoolExecutor(max_workers=10) as e:
+                all_task = [e.submit(self.thread, **kw) for kw in lst_kw]
+                wait(all_task, return_when=ALL_COMPLETED)
+
+        else:
+            self.log.info(" ".join(kwargs.values()))
+            self.send(**kwargs)
 
 
 if __name__ == '__main__':
-    start = "2023-01-01 00:00:00"
-    end = "2023-01-30 00:00:00"
+    start = "2022-01-01 00:00:00"
+    end = "2023-03-01 00:00:00"
 
-    # Write()(source="OpContractInfo", start=start, end=end)
-    # Write()(source="OpTargetQuote", start=start, end=end)
-    # Write()(source="OpContractQuote", start=start, end=end, code="10004237.XSHG")
-    Write()(source="OpNominalAmount", start=start, end=end)
-    # Write()(source="PutdMinusCalld", start=start, end=end, code="510050.XSHG")
+    # Write(source=OpContractInfo)(start=start, end=end)
+    # Write(source=OpTargetQuote)(start=start, end=end)
+    Write(source=OpContractQuote)(start=start, end=end)
+    # Write(source=OpNominalAmount)(start=start, end=end)
+    # Write(source=PutdMinusCalld)(start=start, end=end, code="510050.XSHG")

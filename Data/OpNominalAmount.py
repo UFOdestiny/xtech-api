@@ -8,7 +8,7 @@
 import pandas
 from jqdatasdk import opt, query, get_price
 
-from Data.JoinQuant import Authentication
+from utils.JoinQuant import Authentication
 from datetime import datetime, timedelta
 
 

@@ -10,7 +10,7 @@ import datetime
 import pandas
 from jqdatasdk import query, opt
 
-from Data.JoinQuant import Authentication
+from utils.JoinQuant import Authentication
 
 
 class OpContractGreek(metaclass=Authentication):

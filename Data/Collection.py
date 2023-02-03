@@ -11,7 +11,7 @@ from Data.OpContractInfo import OpContractInfo
 from Data.OpContractQuote import OpContractQuote
 
 
-class Aggregate:
+class Collection:
     def __init__(self, start='2022-01-01 00:00:00', end='2023-01-30 00:00:00'):
         self.start = start
         self.end = end
@@ -35,7 +35,8 @@ class Aggregate:
         for times in self.time_range:
             code = self.info.get_code_expire(times[0], times[1])
             self.code_expire = self.code_expire | set(code)
-        self.code_expire = list(self.code_expire)
+
+        self.code_expire = sorted(list(self.code_expire))
         # print(self.code_expire)
 
     def get_contractquote(self):
@@ -50,5 +51,5 @@ class Aggregate:
 
 
 if __name__ == "__main__":
-    a = Aggregate()
+    a = Collection()
     a.run()

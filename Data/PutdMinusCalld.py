@@ -13,7 +13,7 @@ from utils.InfluxTime import InfluxTime
 import pandas
 from jqdatasdk import opt, query, get_price
 
-from Data.JoinQuant import Authentication
+from utils.JoinQuant import Authentication
 from service.InfluxService import InfluxdbService
 import scipy.interpolate as spi
 
