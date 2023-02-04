@@ -57,6 +57,7 @@ class ImpliedVolatility:
 
     def bs_price(self, cp_flag, S, K, T, v, q=0.0):
         d1 = (np.log(S / K) + (self.r + v * v / 2.) * T) / (v * np.sqrt(T))
+
         d2 = d1 - v * np.sqrt(T)
         if cp_flag == 1:
             price = S * np.exp(-q * T) * self.N(d1) - K * np.exp(-self.r * T) * self.N(d2)
@@ -104,5 +105,5 @@ if __name__ == "__main__":
 
     cp = 'c'  # 看涨期权
     for i in range(1):
-        implied_vol = ImpliedVolatility().find_vol(V_market, cp, S, K, T)
+        implied_vol = ImpliedVolatility().bs_price(cp, S, K, T, 1)
         print('Implied vol: %.2f%%' % (implied_vol * 100))
