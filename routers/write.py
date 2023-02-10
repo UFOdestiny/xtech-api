@@ -16,7 +16,7 @@ from utils.Model import Data
 router = APIRouter()
 
 # InfluxDB
-influxdbService = InfluxdbService(influxdb=InfluxDB)
+influxdbService = InfluxdbService()
 
 
 @router.post("/write")

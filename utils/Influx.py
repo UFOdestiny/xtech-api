@@ -11,7 +11,7 @@ import time
 from config import InfluxDBProduct as InfluxDB
 from service.InfluxService import InfluxdbService
 
-influxdbService = InfluxdbService(influxdb=InfluxDB)
+influxdbService = InfluxdbService()
 
 
 # influxdbService.write_data("test1", "location", "qingdao", "temperature", 54)

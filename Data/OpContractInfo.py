@@ -5,9 +5,10 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     : 合约信息
 
-from datetime import datetime, timedelta, date
 import pandas
 from jqdatasdk import opt, query
+
+from utils.InfluxTime import SplitTime
 from utils.JoinQuant import Authentication
 
 
@@ -15,7 +16,6 @@ class OpContractInfo(metaclass=Authentication):
     def __init__(self):
         self.underlying_symbol = None
         self.code = []
-        self.today = str(date.today())
         self.df = None
         self.result = []
 
@@ -58,7 +58,8 @@ class OpContractInfo(metaclass=Authentication):
         print(len(self.result))
 
     def get(self, **kwargs):
-        times = self.aggravate(kwargs["start"], kwargs["end"])
+        times = SplitTime().split(kwargs["start"], kwargs["end"], interval_day=7)
+
         for t in times:
             print(t)
             self.get_data(t[0], t[1])
@@ -66,21 +67,6 @@ class OpContractInfo(metaclass=Authentication):
             self.final_results.extend(self.result)
         print(len(self.final_results))
         return self.result
-
-    def aggravate(self, start, end):
-        start_date = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
-        end_date = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
-        res = []
-        while start_date != end_date:
-            res.append([])
-            res[-1].append(start_date.strftime("%Y-%m-%d %H:%M:%S"))
-            right = start_date + timedelta(days=7)
-            if right <= end_date:
-                start_date = right
-            else:
-                start_date = end_date
-            res[-1].append(start_date.strftime("%Y-%m-%d %H:%M:%S"))
-        return res
 
 
 if __name__ == "__main__":

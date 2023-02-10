@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-# @Name     : data.py
+# @Name     : query.py
 # @Date     : 2023/1/9 18:07
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
-import pandas
+
 from fastapi import APIRouter
 
-from config import InfluxDBProduct as InfluxDB
 from service.InfluxService import InfluxdbService
 from service.ResponseService import check_exception
 from utils.InfluxTime import InfluxTime
@@ -16,7 +15,7 @@ from utils.Model import QueryData
 router = APIRouter()
 
 # InfluxDB
-influxdbService = InfluxdbService(influxdb=InfluxDB)
+influxdbService = InfluxdbService()
 
 
 @router.post("/query")

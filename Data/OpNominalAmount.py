@@ -8,8 +8,8 @@
 import pandas
 from jqdatasdk import opt, query, get_price
 
+from utils.InfluxTime import SplitTime
 from utils.JoinQuant import Authentication
-from datetime import datetime, timedelta
 
 
 class OpNominalAmount(metaclass=Authentication):
@@ -34,17 +34,6 @@ class OpNominalAmount(metaclass=Authentication):
         self.result = None
 
         self.final_result = None
-
-    def aggravate(self, start, end):
-        start_date = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
-        end_date = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
-        res = []
-        while start_date != end_date:
-            res.append([])
-            res[-1].append(start_date.strftime("%Y-%m-%d %H:%M:%S"))
-            start_date += timedelta(days=1)
-            res[-1].append(start_date.strftime("%Y-%m-%d %H:%M:%S"))
-        return res
 
     def pre_set(self, code, start, end):
         self.result = get_price(code, fields=['close'], frequency='60m', start_date=start, end_date=end, )
@@ -185,7 +174,7 @@ class OpNominalAmount(metaclass=Authentication):
                  '159922.XSHE', '000852.XSHE', '000016.XSHE', '000300.XSHG', ]
 
         for c in codes:
-            times = self.aggravate(start, end)
+            times = SplitTime().split(start, end, interval_day=1)
             for t in times:
                 print(c, t)
                 self.pre_set(c, t[0], t[1])

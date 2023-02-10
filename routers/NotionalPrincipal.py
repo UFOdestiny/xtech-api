@@ -21,7 +21,7 @@ from routers.verify import verify_token
 router = APIRouter(dependencies=[Depends(verify_token)])
 
 # InfluxDB
-influxdbService = InfluxdbService(influxdb=InfluxDB)
+influxdbService = InfluxdbService()
 
 
 @router.post("/all")

@@ -130,7 +130,7 @@ class InfluxdbService(metaclass=Singleton):
 
 
 if __name__ == "__main__":
-    influxdbService = InfluxdbService(influxdb=InfluxDB)
+    influxdbService = InfluxdbService()
     # print(f"{time.time() * 1000 * 1000 * 1000:.0f}")
     # q = ['test1,targetcode=510050.XSHG price=2.76,pct=2.754 1662706943248528896']
     # influxdbService.write_data_execute(q)
