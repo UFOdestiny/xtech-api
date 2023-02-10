@@ -4,6 +4,7 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
+import os
 
 from fastapi import APIRouter
 
@@ -16,7 +17,8 @@ router = APIRouter()
 influxdbService = InfluxdbService()
 
 
-@router.post("/query")
+@router.post("/")
 @check_exception
 async def get_data(data: Subscribe):
     code_list = data.code_list
+    os.environ['SUBSCRIBE'] = str(code_list)

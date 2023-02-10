@@ -7,7 +7,7 @@
 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from routers import user, NotionalPrincipal, write, query,subscribe
+from routers import user, NotionalPrincipal, write, query, subscribe
 from routers.tasks import repeat_task
 from Data.Update import Update
 
@@ -41,9 +41,10 @@ app.include_router(NotionalPrincipal.router, prefix="/NotionalPrincipal", tags=[
 
 app.include_router(subscribe.router, prefix="/subscribe", tags=["subscribe"], )
 
-@app.on_event('startup')
+
+@app.on_event("startup")
 @repeat_task(seconds=60, wait_first=True)
-def repeat_task_aggregate_request_records() -> None:
+def repeat_loop() -> None:
     u = Update()
     # u.run()
     pass
