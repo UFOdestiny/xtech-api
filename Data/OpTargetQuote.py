@@ -4,6 +4,7 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
+from datetime import datetime
 
 import pandas
 from jqdatasdk import get_price  # ,normalize_code
@@ -31,12 +32,17 @@ class OpTargetQuote(metaclass=Authentication):
         self.df = get_price(security=self.code, start_date=start, end_date=end, fq='pre', frequency='minute',
                             fields=['close', 'pre_close'], panel=False)
 
+        start = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+        end = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+        self.df = self.df[(self.df["time"] >= start) & (self.df["time"] <= end)]
+
     def process_df(self):
         self.df["time"] -= pandas.Timedelta(minutes=1)
+
         self.df["time"] = pandas.to_datetime(self.df["time"]).values.astype(object)
         self.df["pct"] = (self.df["close"] - self.df["pre_close"]) / self.df["pre_close"]
         del self.df["pre_close"]
-        # print(self.df)
+
         self.result = self.df.values.tolist()
         print(len(self.result))
 
@@ -55,4 +61,4 @@ class OpTargetQuote(metaclass=Authentication):
 
 if __name__ == "__main__":
     op = OpTargetQuote()
-    a = op.get(start='2023-01-01 00:00:00', end='2023-01-18 00:00:00')
+    a = op.get(start='2023-02-10 23:00:00', end='2023-02-10 23:01:00')

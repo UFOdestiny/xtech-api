@@ -143,6 +143,7 @@ class OpContractQuote(metaclass=Authentication):
                                        end_date=end_date, )
 
         self.symbol_minute.columns = ["symbol_minute"]
+
         self.symbol_minute.index -= pandas.Timedelta(minutes=1)
 
     def get_minute_price(self, code, start, end):
@@ -264,8 +265,6 @@ class OpContractQuote(metaclass=Authentication):
         df = df.copy()
         df.dropna(how="any", inplace=True)
 
-        # print(df)
-
         # pandas.set_option('display.max_rows', None)
         # pandas.set_option('display.max_columns', None)
         # df.fillna(method='ffill', inplace=True)
@@ -318,10 +317,12 @@ if __name__ == "__main__":
     opc = OpContractQuote()
     # opc.get(code="10004405.XSHG", start='2023-02-10 14:33:00', end='2023-02-10 14:34:00')
 
-    start = time.time()
-    n = 0
-    while time.time() - start <= 60:
-        opc.get(code="10004405.XSHG", start='2023-02-10 09:30:00', end='2023-02-10 09:40:00')
-        n += 1
-        print(n)
+    opc.get(code="10004405.XSHG", start='2023-02-11 22:06:00', end='2023-02-11 22:07:00')
+
+    # start = time.time()
+    # n = 0
+    # while time.time() - start <= 60:
+    #     opc.get(code="10004405.XSHG", start='2023-02-10 23:30:00', end='2023-02-10 23:40:00')
+    #     n += 1
+    #     print(n)
     # opc.collect_info(code="10004405.XSHG", start="2023-01-16 00:00:00", end="2023-01-16 09:00:00")

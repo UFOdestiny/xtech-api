@@ -56,7 +56,7 @@ class InfluxdbService(metaclass=Singleton):
 
     def write_data_execute(self, record):
         self.write_api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
-        self.log.info("write ok")
+        self.log.info(f"write ok {len(record)}")
 
     def query_data(self, start="-1h", stop='', filters=''):
         source = f"from(bucket:\"{self.INFLUX.bucket}\")"
