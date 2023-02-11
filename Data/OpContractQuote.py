@@ -7,6 +7,7 @@
 
 import datetime
 import math
+import time
 
 import numpy as np
 import pandas
@@ -32,6 +33,8 @@ class OpContractQuote(metaclass=Authentication):
         self.code_minute = None
 
     def daily_info(self, code, start_date, end_date):
+        start_date = start_date[:11] + "00:00:00"
+
         q = query(opt.OPT_DAILY_PREOPEN.date,
                   opt.OPT_DAILY_PREOPEN.code,
                   opt.OPT_DAILY_PREOPEN.underlying_symbol,
@@ -47,6 +50,7 @@ class OpContractQuote(metaclass=Authentication):
         self.pre_open.set_index("date", inplace=True)
 
         self.code = code
+
         self.underlying_symbol = self.pre_open["underlying_symbol"][0]
         self.pre_open.drop(["expire_date", "underlying_symbol", "code"], axis=1, inplace=True)
 
@@ -155,6 +159,8 @@ class OpContractQuote(metaclass=Authentication):
         :param end_date:
         :return:
         """
+        # start_date = start_date[:11] + "00:00:00"
+
         self.tick = get_ticks(code, start_dt=start_date, end_dt=end_date,
                               fields=['time', "a1_p", "a1_v", "b1_p", "b1_v"])  # 'current', 'volume', 'money',
 
@@ -167,6 +173,7 @@ class OpContractQuote(metaclass=Authentication):
 
         df.fillna(method='ffill', inplace=True)
         df.fillna(method='bfill', inplace=True)
+
         self.code_minute[["a1_p", "b1_p", "a1_v", "b1_v"]] = df
 
         del self.tick
@@ -178,13 +185,24 @@ class OpContractQuote(metaclass=Authentication):
         self.code_minute["code"] = self.code
         self.code_minute["underlying_symbol"] = self.underlying_symbol
 
-        self.code_minute[["his_vol", "exercise_price", "contract_type", "days"]] = self.constant
+        if len(self.constant) > 1:
+            self.code_minute[["his_vol", "exercise_price", "contract_type", "days"]] = self.constant
+        else:
+            for i in ["his_vol", "exercise_price", "contract_type", "days"]:
+                self.code_minute[i] = self.constant.iloc[0][i]
+
+        # print(self.code_minute)
 
         df = self.code_minute[["his_vol", "exercise_price", "contract_type", "days"]].copy()
         df.fillna(method='ffill', inplace=True)
+
         self.code_minute[["his_vol", "exercise_price", "contract_type", "days"]] = df
 
-    def greekiv(self):
+    def greekiv(self, start, end):
+        start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+        end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+        self.code_minute = self.code_minute[(self.code_minute.index >= start) & (self.code_minute.index <= end)]
+
         self.code_minute["delta"] = self.g.delta(self.code_minute["symbol_price"], self.code_minute["exercise_price"],
                                                  self.code_minute["days"], self.code_minute["his_vol"],
                                                  self.code_minute["contract_type"])
@@ -236,7 +254,7 @@ class OpContractQuote(metaclass=Authentication):
 
         self.get_tick(code, start, end)
         self.process_df()
-        self.greekiv()
+        self.greekiv(start, end)
 
         self.code_minute["time"] = pandas.to_datetime(self.code_minute.index).values.astype(object)
         df = self.code_minute[['time', "code", "underlying_symbol", 'open', 'close', 'high', 'low', 'money', "volume",
@@ -245,6 +263,8 @@ class OpContractQuote(metaclass=Authentication):
 
         df = df.copy()
         df.dropna(how="any", inplace=True)
+
+        # print(df)
 
         # pandas.set_option('display.max_rows', None)
         # pandas.set_option('display.max_columns', None)
@@ -257,8 +277,11 @@ class OpContractQuote(metaclass=Authentication):
             print(code, "error")
 
     def collect_info(self, **kwargs):
-        end = InfluxTime.now() if "end" not in kwargs else InfluxTime.to_influx_time(kwargs["end"])
-        start = "-30d" if "start" not in kwargs else InfluxTime.to_influx_time(kwargs["start"])
+        start = kwargs["start"][:11] + "00:00:00"
+        end = kwargs["end"][:11] + "23:00:00"
+
+        end = InfluxTime.now() if "end" not in kwargs else InfluxTime.to_influx_time(end)
+        start = "-30d" if "start" not in kwargs else InfluxTime.to_influx_time(start)
 
         q = f"""
                     from(bucket: "xtech")
@@ -271,11 +294,16 @@ class OpContractQuote(metaclass=Authentication):
         db = InfluxdbService()
 
         df = db.query_api.query_data_frame(q)
+
+        if len(df) == 0:
+            return None
+
         df.drop(["result", "table", ], axis=1, inplace=True)
         df.drop_duplicates(subset=["opcode"], inplace=True)
         df["days"] = df["days"].apply(lambda x: datetime.timedelta(days=int(x)))
         df["end"] = df["_time"] + df["days"]
         df = df[["opcode", "_time", "end"]]
+
         result = df.values.tolist()
         result = sorted(result, key=lambda x: x[0])
 
@@ -283,11 +311,17 @@ class OpContractQuote(metaclass=Authentication):
             for j in [1, 2]:
                 result[i][j] = InfluxTime.to_influx_time(result[i][j])
 
-        # print(result[:10])
         return result
 
 
 if __name__ == "__main__":
     opc = OpContractQuote()
-    opc.get(code="10004419.XSHG", start='2023-01-01 00:00:00', end='2023-02-05 23:00:00')
-    # opc.collect_info()
+    # opc.get(code="10004405.XSHG", start='2023-02-10 14:33:00', end='2023-02-10 14:34:00')
+
+    start = time.time()
+    n = 0
+    while time.time() - start <= 60:
+        opc.get(code="10004405.XSHG", start='2023-02-10 09:30:00', end='2023-02-10 09:40:00')
+        n += 1
+        print(n)
+    # opc.collect_info(code="10004405.XSHG", start="2023-01-16 00:00:00", end="2023-01-16 09:00:00")

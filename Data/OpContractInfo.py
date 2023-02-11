@@ -55,6 +55,7 @@ class OpContractInfo(metaclass=Authentication):
         self.df["date"] = pandas.to_datetime(self.df["date"]).values.astype(object)
         del self.df["expire_date"]
         self.result = self.df.values.tolist()
+
         print(len(self.result))
 
     def get(self, **kwargs):

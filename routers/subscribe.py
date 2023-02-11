@@ -4,7 +4,7 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
-import os
+import json
 
 from fastapi import APIRouter
 
@@ -21,4 +21,6 @@ influxdbService = InfluxdbService()
 @check_exception
 async def get_data(data: Subscribe):
     code_list = data.code_list
-    os.environ['SUBSCRIBE'] = str(code_list)
+    dct = {'code_list': code_list}
+    with open("../static/subscribe.json", "w") as f:
+        json.dump(dct, f)

@@ -65,13 +65,24 @@ class Write(WriteData):
         self.lock.release()
 
     def __call__(self, **kwargs):
-        if self.source == OpContractQuote and "code" not in kwargs:
-            lst = self.get_data(**kwargs)
-            length = len(lst)
+        if self.source == OpContractQuote:
+            if "code" not in kwargs:
+                lst = self.get_data(**kwargs)
+                length = len(lst)
 
-            lst_kw = [{"code": c, "start": s, "end": e, "length": length} for c, s, e in lst]
+                # lst_kw = [{"code": c, "start": s, "end": e, "length": length} for c, s, e in lst]
+                l_ = [{"code": c, "start": kwargs["start"], "end": kwargs["end"], "length": length} for c, s, e in lst]
+
+            elif type(kwargs["code"]) == list:
+                lst = kwargs["code"]
+                length = len(lst)
+                l_ = [{"code": c, "start": kwargs["start"], "end": kwargs["end"], "length": length} for c in lst]
+
+            else:
+                raise Exception("Input Error")
+
             with ThreadPoolExecutor(max_workers=10) as e:
-                all_task = [e.submit(self.thread, **kw) for kw in lst_kw]
+                all_task = [e.submit(self.thread, **kw) for kw in l_]
                 wait(all_task, return_when=ALL_COMPLETED)
 
         else:
@@ -80,11 +91,11 @@ class Write(WriteData):
 
 
 if __name__ == '__main__':
-    start = "2022-01-01 00:00:00"
-    end = "2023-02-07 00:00:00"
+    start = "2023-02-10 10:03:00"
+    end = "2023-02-10 10:04:00"
 
     # Write(source=OpContractInfo)(start=start, end=end)
     # Write(source=OpTargetQuote)(start=start, end=end)
-    # Write(source=OpContractQuote)(start=start, end=end)
+    # Write(source=OpContractQuote)(start=start, end=end, code="10004405.XSHG")
     # Write(source=OpNominalAmount)(start=start, end=end)
     Write(source=PutdMinusCalld)(start=start, end=end)
