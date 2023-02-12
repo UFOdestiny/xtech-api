@@ -71,7 +71,7 @@ class Write(WriteData):
                 length = len(lst)
 
                 # lst_kw = [{"code": c, "start": s, "end": e, "length": length} for c, s, e in lst]
-                l_ = [{"code": c, "start": kwargs["start"], "end": kwargs["end"], "length": length} for c, s, e in lst]
+                l_ = [{"code": c, "start": s, "end": e, "length": length} for c, s, e in lst]
 
             else:
                 if type(kwargs["code"]) == str:
@@ -81,7 +81,7 @@ class Write(WriteData):
                 length = len(lst)
                 l_ = [{"code": c, "start": kwargs["start"], "end": kwargs["end"], "length": length} for c in lst]
 
-            with ThreadPoolExecutor(max_workers=max(10, length)) as e:
+            with ThreadPoolExecutor(max_workers=min(10, length)) as e:
                 all_task = [e.submit(self.thread, **kw) for kw in l_]
                 wait(all_task, return_when=ALL_COMPLETED)
 
@@ -91,12 +91,12 @@ class Write(WriteData):
 
 
 if __name__ == '__main__':
-    start = "2019-01-01 00:00:00"
-    end = "2023-02-12 00:00:00"
+    start = "2020-01-01 00:00:00"
+    end = "2023-02-20 00:00:00"
 
     # Write(source=OpContractInfo)(start=start, end=end)
     # Write(source=OpTargetQuote)(start=start, end=end)
 
-    Write(source=OpNominalAmount)(start=start, end=end)
-    # Write(source=OpContractQuote)(start=start, end=end, code="10004405.XSHG")
+    # Write(source=OpNominalAmount)(start=start, end=end)
+    Write(source=OpContractQuote)(start=start, end=end)
     # Write(source=PutdMinusCalld)(start=start, end=end)

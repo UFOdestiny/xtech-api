@@ -27,9 +27,10 @@ class InfluxdbService(metaclass=Singleton):
                                      retries=Retry(connect=5, read=2, redirect=5))
 
         if self.client.ping():
-            print("InfluxDB ok!")
+            self.log.info(f"InfluxDB Connected")
         else:
-            print("InfluxDB fail!")
+            self.log.error(f"InfluxDB Error")
+            raise Exception
 
         self.option = WriteOptions(batch_size=50_000,
                                    flush_interval=10_000,

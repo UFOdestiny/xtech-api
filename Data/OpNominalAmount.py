@@ -106,6 +106,9 @@ class OpNominalAmount(metaclass=Authentication):
 
     def vol(self, code, start, end, types):
         df = get_price(code, start, end, frequency='60m', fields=['close', 'volume'])
+        if len(df) == 0:
+            return
+
         unit = self.daily[self.daily["code"] == code]["contract_unit"]
 
         df["unit"] = unit
@@ -134,6 +137,7 @@ class OpNominalAmount(metaclass=Authentication):
 
     def vol_aggregate(self, start, end):
         if self.code is None:
+            self.result = None
             return
 
         for i in self.code:
@@ -145,11 +149,13 @@ class OpNominalAmount(metaclass=Authentication):
         for i in self.code_01:
             self.vol(i, start, end, 2)
 
+        if self.result is None or len(self.result) == 0:
+            return
+
         self.result["vol"] = self.result["vol_c"] + self.result["vol_p"]
         self.result["vol_00"] = self.result["vol_c_00"] + self.result["vol_p_00"]
         self.result["vol_01"] = self.result["vol_c_01"] + self.result["vol_p_01"]
 
-        # print(self.result)
         self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
         self.result = self.result[['time', "targetcode", 'vol_c', 'vol_p', 'vol', 'vol_c_00', 'vol_p_00',
                                    "vol_00", 'vol_c_01', 'vol_p_01', "vol_01"]]
@@ -163,10 +169,10 @@ class OpNominalAmount(metaclass=Authentication):
         # code = kwargs["code"]
         start = kwargs["start"]
         end = kwargs["end"]
-        # , '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
+        # '510050.XSHG', , '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
         # '159922.XSHE', '000852.XSHE', '000016.XSHE', '000300.XSHG',
-        codes = ['510050.XSHG', '510300.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE',
-                 '159901.XSHE', '159922.XSHE', '000852.XSHE', '000016.XSHE', '000300.XSHG', ]
+        codes = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
+                 '159922.XSHE', '000852.XSHE', '000016.XSHE', '000300.XSHG', ]
 
         times = SplitTime().split(start, end, interval_day=1)
         for t in times:
@@ -176,10 +182,14 @@ class OpNominalAmount(metaclass=Authentication):
                 self.vol_aggregate(t[0], t[1])
 
                 length = len(self.result) if self.result is not None else 0
-                # print(self.result)
                 print(c, t, length)
 
-        self.final_result.dropna(inplace=True)
+        if self.final_result is None:
+            print("ZERO")
+            return
+        else:
+            self.final_result.dropna(inplace=True)
+        # print(self.final_result)
 
         if not self.final_result.isnull().values.any():
             return self.final_result.values.tolist()
@@ -189,4 +199,4 @@ class OpNominalAmount(metaclass=Authentication):
 
 if __name__ == "__main__":
     opc = OpNominalAmount()
-    opc.get(start='2023-01-04 00:00:00', end='2023-01-06 00:00:00')
+    opc.get(start='2019-01-02 00:00:00', end='2019-01-03 00:00:00')

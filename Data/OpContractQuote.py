@@ -316,8 +316,8 @@ class OpContractQuote(metaclass=Authentication):
 if __name__ == "__main__":
     opc = OpContractQuote()
     # opc.get(code="10004405.XSHG", start='2023-02-10 14:33:00', end='2023-02-10 14:34:00')
-
-    opc.get(code="10004405.XSHG", start='2023-02-11 22:06:00', end='2023-02-11 22:07:00')
+    opc.collect_info(start='2020-01-01 00:00:00', end='2023-02-11 00:00:00')
+    # opc.get(code="10004405.XSHG", start='2023-01-11 22:06:00', end='2023-02-11 22:07:00')
 
     # start = time.time()
     # n = 0
