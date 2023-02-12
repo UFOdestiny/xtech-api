@@ -200,9 +200,10 @@ class OpContractQuote(metaclass=Authentication):
         self.code_minute[["his_vol", "exercise_price", "contract_type", "days"]] = df
 
     def greekiv(self, start, end):
+
         start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
         end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
-        self.code_minute = self.code_minute[(self.code_minute.index >= start) & (self.code_minute.index <= end)]
+        # self.code_minute = self.code_minute[(self.code_minute.index >= start) & (self.code_minute.index <= end)]
 
         self.code_minute["delta"] = self.g.delta(self.code_minute["symbol_price"], self.code_minute["exercise_price"],
                                                  self.code_minute["days"], self.code_minute["his_vol"],

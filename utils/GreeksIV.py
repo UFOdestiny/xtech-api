@@ -7,6 +7,9 @@
 
 import numpy as np
 import scipy.stats as si
+import warnings
+
+warnings.simplefilter(action='ignore', category=RuntimeWarning)
 
 
 class Greeks:

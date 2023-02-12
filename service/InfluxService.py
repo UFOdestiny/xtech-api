@@ -41,6 +41,7 @@ class InfluxdbService(metaclass=Singleton):
                                    exponential_base=2)
 
         self.write_api = self.client.write_api(write_options=self.option)  # SYNCHRONOUS
+        self.write_api_S = self.client.write_api(SYNCHRONOUS)
 
         self.query_api = self.client.query_api()
 
@@ -59,6 +60,12 @@ class InfluxdbService(metaclass=Singleton):
         with self.client as _client:
             with _client.write_api(write_options=self.option) as _write_client:
                 _write_client.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
+
+        name = record[0].split(",")[0]
+        self.log.info(f"{len(record)} records of {name} has been written")
+
+    def write_data_execute_S(self, record):
+        self.write_api_S.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
 
         name = record[0].split(",")[0]
         self.log.info(f"{len(record)} records of {name} has been written")

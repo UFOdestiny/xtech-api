@@ -53,7 +53,10 @@ class WriteData:
 
     def send(self, **kwargs):
         q = self.generate(**kwargs)
-        self.db.write_data_execute(q)
+        if self.source.__name__.lower() == "opcontractquote":
+            self.db.write_data_execute_S(q)
+        else:
+            self.db.write_data_execute(q)
 
 
 class Write(WriteData):
@@ -92,7 +95,7 @@ class Write(WriteData):
 
 if __name__ == '__main__':
     start = "2020-01-01 00:00:00"
-    end = "2023-02-20 00:00:00"
+    end = "2023-03-01 00:00:00"
 
     # Write(source=OpContractInfo)(start=start, end=end)
     # Write(source=OpTargetQuote)(start=start, end=end)
