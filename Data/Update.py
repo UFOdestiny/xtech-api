@@ -55,8 +55,8 @@ class Update:
         end = str(next)
 
         if now.hour == 7 and now.minute == 0:
-            self.update(source=OpContractInfo, start=str(day0), end=str(day1))
-            return
+            return self.update(source=OpContractInfo, start=str(day0), end=str(day1))
+
         elif (now.hour == 11 and now.minute == 0) or (now.hour == 18 and now.minute == 0):
             self.subscribe = None
             start = str(now.replace(hour=1, second=0, microsecond=0))

@@ -150,19 +150,14 @@ class OpNominalAmount(metaclass=Authentication):
         self.result["vol_01"] = self.result["vol_c_01"] + self.result["vol_p_01"]
 
         # print(self.result)
+        self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
+        self.result = self.result[['time', "targetcode", 'vol_c', 'vol_p', 'vol', 'vol_c_00', 'vol_p_00',
+                                   "vol_00", 'vol_c_01', 'vol_p_01', "vol_01"]]
+
         if self.final_result is None:
             self.final_result = self.result
         else:
             self.final_result = pandas.concat([self.final_result, self.result])
-
-    def process_df(self):
-
-        self.final_result.dropna(inplace=True)
-        # self.final_result.to_excel("sep.xlsx")
-
-        self.final_result["time"] = pandas.to_datetime(self.final_result.index).values.astype(object)
-        self.final_result = self.final_result[['time', "targetcode", 'vol_c', 'vol_p', 'vol', 'vol_c_00', 'vol_p_00',
-                                               "vol_00", 'vol_c_01', 'vol_p_01', "vol_01"]]
 
     def get(self, **kwargs):
         # code = kwargs["code"]
@@ -170,19 +165,22 @@ class OpNominalAmount(metaclass=Authentication):
         end = kwargs["end"]
         # , '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
         # '159922.XSHE', '000852.XSHE', '000016.XSHE', '000300.XSHG',
-        codes = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
-                 '159922.XSHE', '000852.XSHE', '000016.XSHE', '000300.XSHG', ]
+        codes = ['510050.XSHG', '510300.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE',
+                 '159901.XSHE', '159922.XSHE', '000852.XSHE', '000016.XSHE', '000300.XSHG', ]
 
-        for c in codes:
-            times = SplitTime().split(start, end, interval_day=1)
-            for t in times:
-                print(c, t)
+        times = SplitTime().split(start, end, interval_day=1)
+        for t in times:
+            for c in codes:
                 self.pre_set(c, t[0], t[1])
                 self.daily_info(c, t[0], t[1])
                 self.vol_aggregate(t[0], t[1])
 
-        self.process_df()
-        # print(self.final_result)
+                length = len(self.result) if self.result is not None else 0
+                # print(self.result)
+                print(c, t, length)
+
+        self.final_result.dropna(inplace=True)
+
         if not self.final_result.isnull().values.any():
             return self.final_result.values.tolist()
         else:
@@ -191,4 +189,4 @@ class OpNominalAmount(metaclass=Authentication):
 
 if __name__ == "__main__":
     opc = OpNominalAmount()
-    opc.get(start='2023-01-04 00:00:00', end='2023-01-20 00:00:00')
+    opc.get(start='2023-01-04 00:00:00', end='2023-01-06 00:00:00')

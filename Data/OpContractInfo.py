@@ -66,10 +66,10 @@ class OpContractInfo(metaclass=Authentication):
             self.get_data(t[0], t[1])
             self.process_df()
             self.final_results.extend(self.result)
-        print(len(self.final_results))
-        return self.result
+
+        return self.final_results
 
 
 if __name__ == "__main__":
     opc = OpContractInfo()
-    opc.get(start='2022-01-01 00:00:00', end='2023-01-30 00:00:00')
+    opc.get(start='2019-01-01 00:00:00', end='2020-01-30 00:00:00')

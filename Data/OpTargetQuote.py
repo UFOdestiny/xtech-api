@@ -55,10 +55,9 @@ class OpTargetQuote(metaclass=Authentication):
                 self.process_df()
                 self.final_results.extend(self.result)
 
-        print(len(self.final_results))
-        return self.result
+        return self.final_results
 
 
 if __name__ == "__main__":
     op = OpTargetQuote()
-    a = op.get(start='2023-02-10 23:00:00', end='2023-02-10 23:01:00')
+    a = op.get(start='2020-02-10 23:00:00', end='2023-02-10 23:01:00')

@@ -7,6 +7,7 @@
 
 import datetime, time
 
+from influxdb_client.rest import ApiException
 from influxdb_client import InfluxDBClient, Point, WriteOptions
 from influxdb_client.client.write_api import SYNCHRONOUS
 from urllib3 import Retry
@@ -20,9 +21,9 @@ from utils.Logger import Logger
 
 class InfluxdbService(metaclass=Singleton):
     def __init__(self, influxdb=InfluxDB):
-        self.log = Logger(path="../logger")
+        self.log = Logger()
         self.INFLUX = influxdb
-        self.client = InfluxDBClient(url=self.INFLUX.url, token=self.INFLUX.token, org=self.INFLUX.org,
+        self.client = InfluxDBClient(url=self.INFLUX.url, token=self.INFLUX.token, org=self.INFLUX.org, timeout=0,
                                      retries=Retry(connect=5, read=2, redirect=5))
 
         if self.client.ping():
@@ -30,16 +31,15 @@ class InfluxdbService(metaclass=Singleton):
         else:
             print("InfluxDB fail!")
 
-        self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
-        """
-        WriteOptions(batch_size=500,
-                                                                          flush_interval=10_000,
-                                                                          jitter_interval=2_000,
-                                                                          retry_interval=5_000,
-                                                                          max_retries=5,
-                                                                          max_retry_delay=30_000,
-                                                                          exponential_base=2),
-        """
+        self.option = WriteOptions(batch_size=50_000,
+                                   flush_interval=10_000,
+                                   jitter_interval=2_000,
+                                   retry_interval=1_000,
+                                   max_retries=5,
+                                   max_retry_delay=30_000,
+                                   exponential_base=2)
+
+        self.write_api = self.client.write_api(write_options=self.option)  # SYNCHRONOUS
 
         self.query_api = self.client.query_api()
 
@@ -55,8 +55,12 @@ class InfluxdbService(metaclass=Singleton):
         self.log.info("write ok")
 
     def write_data_execute(self, record):
-        self.write_api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
-        self.log.info(f"write ok {len(record)}")
+        with self.client as _client:
+            with _client.write_api(write_options=self.option) as _write_client:
+                _write_client.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
+
+        name = record[0].split(",")[0]
+        self.log.info(f"{len(record)} records of {name} has been written")
 
     def query_data(self, start="-1h", stop='', filters=''):
         source = f"from(bucket:\"{self.INFLUX.bucket}\")"
