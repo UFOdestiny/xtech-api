@@ -51,12 +51,12 @@ class OpTargetQuote(metaclass=Authentication):
             if df is not None:
                 self.process_df(df)
 
-        self.df["time"] = pandas.DatetimeIndex(self.df["time"])  # , tz='Asia/Shanghai'
-        self.df.set_index(["time"], inplace=True)
-        self.df.rename(columns={'code': 'targetcode'}, inplace=True)
+        self.df["time"] = pandas.DatetimeIndex(self.df["time"], tz='Asia/Shanghai')
+        self.df.set_index("time", inplace=True)
+        self.df.rename(columns={'code': 'targetcode', "close": 'price'}, inplace=True)
         tag_columns = ['targetcode']
         # pandas.set_option('display.max_rows', None)
-        print(self.df.index[-1])
+        # print(self.df)
 
         return self.df, tag_columns
 

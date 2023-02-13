@@ -84,20 +84,26 @@ class InfluxdbService(metaclass=Singleton):
         self.log.info(f"{len(record)} records of {name} has been written")
 
     def write_pandas(self, df, measurement, tag_columns, **kwargs):
-        with self.client as client:
-            batch_size = min(50000, max(len(df) // 2, 1))
+        if measurement == "opcontractquote":
+            api = self.client.write_api(write_options=SYNCHRONOUS)
+            api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,
+                      data_frame_measurement_name=measurement, data_frame_tag_columns=tag_columns,
+                      **kwargs)
+        else:
+            with self.client as client:
+                batch_size = min(50000, max(len(df) // 2, 1))
 
-            option = WriteOptions(batch_size=batch_size, flush_interval=10_000, jitter_interval=2_000,
-                                  retry_interval=1_000, max_retries=10, max_retry_delay=30_000, exponential_base=2)
+                option = WriteOptions(batch_size=batch_size, flush_interval=10_000, jitter_interval=2_000,
+                                      retry_interval=1_000, max_retries=10, max_retry_delay=30_000, exponential_base=2)
 
-            api = client.write_api(write_options=option, success_callback=self.callback.success,
-                                   error_callback=self.callback.error,
-                                   retry_callback=self.callback.retry)
+                api = client.write_api(write_options=option, success_callback=self.callback.success,
+                                       error_callback=self.callback.error,
+                                       retry_callback=self.callback.retry)
 
-            with api as a:
-                a.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,
-                        data_frame_measurement_name=measurement, data_frame_tag_columns=tag_columns,
-                        **kwargs)
+                with api as a:
+                    a.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,
+                            data_frame_measurement_name=measurement, data_frame_tag_columns=tag_columns,
+                            **kwargs)
 
         # self.write_api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,
         #                      data_frame_measurement_name=measurement, data_frame_tag_columns=tag_columns,

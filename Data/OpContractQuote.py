@@ -7,16 +7,15 @@
 
 import datetime
 import math
-import time
 
 import numpy as np
 import pandas
 from jqdatasdk import get_ticks, opt, query, get_price
 
-from utils.JoinQuant import Authentication
 from service.InfluxService import InfluxdbService
 from utils.GreeksIV import Greeks, ImpliedVolatility
 from utils.InfluxTime import InfluxTime
+from utils.JoinQuant import Authentication
 
 
 class OpContractQuote(metaclass=Authentication):
@@ -203,7 +202,7 @@ class OpContractQuote(metaclass=Authentication):
 
         start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
         end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
-        # self.code_minute = self.code_minute[(self.code_minute.index >= start) & (self.code_minute.index <= end)]
+        self.code_minute = self.code_minute[(self.code_minute.index >= start) & (self.code_minute.index <= end)]
 
         self.code_minute["delta"] = self.g.delta(self.code_minute["symbol_price"], self.code_minute["exercise_price"],
                                                  self.code_minute["days"], self.code_minute["his_vol"],
@@ -273,7 +272,7 @@ class OpContractQuote(metaclass=Authentication):
         tag_columns = ['opcode', 'targetcode']
 
         self.code_minute.index = pandas.DatetimeIndex(self.code_minute.index, tz='Asia/Shanghai')
-        print(self.code_minute)
+        # print(self.code_minute)
         return self.code_minute, tag_columns
 
         # pandas.set_option('display.max_rows', None)

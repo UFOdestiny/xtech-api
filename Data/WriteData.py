@@ -105,6 +105,7 @@ class Write:
                 length = len(lst)
                 l_ = [{"code": c, "start": kwargs["start"], "end": kwargs["end"], "length": length} for c in lst]
 
+            print(length)
             with ThreadPoolExecutor(max_workers=min(10, length)) as e:
                 all_task = [e.submit(self.thread, **kw) for kw in l_]
                 wait(all_task, return_when=ALL_COMPLETED)
@@ -115,12 +116,12 @@ class Write:
 
 
 if __name__ == '__main__':
-    start = "2023-02-09 00:00:00"
+    start = "2020-01-01 00:00:00"
     end = "2023-02-14 00:00:00"
 
     # Write(source=OpContractInfo)(start=start, end=end)
     # Write(source=OpTargetQuote)(start=start, end=end)
-
+    Write(source=OpContractQuote)(start=start, end=end)  # , code="10004405.XSHG"
     # Write(source=OpNominalAmount)(start=start, end=end)
-    Write(source=OpContractQuote)(start=start, end=end, code="10004405.XSHG")
+
     # Write(source=PutdMinusCalld)(start=start, end=end)
