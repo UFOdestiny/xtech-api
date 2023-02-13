@@ -156,9 +156,9 @@ class OpNominalAmount(metaclass=Authentication):
         self.result["vol_00"] = self.result["vol_c_00"] + self.result["vol_p_00"]
         self.result["vol_01"] = self.result["vol_c_01"] + self.result["vol_p_01"]
 
-        self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
-        self.result = self.result[['time', "targetcode", 'vol_c', 'vol_p', 'vol', 'vol_c_00', 'vol_p_00',
-                                   "vol_00", 'vol_c_01', 'vol_p_01', "vol_01"]]
+        # self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
+        # self.result = self.result[['time', "targetcode", 'vol_c', 'vol_p', 'vol', 'vol_c_00', 'vol_p_00',
+        #                            "vol_00", 'vol_c_01', 'vol_p_01', "vol_01"]]
 
         if self.final_result is None:
             self.final_result = self.result
@@ -187,14 +187,20 @@ class OpNominalAmount(metaclass=Authentication):
         if self.final_result is None:
             print("ZERO")
             return
-        else:
-            self.final_result.dropna(inplace=True)
+
+        self.final_result.dropna(inplace=True)
         # print(self.final_result)
 
-        if not self.final_result.isnull().values.any():
-            return self.final_result.values.tolist()
-        else:
-            print("error")
+        # if not self.final_result.isnull().values.any():
+        #     return self.final_result.values.tolist()
+        # else:
+        #     print("error")
+        tag_columns = ['targetcode']
+        self.final_result.index = pandas.DatetimeIndex(self.final_result.index, tz='Asia/Shanghai')
+
+        # print(self.final_result)
+        # print(self.final_result.columns)
+        return self.final_result, tag_columns
 
 
 if __name__ == "__main__":
