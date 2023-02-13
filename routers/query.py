@@ -25,15 +25,15 @@ async def get_data(data: QueryData):
     # "%Y-%m-%d %H:%M:%S"
     time_series = data.time
 
-    start_time = InfluxTime.to_influx_time(time_series[0])
+    start_time = InfluxTime.utc(time_series[0])
 
-    end_time = InfluxTime.to_influx_time(time_series[1])
+    end_time = InfluxTime.utc(time_series[1])
 
     targetcode = data.targetcode
     opcode = data.opcode
 
     query = f"""
-                from(bucket: "xtech")
+                from(bucket: "{influxdbService.INFLUX.bucket}")
                   |> range(start: {start_time}, stop: {end_time})
                   |> filter(fn: (r) => r["_measurement"] == "{name}")
                   |> filter(fn: (r) => r["targetcode"] == "{targetcode}")

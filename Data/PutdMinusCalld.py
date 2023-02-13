@@ -122,7 +122,7 @@ class PutdMinusCalld(metaclass=Authentication):
             data = self.PO_code_all
 
         delta2 = f"""
-                    from(bucket: "xtech")
+                    from(bucket: "{self.db.INFLUX.bucket}")
                       |> range(start: {start}, stop: {end})
                       |> filter(fn: (r) => r["targetcode"] == "{targetcode}")
                       |> filter(fn: (r) => {data})
@@ -152,7 +152,7 @@ class PutdMinusCalld(metaclass=Authentication):
 
         for s, e in pairs:
             # print(s)
-            start_, end_ = InfluxTime.to_influx_time(s), InfluxTime.to_influx_time(e)
+            start_, end_ = InfluxTime.utc(s), InfluxTime.utc(e)
             CO_delta, CO_iv = self.vol(start_, end_, targetcode=code, mode="CO")
             PO_delta, PO_iv = self.vol(start_, end_, targetcode=code, mode="PO")
 
@@ -192,7 +192,7 @@ class PutdMinusCalld(metaclass=Authentication):
         start = kwargs["start"]
         end = kwargs["end"]
 
-        times = SplitTime().split(start, end, interval_day=1)
+        times = SplitTime.split(start, end, interval_day=1)
 
         for code in codes:
             self.pre_set(code, start, end)

@@ -5,26 +5,42 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     : Influx服务连接
 
-import datetime, time
+import datetime
+import time
 
-from influxdb_client.rest import ApiException
 from influxdb_client import InfluxDBClient, Point, WriteOptions
+from influxdb_client.client.exceptions import InfluxDBError
 from influxdb_client.client.write_api import SYNCHRONOUS
 from urllib3 import Retry
 
 from config import InfluxDBProduct as InfluxDB
 from utils.InfluxTime import InfluxTime
+from utils.Logger import Logger
 from utils.Singleton import Singleton
 
-from utils.Logger import Logger
+
+class BatchingCallback:
+    def success(self, conf: (str, str, str), data: str):
+        """Successfully writen batch."""
+        print(f"Written batch: {conf}, data: {len(data)}")
+
+    def error(self, conf: (str, str, str), data: str, exception: InfluxDBError):
+        """Unsuccessfully writen batch."""
+        print(f"Cannot write batch: {conf}, data: {len(data)} due: {exception}")
+
+    def retry(self, conf: (str, str, str), data: str, exception: InfluxDBError):
+        """Retryable error."""
+        print(f"Retryable error occurs for batch: {conf}, data: {len(data)} retry: {exception}")
 
 
 class InfluxdbService(metaclass=Singleton):
     def __init__(self, influxdb=InfluxDB):
         self.log = Logger()
         self.INFLUX = influxdb
+
+        self.callback = BatchingCallback()
         self.client = InfluxDBClient(url=self.INFLUX.url, token=self.INFLUX.token, org=self.INFLUX.org, timeout=0,
-                                     retries=Retry(connect=5, read=2, redirect=5))
+                                     retries=Retry(connect=5, read=2, redirect=5), debug=False)
 
         if self.client.ping():
             self.log.info(f"InfluxDB Connected")
@@ -36,15 +52,13 @@ class InfluxdbService(metaclass=Singleton):
                                    flush_interval=10_000,
                                    jitter_interval=2_000,
                                    retry_interval=1_000,
-                                   max_retries=5,
+                                   max_retries=10,
                                    max_retry_delay=30_000,
                                    exponential_base=2)
 
-        self.write_api = self.client.write_api(write_options=self.option)  # SYNCHRONOUS
-        self.write_api_S = self.client.write_api(SYNCHRONOUS)
+        self.write_api_syn = self.client.write_api(SYNCHRONOUS)
 
         self.query_api = self.client.query_api()
-
         self.delete_api = self.client.delete_api()
 
     def write_data(self, measurement_name, tag_key, tag_value, field_key, field_value, time=''):
@@ -53,22 +67,42 @@ class InfluxdbService(metaclass=Singleton):
             field(field=field_key, value=field_value)
         if record:
             record.time(time)
-        self.write_api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
+        self.write_api_batch.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
         self.log.info("write ok")
 
-    def write_data_execute(self, record):
+    def write_batch(self, record):
         with self.client as _client:
-            with _client.write_api(write_options=self.option) as _write_client:
-                _write_client.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
+            with _client.write_api(self.option) as _api:
+                _api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
 
         name = record[0].split(",")[0]
         self.log.info(f"{len(record)} records of {name} has been written")
 
-    def write_data_execute_S(self, record):
-        self.write_api_S.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
-
+    def write_synchronous(self, record):
+        self.write_api_syn.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
         name = record[0].split(",")[0]
         self.log.info(f"{len(record)} records of {name} has been written")
+
+    def write_pandas(self, df, measurement, tag_columns, **kwargs):
+        with self.client as client:
+            batch_size = min(50000, max(len(df) // 2, 1))
+
+            option = WriteOptions(batch_size=batch_size, flush_interval=10_000, jitter_interval=2_000,
+                                  retry_interval=1_000, max_retries=10, max_retry_delay=30_000, exponential_base=2)
+
+            api = client.write_api(write_options=option, success_callback=self.callback.success,
+                                   error_callback=self.callback.error,
+                                   retry_callback=self.callback.retry)
+
+            with api as a:
+                a.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,
+                        data_frame_measurement_name=measurement, data_frame_tag_columns=tag_columns,
+                        **kwargs)
+
+        # self.write_api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,
+        #                      data_frame_measurement_name=measurement, data_frame_tag_columns=tag_columns,
+        #                      **kwargs)
+        self.log.info(f"{len(df)} records of {measurement} has been written")
 
     def query_data(self, start="-1h", stop='', filters=''):
         source = f"from(bucket:\"{self.INFLUX.bucket}\")"
@@ -133,7 +167,7 @@ class InfluxdbService(metaclass=Singleton):
 
     def empty(self, measurement):
         self.delete_api.delete(start="1970-01-01T00:00:00Z",
-                               stop=InfluxTime.to_influx_time(time.time()),
+                               stop=InfluxTime.utc(time.time()),
                                # predicate=f'_measurement="{self.INFLUX.measurement}"',
                                predicate=f'_measurement="{measurement}"',
                                bucket=self.INFLUX.bucket,
@@ -145,12 +179,15 @@ if __name__ == "__main__":
     influxdbService = InfluxdbService()
     # print(f"{time.time() * 1000 * 1000 * 1000:.0f}")
     # q = ['test1,targetcode=510050.XSHG price=2.76,pct=2.754 1662706943248528896']
-    # influxdbService.write_data_execute(q)
-    # influxdbService.empty("optargetquote")
+    # influxdbService.write_batch(q)
+    # influxdbService.empty("opcontractinfo")
     # mysqlService = MysqlService()
-    # influxdbService.delete_data("2022-11-01T00:00:00Z", "2022-11-30T23:00:00Z", "opcontractquote")
-    q = [
-        'test1,targetcode=510050.XSHG price=2.76,pct=2.754 1673956372162814720',
-    ]
-    influxdbService.write_data("test", "a", 1, "b", 2, "2023-01-16T09:30:05.000Z")
-    influxdbService.query_data()
+    # influxdbService.client.drop_database("test_hello_world")
+
+    # influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-15T00:00:00Z", "opcontractinfo")
+    # influxdbService.delete_data("2019-01-01T00:00:00Z", "2023-02-15T00:00:00Z", "optargetquote")
+    # q = [
+    #     'test1,targetcode=510050.XSHG price=2.76,pct=2.754 1673956372162814720',
+    # ]
+    # influxdbService.write_data("test", "a", 1, "b", 2, "2023-01-16T09:30:05.000Z")
+    # influxdbService.query_data()

@@ -258,40 +258,50 @@ class OpContractQuote(metaclass=Authentication):
         self.process_df()
         self.greekiv(start, end)
 
-        self.code_minute["time"] = pandas.to_datetime(self.code_minute.index).values.astype(object)
-        df = self.code_minute[['time', "code", "underlying_symbol", 'open', 'close', 'high', 'low', 'money', "volume",
-                               'pct', 'a1_p', 'a1_v', 'b1_p', 'b1_v', 'delta', 'gamma', 'vega', 'theta', 'iv',
-                               'timevalue']]
+        # self.code_minute["time"] = pandas.to_datetime(self.code_minute.index).values.astype(object)
+        # df = self.code_minute[['time', "code", "underlying_symbol", 'open', 'close', 'high', 'low', 'money', "volume",
+        #                        'pct', 'a1_p', 'a1_v', 'b1_p', 'b1_v', 'delta', 'gamma', 'vega', 'theta', 'iv',
+        #                        'timevalue']]
 
-        df = df.copy()
-        df.dropna(how="any", inplace=True)
+        # df = df.copy()
+        self.code_minute.dropna(how="any", inplace=True)
+        # pandas.set_option('display.max_rows', None)
+        # pandas.set_option('display.max_columns', None)
+        # print(self.code_minute)
+
+        self.code_minute.rename(columns={'code': 'opcode', "underlying_symbol": "targetcode"}, inplace=True)
+        tag_columns = ['opcode', 'targetcode']
+
+        self.code_minute.index = pandas.DatetimeIndex(self.code_minute.index, tz='Asia/Shanghai')
+        print(self.code_minute)
+        return self.code_minute, tag_columns
 
         # pandas.set_option('display.max_rows', None)
         # pandas.set_option('display.max_columns', None)
         # df.fillna(method='ffill', inplace=True)
         # df.fillna(method='bfill', inplace=True)
 
-        if not df.isnull().values.any():
-            return df.values.tolist()
-        else:
-            print(code, "error")
+        # if not df.isnull().values.any():
+        #     return df.values.tolist()
+        # else:
+        #     print(code, "error")
 
     def collect_info(self, **kwargs):
         start = kwargs["start"][:11] + "00:00:00"
         end = kwargs["end"][:11] + "23:00:00"
 
-        end = InfluxTime.now() if "end" not in kwargs else InfluxTime.to_influx_time(end)
-        start = "-30d" if "start" not in kwargs else InfluxTime.to_influx_time(start)
+        end = InfluxTime.now() if "end" not in kwargs else InfluxTime.utc(end)
+        start = "-30d" if "start" not in kwargs else InfluxTime.utc(start)
 
+        db = InfluxdbService()
         q = f"""
-                    from(bucket: "xtech")
+                    from(bucket: "{db.INFLUX.bucket}")
                         |> range(start: {start}, stop: {end})
                         |> filter(fn: (r) => r["_measurement"] == "opcontractinfo")
                         |> filter(fn: (r) => r["_field"] == "days")
                         |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-                        |> keep(columns: ["_time","days", "opcode"])
+                        |> keep(columns: ["_time", "days", "opcode"])
                 """
-        db = InfluxdbService()
 
         df = db.query_api.query_data_frame(q)
 
@@ -307,17 +317,19 @@ class OpContractQuote(metaclass=Authentication):
         result = df.values.tolist()
         result = sorted(result, key=lambda x: x[0])
 
+        # print(df)
         for i in range(len(result)):
             for j in [1, 2]:
-                result[i][j] = InfluxTime.to_influx_time(result[i][j])
+                result[i][j] = InfluxTime.utc(result[i][j])
 
+        # print(result[0])
         return result
 
 
 if __name__ == "__main__":
     opc = OpContractQuote()
-    # opc.get(code="10004405.XSHG", start='2023-02-10 14:33:00', end='2023-02-10 14:34:00')
-    opc.collect_info(start='2020-01-01 00:00:00', end='2023-02-11 00:00:00')
+    opc.get(code="10004405.XSHG", start='2023-02-01 00:00:00', end='2023-02-14 00:00:00')
+    # opc.collect_info(start='2023-02-01 00:00:00', end='2023-02-11 00:00:00')
     # opc.get(code="10004405.XSHG", start='2023-01-11 22:06:00', end='2023-02-11 22:07:00')
 
     # start = time.time()

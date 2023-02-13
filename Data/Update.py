@@ -16,13 +16,14 @@ from Data.OpTargetQuote import OpTargetQuote
 from Data.PutdMinusCalld import PutdMinusCalld
 from Data.WriteData import Write
 from utils.Logger import Logger
+from config import FilePath
 
 
-class Update:
+class Update(FilePath):
     def __init__(self):
         self.logger = Logger()
 
-        with open("../static/subscribe.json", 'r') as load_f:
+        with open(self.path, 'r') as load_f:
             self.subscribe = json.load(load_f)["code_list"]
             if not self.subscribe:
                 self.subscribe = None

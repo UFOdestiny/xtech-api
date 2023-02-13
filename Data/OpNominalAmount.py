@@ -174,7 +174,7 @@ class OpNominalAmount(metaclass=Authentication):
         codes = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
                  '159922.XSHE', '000852.XSHE', '000016.XSHE', '000300.XSHG', ]
 
-        times = SplitTime().split(start, end, interval_day=1)
+        times = SplitTime.split(start, end, interval_day=1)
         for t in times:
             for c in codes:
                 self.pre_set(c, t[0], t[1])

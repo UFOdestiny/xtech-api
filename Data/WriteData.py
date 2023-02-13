@@ -5,6 +5,7 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
 
+
 from service.InfluxService import InfluxdbService
 from utils.Logger import Logger
 from utils.JoinQuant import Authentication
@@ -54,14 +55,34 @@ class WriteData:
     def send(self, **kwargs):
         q = self.generate(**kwargs)
         if self.source.__name__.lower() == "opcontractquote":
-            self.db.write_data_execute_S(q)
+            self.db.write_synchronous(q)
         else:
-            self.db.write_data_execute(q)
+            self.db.write_batch(q)
 
 
-class Write(WriteData):
+class Write:
+    def __init__(self, source):
+        self.db = InfluxdbService()
+        self.source = source
+        self.measurement = self.source.__name__.lower()
+        self.log = Logger()
+        self.count = 0
+        self.lock = Lock()
+
+    def get_data(self, **kwargs):
+        s = self.source()
+        if self.source == OpContractQuote and "code" not in kwargs:
+            lst = s.collect_info(**kwargs)
+            return lst
+        df, tag_columns = s.get(**kwargs)
+        return df, tag_columns
+
+    def submit(self, **kwargs):
+        df, tag_columns = self.get_data(**kwargs)
+        self.db.write_pandas(df=df, tag_columns=tag_columns, measurement=self.measurement)
+
     def thread(self, **kw):
-        self.send(**kw)
+        self.submit(**kw)
         self.lock.acquire()
         self.count += 1
         self.log.info(f"{kw['code']} {kw['start']} {kw['end']} {self.count}/{kw['length']}")
@@ -90,16 +111,16 @@ class Write(WriteData):
 
         else:
             self.log.info(" ".join(kwargs.values()))
-            self.send(**kwargs)
+            self.submit(**kwargs)
 
 
 if __name__ == '__main__':
-    start = "2020-01-01 00:00:00"
-    end = "2023-03-01 00:00:00"
+    start = "2023-02-09 00:00:00"
+    end = "2023-02-14 00:00:00"
 
     # Write(source=OpContractInfo)(start=start, end=end)
     # Write(source=OpTargetQuote)(start=start, end=end)
 
     # Write(source=OpNominalAmount)(start=start, end=end)
-    Write(source=OpContractQuote)(start=start, end=end)
+    Write(source=OpContractQuote)(start=start, end=end, code="10004405.XSHG")
     # Write(source=PutdMinusCalld)(start=start, end=end)

@@ -27,8 +27,8 @@ influxdbService = InfluxdbService()
 @router.post("/all")
 @check_exception
 async def all_data(time: TimeRange):
-    start = InfluxTime.to_influx_time(time.start)
-    stop = InfluxTime.to_influx_time(time.stop)
+    start = InfluxTime.utc(time.start)
+    stop = InfluxTime.utc(time.stop)
     tables = influxdbService.query_data(start=start, stop=stop)
 
     # unpack = [[round(table.get_time().timestamp() * 1000), table.get_value(), random.random() * 15] for table in
