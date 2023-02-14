@@ -167,13 +167,11 @@ class OpNominalAmount(metaclass=Authentication):
         else:
             self.final_result = pandas.concat([self.final_result, self.result])
 
-    def get(self, **kwargs):
-        # code = kwargs["code"]
+    def get_all(self, **kwargs):
         start = kwargs["start"]
         end = kwargs["end"]
-
         codes = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
-                 '159922.XSHE', '000852.XSHG', '000016.XSHG', '000300.XSHG']
+                 '159922.XSHE', '000852.XSHG', '000016.XSHG', '000300.XSHG', '000852.XSHE', "000016.XSHG"]
 
         times = SplitTime.split(start, end, interval_day=1)
         for t in times:
@@ -203,7 +201,29 @@ class OpNominalAmount(metaclass=Authentication):
         # print(self.final_result.columns)
         return self.final_result, tag_columns
 
+    def get(self, **kwargs):
+        start = kwargs["start"]
+        end = kwargs["end"]
+        codes = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
+                 '159922.XSHE', '000852.XSHG', '000016.XSHG', '000300.XSHG', '000852.XSHE', "000016.XSHG"]
+        for c in codes:
+            self.pre_set(c, start, end)
+            self.daily_info(c, start, end)
+            self.vol_aggregate(start, end)
+            length = len(self.result) if self.result is not None else 0
+            print(c, start, end, length)
+
+        if self.final_result is None:
+            print("ZERO")
+            return
+        self.final_result.dropna(inplace=True)
+
+        tag_columns = ['targetcode']
+        self.final_result.index = pandas.DatetimeIndex(self.final_result.index, tz='Asia/Shanghai')
+        print(self.result)
+        return self.final_result, tag_columns
+
 
 if __name__ == "__main__":
     opc = OpNominalAmount()
-    opc.get(start='2019-01-02 00:00:00', end='2019-01-03 00:00:00')
+    opc.get(start='2023-02-12 00:00:00', end='2023-02-14 00:00:00')

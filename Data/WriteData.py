@@ -14,7 +14,7 @@ from Data.OpContractInfo import OpContractInfo
 from Data.OpContractQuote import OpContractQuote
 from Data.OpNominalAmount import OpNominalAmount
 from Data.PutdMinusCalld import PutdMinusCalld
-
+from utils.InfluxTime import SplitTime
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 from threading import Lock
 
@@ -110,6 +110,13 @@ class Write:
                 all_task = [e.submit(self.thread, **kw) for kw in l_]
                 wait(all_task, return_when=ALL_COMPLETED)
 
+        elif self.source == OpNominalAmount:
+            times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=1)
+            l_ = [{"start": t[0], "end": t[1]} for t in times]
+            with ThreadPoolExecutor(max_workers=10) as e:
+                all_task = [e.submit(self.thread, **kw) for kw in l_]
+                wait(all_task, return_when=ALL_COMPLETED)
+
         else:
             self.log.info(" ".join(kwargs.values()))
             self.submit(**kwargs)
@@ -117,10 +124,10 @@ class Write:
 
 if __name__ == '__main__':
     start = "2020-01-01 00:00:00"
-    end = "2021-01-01 00:00:00"
+    end = "2023-02-15 00:00:00"
 
     # Write(source=OpContractInfo)(start=start, end=end)
-    # Write(source=OpTargetQuote)(start=start, end=end)
+    Write(source=OpTargetQuote)(start=start, end=end)
     # Write(source=OpContractQuote)(start=start, end=end)  # , code="10004405.XSHG"
-    Write(source=OpNominalAmount)(start=start, end=end)
+    # Write(source=OpNominalAmount)(start=start, end=end)
     # Write(source=PutdMinusCalld)(start=start, end=end)

@@ -17,7 +17,9 @@ class OpTargetQuote(metaclass=Authentication):
     def __init__(self):
         # self.code = normalize_code(self.code_pre)
         self.code = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
-                     '159922.XSHE', '000852.XSHG', '000016.XSHG', '000300.XSHG', ]
+                     '159922.XSHE', '000852.XSHG', '000016.XSHG', '000300.XSHG', '000852.XSHE', "000016.XSHG"]
+
+        self.code2 = ['000852.XSHE', "000016.XSHG"]
 
         self.df = None
 
@@ -55,7 +57,7 @@ class OpTargetQuote(metaclass=Authentication):
         self.df.rename(columns={'code': 'targetcode', "close": 'price'}, inplace=True)
         tag_columns = ['targetcode']
         # pandas.set_option('display.max_rows', None)
-        # print(self.df)
+        print(self.df)
 
         return self.df, tag_columns
 

@@ -8,7 +8,6 @@ import json
 
 import requests
 
-
 class PostData:
     username = "ydh"
     password = "123"
