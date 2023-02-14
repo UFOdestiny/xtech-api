@@ -230,4 +230,5 @@ if __name__ == "__main__":
     df = influxdbService.query_influx("2023-02-01 00:00:00", "2023-02-14 00:00:00", "opcontractquote",
                                       "510050.XSHG", "10004405.XSHG")
     print(df)
+
     print(df.columns)
