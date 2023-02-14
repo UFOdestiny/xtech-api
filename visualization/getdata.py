@@ -4,3 +4,14 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
+
+from service.InfluxService import InfluxdbService
+
+
+class GetData:
+    def __init__(self):
+        self.db = InfluxdbService()
+
+    def get_data(self, start, end, measurement, targetcode=None, opcode=None, df=True, keep=None, filter_=None):
+        return self.db.query_influx(start, end, measurement, targetcode=targetcode, opcode=opcode, df=df, keep=keep,
+                                    filter_=filter_)

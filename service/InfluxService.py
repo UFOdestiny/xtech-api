@@ -128,6 +128,45 @@ class InfluxdbService(metaclass=Singleton):
         df["_time"] = df["_time"].apply(lambda x: x.tz_convert('Asia/Shanghai').strftime("%Y-%m-%d %H:%M:%S"))
         return df
 
+    def query_influx(self, start, end, measurement, targetcode=None, opcode=None, df=True, keep=None, filter_=None):
+        start, end = InfluxTime.utc(start, end)
+
+        q = f"""
+                from(bucket: "{self.INFLUX.bucket}")
+                |> range(start: {start}, stop: {end})
+                |> filter(fn: (r) => r["_measurement"] == "{measurement}")
+             """
+        if targetcode:
+            q += f"""|> filter(fn: (r) => r["targetcode"] == "{targetcode}")"""
+        if opcode:
+            q += f"""|> filter(fn: (r) => r["opcode"] == "{opcode}")"""
+
+        if filter_:
+            q += filter_
+
+        q += """
+        |> drop(columns: ["_start", "_stop"])
+        |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+             """
+
+        if keep:
+            q += f"""|> keep(columns: ["""
+            for i in keep:
+                q += f"\"{i}\","
+            q += "])"
+
+        df_ = self.query_api.query_data_frame(q)
+        if len(df_) == 0:
+            return None
+
+        df_.drop(["result", "table"], axis=1, inplace=True)
+
+        df_["_time"] = df_["_time"].apply(lambda x: x.tz_convert('Asia/Shanghai').strftime("%Y-%m-%d %H:%M:%S"))
+        if df:
+            return df_
+        else:
+            return df_.values.tolist()
+
     def process_result(self, tables):
         result = []
         for table in tables:
@@ -187,3 +226,8 @@ if __name__ == "__main__":
     # ]
     # influxdbService.write_data("test", "a", 1, "b", 2, "2023-01-16T09:30:05.000Z")
     # influxdbService.query_data()
+
+    df = influxdbService.query_influx("2023-02-01 00:00:00", "2023-02-14 00:00:00", "opcontractquote",
+                                      "510050.XSHG", "10004405.XSHG")
+    print(df)
+    print(df.columns)

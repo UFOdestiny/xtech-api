@@ -9,7 +9,6 @@ from fastapi import APIRouter
 
 from service.InfluxService import InfluxdbService
 from service.ResponseService import check_exception
-from utils.InfluxTime import InfluxTime
 from utils.Model import QueryData
 
 router = APIRouter()
@@ -25,35 +24,14 @@ async def get_data(data: QueryData):
     # "%Y-%m-%d %H:%M:%S"
     time_series = data.time
 
-    start_time = InfluxTime.utc(time_series[0])
-
-    end_time = InfluxTime.utc(time_series[1])
-
     targetcode = data.targetcode
     opcode = data.opcode
+    if not opcode:
+        opcode = None
 
-    query = f"""
-                from(bucket: "{influxdbService.INFLUX.bucket}")
-                  |> range(start: {start_time}, stop: {end_time})
-                  |> filter(fn: (r) => r["_measurement"] == "{name}")
-                  |> filter(fn: (r) => r["targetcode"] == "{targetcode}")
-                  
-            """
+    df = influxdbService.query_influx(start=time_series[0], end=time_series[1], measurement=name,
+                                      targetcode=targetcode, opcode=opcode, df=False)
 
-    if name in ["optargetquote", "opnominalamount", "putdminuscalld"]:
-        pass
-
-    if name in ["opcontractquote", "opcontractinfo"]:
-        query += f"""|> filter(fn: (r) => r["opcode"] == "{opcode}")"""
-
-    query += """|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")"""
-
-    # print(query)
-    df = influxdbService.query_data_raw(query)
-
-    # df.drop(["result", "table", "_start", "_stop", "_measurement"], axis=1, inplace=True)
-    #
-    # df["_time"] = df["_time"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"), inplace=True)
     res = df.values.tolist()
 
     for i in res[:10]:

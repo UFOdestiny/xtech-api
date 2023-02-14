@@ -110,8 +110,7 @@ class PutdMinusCalld(metaclass=Authentication):
         else:
             data = self.PO_code_all
 
-        start = InfluxTime.utc(start)
-        end = InfluxTime.utc(end)
+        start, end = InfluxTime.utc(start, end)
 
         delta2 = f"""
                     from(bucket: "{self.db.INFLUX.bucket}")
@@ -144,7 +143,7 @@ class PutdMinusCalld(metaclass=Authentication):
 
         for s, e in pairs:
             # print(s)
-            start_, end_ = InfluxTime.utc(s), InfluxTime.utc(e)
+            start_, end_ = InfluxTime.utc(s, e)
             CO_delta, CO_iv = self.vol(start_, end_, targetcode=code, mode="CO")
             PO_delta, PO_iv = self.vol(start_, end_, targetcode=code, mode="PO")
 
