@@ -8,7 +8,7 @@
 import datetime
 import time
 
-from influxdb_client import InfluxDBClient, Point, WriteOptions
+from influxdb_client import InfluxDBClient, WriteOptions
 from influxdb_client.client.exceptions import InfluxDBError
 from influxdb_client.client.write_api import SYNCHRONOUS
 from urllib3 import Retry
@@ -60,15 +60,6 @@ class InfluxdbService(metaclass=Singleton):
 
         self.query_api = self.client.query_api()
         self.delete_api = self.client.delete_api()
-
-    def write_data(self, measurement_name, tag_key, tag_value, field_key, field_value, time=''):
-        record = Point(measurement_name=measurement_name). \
-            tag(key=tag_key, value=tag_value). \
-            field(field=field_key, value=field_value)
-        if record:
-            record.time(time)
-        self.write_api_batch.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
-        self.log.info("write ok")
 
     def write_batch(self, record):
         with self.client as _client:
@@ -132,11 +123,10 @@ class InfluxdbService(metaclass=Singleton):
         return self.process_result(tables)
 
     def query_data_raw(self, raw_query):
-
-        print(raw_query)
-        tables = self.query_api.query(raw_query, org=self.INFLUX.org)
-
-        return self.process_result(tables)
+        df = self.query_api.query_data_frame(raw_query)
+        df.drop(["result", "table", "_start", "_stop"], axis=1, inplace=True)
+        df["_time"] = df["_time"].apply(lambda x: x.tz_convert('Asia/Shanghai').strftime("%Y-%m-%d %H:%M:%S"))
+        return df
 
     def process_result(self, tables):
         result = []

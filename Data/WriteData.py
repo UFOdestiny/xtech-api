@@ -79,14 +79,19 @@ class Write:
 
     def submit(self, **kwargs):
         df, tag_columns = self.get_data(**kwargs)
-        self.db.write_pandas(df=df, tag_columns=tag_columns, measurement=self.measurement)
+        if df is None:
+            return False
+        else:
+            self.db.write_pandas(df=df, tag_columns=tag_columns, measurement=self.measurement)
+            return True
 
     def thread(self, **kw):
-        self.submit(**kw)
-        self.lock.acquire()
-        self.count += 1
-        self.log.info(f"{kw['code']} {kw['start']} {kw['end']} {self.count}/{kw['length']}")
-        self.lock.release()
+        indicator = self.submit(**kw)
+        if indicator:
+            self.lock.acquire()
+            self.count += 1
+            self.lock.release()
+        self.log.info(f"{list(kw.values())} {self.count}")
 
     def __call__(self, **kwargs):
         if self.source == OpContractQuote:
@@ -112,7 +117,8 @@ class Write:
 
         elif self.source == OpNominalAmount:
             times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=1)
-            l_ = [{"start": t[0], "end": t[1]} for t in times]
+            length = len(times)
+            l_ = [{"start": t[0], "end": t[1], "length": length} for t in times]
             with ThreadPoolExecutor(max_workers=10) as e:
                 all_task = [e.submit(self.thread, **kw) for kw in l_]
                 wait(all_task, return_when=ALL_COMPLETED)
@@ -127,7 +133,7 @@ if __name__ == '__main__':
     end = "2023-02-15 00:00:00"
 
     # Write(source=OpContractInfo)(start=start, end=end)
-    Write(source=OpTargetQuote)(start=start, end=end)
+    # Write(source=OpTargetQuote)(start=start, end=end)
     # Write(source=OpContractQuote)(start=start, end=end)  # , code="10004405.XSHG"
-    # Write(source=OpNominalAmount)(start=start, end=end)
+    Write(source=OpNominalAmount)(start=start, end=end)
     # Write(source=PutdMinusCalld)(start=start, end=end)

@@ -210,17 +210,16 @@ class OpNominalAmount(metaclass=Authentication):
             self.pre_set(c, start, end)
             self.daily_info(c, start, end)
             self.vol_aggregate(start, end)
-            length = len(self.result) if self.result is not None else 0
-            print(c, start, end, length)
+            # length = len(self.result) if self.result is not None else 0
+            # print(c, start, end, length)
 
         if self.final_result is None:
-            print("ZERO")
-            return
+            return None, None
         self.final_result.dropna(inplace=True)
 
         tag_columns = ['targetcode']
         self.final_result.index = pandas.DatetimeIndex(self.final_result.index, tz='Asia/Shanghai')
-        print(self.result)
+        # print(self.result)
         return self.final_result, tag_columns
 
 

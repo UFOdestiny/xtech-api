@@ -45,7 +45,7 @@ app.include_router(subscribe.router, prefix="/subscribe", tags=["subscribe"], )
 @app.on_event("startup")
 @repeat_task(seconds=60, wait_first=True)
 def repeat_loop() -> None:
-    u = Update()
+    # u = Update()
     # u.run()
     pass
 

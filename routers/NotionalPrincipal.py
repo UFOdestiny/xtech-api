@@ -9,14 +9,11 @@ import random
 
 from fastapi import APIRouter, Depends
 
-from config import InfluxDBProduct as InfluxDB
+from routers.verify import verify_token
 from service.InfluxService import InfluxdbService
 from service.ResponseService import check_exception
-
 from utils.InfluxTime import InfluxTime
 from utils.Model import TimeRange, Day
-
-from routers.verify import verify_token
 
 router = APIRouter(dependencies=[Depends(verify_token)])
 

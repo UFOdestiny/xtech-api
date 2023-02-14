@@ -18,7 +18,7 @@ router = APIRouter()
 influxdbService = InfluxdbService()
 
 
-@router.post("/query")
+@router.post("/")
 @check_exception
 async def get_data(data: QueryData):
     name = data.name
@@ -49,9 +49,13 @@ async def get_data(data: QueryData):
     query += """|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")"""
 
     # print(query)
-    df = influxdbService.query_api.query_data_frame(query)
-    df.drop(["result", "table", "_start", "_stop"], axis=1, inplace=True)
+    df = influxdbService.query_data_raw(query)
 
-    df["_time"] = df["_time"].apply(lambda x: str(x)[:-6])
+    # df.drop(["result", "table", "_start", "_stop", "_measurement"], axis=1, inplace=True)
+    #
+    # df["_time"] = df["_time"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"), inplace=True)
     res = df.values.tolist()
+
+    for i in res[:10]:
+        print(i)
     return res
