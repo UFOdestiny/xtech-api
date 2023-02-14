@@ -59,7 +59,8 @@ class OpNominalAmount(metaclass=Authentication):
                   opt.OPT_DAILY_PREOPEN.underlying_symbol,
                   opt.OPT_DAILY_PREOPEN.contract_unit,
                   opt.OPT_DAILY_PREOPEN.expire_date,
-                  opt.OPT_DAILY_PREOPEN.contract_type, ).filter(
+                  opt.OPT_DAILY_PREOPEN.contract_type,
+                  opt.OPT_DAILY_PREOPEN.exercise_price, ).filter(
             opt.OPT_DAILY_PREOPEN.underlying_symbol == code,
             opt.OPT_DAILY_PREOPEN.date >= start,
             opt.OPT_DAILY_PREOPEN.date <= end)
@@ -155,6 +156,7 @@ class OpNominalAmount(metaclass=Authentication):
         self.result["vol"] = self.result["vol_c"] + self.result["vol_p"]
         self.result["vol_00"] = self.result["vol_c_00"] + self.result["vol_p_00"]
         self.result["vol_01"] = self.result["vol_c_01"] + self.result["vol_p_01"]
+        # self.result["money"]=self.result["vol"]*1
 
         # self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
         # self.result = self.result[['time', "targetcode", 'vol_c', 'vol_p', 'vol', 'vol_c_00', 'vol_p_00',
@@ -169,10 +171,9 @@ class OpNominalAmount(metaclass=Authentication):
         # code = kwargs["code"]
         start = kwargs["start"]
         end = kwargs["end"]
-        # '510050.XSHG', , '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
-        # '159922.XSHE', '000852.XSHE', '000016.XSHE', '000300.XSHG',
+
         codes = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
-                 '159922.XSHE', '000852.XSHE', '000016.XSHE', '000300.XSHG', ]
+                 '159922.XSHE', '000852.XSHG', '000016.XSHG', '000300.XSHG']
 
         times = SplitTime.split(start, end, interval_day=1)
         for t in times:

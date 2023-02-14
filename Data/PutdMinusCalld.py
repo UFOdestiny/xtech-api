@@ -178,8 +178,8 @@ class PutdMinusCalld(metaclass=Authentication):
 
     def get(self, **kwargs):
         codes = [kwargs["code"]] if "code" in kwargs else ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG',
-                                                           '159915.XSHE', '159901.XSHE', '159922.XSHE', '000852.XSHE',
-                                                           '000016.XSHE', '000300.XSHG', ]
+                                                           '159915.XSHE', '159901.XSHE', '159922.XSHE', '000852.XSHG',
+                                                           '000016.XSHG', '000300.XSHG', ]
 
         start = kwargs["start"]
         end = kwargs["end"]
