@@ -41,6 +41,9 @@ class PutdMinusCalld(metaclass=Authentication):
     def pre_set(self, code, start, end):
         self.result = get_price(code, fields=['close'], frequency='1m', start_date=start, end_date=end, )
 
+        if len(self.result) == 0:
+            return None
+
         self.result.index -= pandas.Timedelta(minutes=1)
         self.result["targetcode"] = code
         self.result["putd"] = 0
@@ -50,6 +53,9 @@ class PutdMinusCalld(metaclass=Authentication):
         del self.result["close"]
 
     def daily_info(self, code, start, end):
+        if len(self.result) == 0:
+            return None
+
         q = query(opt.OPT_DAILY_PREOPEN.date,
                   opt.OPT_DAILY_PREOPEN.code,
                   opt.OPT_DAILY_PREOPEN.underlying_symbol,
@@ -99,27 +105,13 @@ class PutdMinusCalld(metaclass=Authentication):
         # print(self.PO_code)
 
     def vol(self, start, end, targetcode, mode="CO"):
-        # delta = f"""
-        #         from(bucket: "xtech")
-        #         |> range(start: {start}, stop: {end})
-        #         |> filter(fn: (r) => r["targetcode"] == "{targetcode}")
-        #         |> filter(fn: (r) => {self.CO_code_all})
-        #         |> filter(fn: (r) => r["_field"] == "delta" or r["_field"] == "iv")
-        #         """
-        # res = self.db.query_data_raw(delta)
-        # res1 = [i.get_value() for i in res]
-        # length = len(res1)
-        # delta_set = res1[:length // 2]
-        # iv_set = res1[length // 2:]
-        # zips = list(zip(delta_set, iv_set))
-        # zips.sort(key=lambda x: x[0])
-        # final_res = [i for i in zips if i[0] != 0 and i[0] != 1 and i[1] != 0]
-        # print(len(final_res))
-
         if mode == "CO":
             data = self.CO_code_all
         else:
             data = self.PO_code_all
+
+        start = InfluxTime.utc(start)
+        end = InfluxTime.utc(end)
 
         delta2 = f"""
                     from(bucket: "{self.db.INFLUX.bucket}")
@@ -201,20 +193,30 @@ class PutdMinusCalld(metaclass=Authentication):
                 self.daily_info(code, t[0], t[1])
                 self.vol_aggregate(t[0], t[1], code)
 
-            self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
-            self.result.reset_index(drop=True, inplace=True)
+            # self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
+            # self.result.reset_index(drop=True, inplace=True)
+
             if self.final_result is None:
                 self.final_result = self.result
             else:
                 self.final_result = pandas.concat([self.final_result, self.result])
 
-        self.final_result = self.final_result[["time", "targetcode", "putd", "calld", "putd_calld"]]
-        if not self.final_result.isnull().values.any():
-            return self.final_result.values.tolist()
-        else:
-            print("error")
+        self.final_result.dropna(how="any", inplace=True)
+        # self.final_result.rename(columns={'code': 'opcode', "underlying_symbol": "targetcode"}, inplace=True)
+        tag_columns = ['targetcode']
+        self.final_result.index = pandas.DatetimeIndex(self.final_result.index, tz='Asia/Shanghai')
+
+        print(self.final_result)
+        print(self.final_result.columns)
+        return self.final_result, tag_columns
+
+        # self.final_result = self.final_result[["time", "targetcode", "putd", "calld", "putd_calld"]]
+        # if not self.final_result.isnull().values.any():
+        #     return self.final_result.values.tolist()
+        # else:
+        #     print("error")
 
 
 if __name__ == "__main__":
     opc = PutdMinusCalld()
-    opc.get(start='2022-01-05 00:00:00', end='2022-01-06 00:00:00')
+    opc.get(start='2020-01-05 00:00:00', end='2020-01-10 00:00:00')
