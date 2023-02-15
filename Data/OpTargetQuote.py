@@ -7,7 +7,7 @@
 from datetime import datetime
 
 import pandas
-from jqdatasdk import get_price  # ,normalize_code
+from jqdatasdk import get_price, get_bars  # ,normalize_code
 
 from utils.InfluxTime import SplitTime
 from utils.JoinQuant import Authentication
@@ -24,8 +24,8 @@ class OpTargetQuote(metaclass=Authentication):
         self.df = None
 
     def get_data(self, start, end):
-        df = get_price(security=self.code, start_date=start, end_date=end, fq='pre', frequency='minute',
-                       fields=['close', 'pre_close'], panel=False)
+        df = get_bars(security=self.code, start_date=start, end_date=end, fq='pre', frequency='minute',
+                      fields=['close', 'pre_close'], panel=False)
         if len(df) == 0:
             return
 
@@ -52,6 +52,9 @@ class OpTargetQuote(metaclass=Authentication):
             if df is not None:
                 self.process_df(df)
 
+        if self.df is None:
+            return None, None
+
         self.df["time"] = pandas.DatetimeIndex(self.df["time"], tz='Asia/Shanghai')
         self.df.set_index("time", inplace=True)
         self.df.rename(columns={'code': 'targetcode', "close": 'price'}, inplace=True)
@@ -64,6 +67,8 @@ class OpTargetQuote(metaclass=Authentication):
 
 if __name__ == "__main__":
     op = OpTargetQuote()
-    start = "2023-02-10 00:00:00"
-    end = "2023-02-14 00:00:00"
-    a = op.get(start=start, end=end)
+    start = "2023-02-14 00:00:00"
+    end = "2023-02-14 14:00:00"
+    # a = op.get(start=start, end=end)
+    df = get_bars(security="510050.XSHG", unit='1m', count=10, fields=['close'])
+    print(df)

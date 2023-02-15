@@ -30,8 +30,15 @@ class InfluxTime:
             return res
 
     @staticmethod
-    def now():
+    def utcnow():
         return InfluxTime.utc(time.time())
+
+    @staticmethod
+    def utc8now():
+        timestamp = time.time()
+        structure = time.localtime(timestamp)
+        string_ = time.strftime(InfluxTime.yearmd_hourms_format, structure)
+        return string_
 
 
 class SplitTime:
@@ -60,13 +67,13 @@ class SplitTime:
 if __name__ == '__main__':
     # print(InfluxTime.utc("2022-08-09"))
     # print(InfluxTime.utc("2022-08-09 10:28"))
-    print(InfluxTime.utc("2022-08-09 10:28:00","2022-08-10 10:28:00"))
+    print(InfluxTime.utc("2022-08-09 10:28:00", "2022-08-10 10:28:00"))
     # print(InfluxTime.utc("2022-08-09T10:50:00Z"))
     # print(InfluxTime.utc(time.time()))
     # print(InfluxTime.utc('1660026181729'))
     # print(InfluxTime.utc('1660026181729'))
     #
-    print(InfluxTime.now())
+    print(InfluxTime.utcnow())
     print(time.time())
 
     # s = SplitTime()
