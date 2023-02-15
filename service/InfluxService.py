@@ -128,7 +128,8 @@ class InfluxdbService(metaclass=Singleton):
         df["_time"] = df["_time"].apply(lambda x: x.tz_convert('Asia/Shanghai').strftime("%Y-%m-%d %H:%M:%S"))
         return df
 
-    def query_influx(self, start, end, measurement, targetcode=None, opcode=None, df=True, keep=None, filter_=None):
+    def query_influx(self, start, end, measurement, targetcode=None, opcode=None, df=True, keep=None, filter_=None,
+                     unique=None):
         start, end = InfluxTime.utc(start, end)
 
         q = f"""
@@ -149,6 +150,9 @@ class InfluxdbService(metaclass=Singleton):
         |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
              """
 
+        if unique:
+            q += f"""|> unique(column: "{unique}")"""
+
         if keep:
             q += f"""|> keep(columns: ["""
             for i in keep:
@@ -161,7 +165,8 @@ class InfluxdbService(metaclass=Singleton):
 
         df_.drop(["result", "table"], axis=1, inplace=True)
 
-        df_["_time"] = df_["_time"].apply(lambda x: x.tz_convert('Asia/Shanghai').strftime("%Y-%m-%d %H:%M:%S"))
+        if "_time" in df_.columns:
+            df_["_time"] = df_["_time"].apply(lambda x: x.tz_convert('Asia/Shanghai').strftime("%Y-%m-%d %H:%M:%S"))
         if df:
             return df_
         else:

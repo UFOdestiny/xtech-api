@@ -279,33 +279,46 @@ class OpContractQuote(metaclass=Authentication):
 
         filter_ = """|> filter(fn: (r) => r["_field"] == "days")"""
         df = db.query_influx(start=kwargs["start"], end=kwargs["end"], measurement="opcontractinfo", filter_=filter_,
-                             keep=["_time", "days", "opcode"])
+                             keep=["_time", "days", "opcode"], unique="opcode")
+
+        filter_2 = """|> filter(fn: (r) => r["_field"] == "open")"""
+        df2 = db.query_influx(start=kwargs["start"], end=kwargs["end"], measurement="opcontractquote", filter_=filter_2,
+                              keep=["opcode"], unique="opcode", df=True)
+        lst = list(df2["opcode"])
+
+        lst = [i for i in lst if i <= "10003755.XSHG"]
 
         df["_time"] = pandas.DatetimeIndex(df["_time"], tz='Asia/Shanghai')
 
         if len(df) == 0:
             return None
-
+        # df.drop_duplicates(subset=["opcode"], inplace=True)
         df["days"] = df["days"].apply(lambda x: datetime.timedelta(days=int(x)))
         df["end"] = df["_time"] + df["days"]
         df = df[["opcode", "_time", "end"]]
 
         result = df.values.tolist()
         result = sorted(result, key=lambda x: x[0])
+        result = [i for i in result if i[0] not in lst]
 
         for i in range(len(result)):
             for j in [1, 2]:
                 result[i][j] = result[i][j].strftime("%Y-%m-%d %H:%M:%S")
 
-        print(result[:10])
         return result
 
 
 if __name__ == "__main__":
     opc = OpContractQuote()
     # opc.get(code="10004405.XSHG", start='2023-02-01 00:00:00', end='2023-02-14 00:00:00')
-    opc.collect_info(start='2023-02-01 00:00:00', end='2023-02-11 00:00:00')
+    c = opc.collect_info(start='2020-01-01 00:00:00', end='2023-02-11 00:00:00')
     # opc.get(code="10004405.XSHG", start='2023-01-11 22:06:00', end='2023-02-11 22:07:00')
+
+    # print(len(c))
+    # for i in range(len(c)):
+    #     if c[i][0] == "10003755.XSHG":
+    #         print(i)
+    #         break
 
     # start = time.time()
     # n = 0
