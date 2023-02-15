@@ -25,7 +25,6 @@ class Greeks:
     def delta(self, s, k, T, sigma, n=1):
         d1 = self.d(s, k, T, sigma)[0]
         delta = n * si.norm.cdf(n * d1)
-
         return delta
 
     def gamma(self, s, k, T, sigma):

@@ -129,8 +129,8 @@ class Write:
 
 
 if __name__ == '__main__':
-    start = "2020-01-01 00:00:00"
-    end = "2023-02-15 00:00:00"
+    start = "2020-01-02 00:00:00"
+    end = '2023-02-19 00:00:00'
 
     # Write(source=OpContractInfo)(start=start, end=end)
     # Write(source=OpTargetQuote)(start=start, end=end)
