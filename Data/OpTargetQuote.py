@@ -26,6 +26,9 @@ class OpTargetQuote(metaclass=Authentication):
     def get_data(self, start, end):
         df = get_price(security=self.code, start_date=start, end_date=end, fq='pre', frequency='minute',
                        fields=['close', 'pre_close'], panel=False)
+
+        print(df)
+
         if len(df) == 0:
             return
 
@@ -69,6 +72,6 @@ if __name__ == "__main__":
     op = OpTargetQuote()
     start = "2023-02-14 00:00:00"
     end = "2023-02-14 14:00:00"
-    # a = op.get(start=start, end=end)
-    df = get_bars(security="510050.XSHG", unit='1m', count=10, fields=['close'])
-    print(df)
+    a = op.get(start=start, end=end)
+    #df = get_bars(security="510050.XSHG", unit='1m', count=10, fields=['close'])
+    #print(df)

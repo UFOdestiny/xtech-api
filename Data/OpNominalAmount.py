@@ -67,6 +67,8 @@ class OpNominalAmount(metaclass=Authentication):
 
         self.daily = opt.run_query(q)
 
+        print(self.daily)
+
         if len(self.daily) == 0:
             self.code = None
             return None
@@ -114,7 +116,7 @@ class OpNominalAmount(metaclass=Authentication):
 
         df["unit"] = unit
         df.fillna(method='ffill', inplace=True)
-        print(df["close"], df["unit"], df["volume"])
+        # print(df["close"], df["unit"], df["volume"])
         df["close"] = df["close"] * df["unit"] * df["volume"]
         del df["unit"]
 
@@ -212,8 +214,8 @@ class OpNominalAmount(metaclass=Authentication):
             self.pre_set(c, start, end)
             self.daily_info(c, start, end)
             self.vol_aggregate(start, end)
-            # length = len(self.result) if self.result is not None else 0
-            # print(c, start, end, length)
+            length = len(self.result) if self.result is not None else 0
+            print(c, start, end, length)
 
         if self.final_result is None:
             return None, None
@@ -222,12 +224,15 @@ class OpNominalAmount(metaclass=Authentication):
         tag_columns = ['targetcode']
         self.final_result.index = pandas.DatetimeIndex(self.final_result.index, tz='Asia/Shanghai')
 
+        print(123)
         print(self.result)
         return self.final_result, tag_columns
 
 
 if __name__ == "__main__":
     opc = OpNominalAmount()
-    a, b = opc.get(start='2023-02-08 00:00:00', end='2023-02-10 00:00:00')
+    opc.daily_info("000016.XSHG", '2022-02-01 00:00:00', '2023-02-05 00:00:00')
+
+    # a, b = opc.get(start='2023-02-01 00:00:00', end='2023-02-17 00:00:00')
     # print(a["vol"].to_list())
-    print(a["vol"].values())
+    # print(a["vol"].values())
