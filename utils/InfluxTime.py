@@ -18,7 +18,17 @@ class InfluxTime:
     def utc(*args):
         res = []
         for t in args:
-            timestamp = time.mktime(time.strptime(t, InfluxTime.yearmd_hourms_format)) if type(t) == str else t
+            if type(t) == str:
+                if t.isnumeric():
+                    timestamp = int(t) * 10e4
+                    print()
+                else:
+
+                    timestamp = time.mktime(time.strptime(t, InfluxTime.yearmd_hourms_format))
+                    print(timestamp)
+            else:
+                timestamp = t
+
             # timestamp -= 3600 * 8 localtime
             structure = time.gmtime(timestamp)
             string_ = time.strftime(InfluxTime.influx_format, structure)
@@ -75,6 +85,7 @@ if __name__ == '__main__':
     #
     print(InfluxTime.utcnow())
     print(time.time())
+    print(InfluxTime.utc("1676450847655"))
 
     # s = SplitTime()
 

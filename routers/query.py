@@ -23,8 +23,8 @@ async def get_data(data: QueryData):
     name = data.name
     # "%Y-%m-%d %H:%M:%S"
     time_series = data.time
-
     targetcode = data.targetcode
+
     opcode = data.opcode
     if not opcode:
         opcode = None

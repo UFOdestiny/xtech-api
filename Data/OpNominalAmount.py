@@ -114,6 +114,7 @@ class OpNominalAmount(metaclass=Authentication):
 
         df["unit"] = unit
         df.fillna(method='ffill', inplace=True)
+        print(df["close"], df["unit"], df["volume"])
         df["close"] = df["close"] * df["unit"] * df["volume"]
         del df["unit"]
 
@@ -206,6 +207,7 @@ class OpNominalAmount(metaclass=Authentication):
         end = kwargs["end"]
         codes = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
                  '159922.XSHE', '000852.XSHG', '000016.XSHG', '000300.XSHG', '000852.XSHE', "000016.XSHG"]
+
         for c in codes:
             self.pre_set(c, start, end)
             self.daily_info(c, start, end)
@@ -219,10 +221,13 @@ class OpNominalAmount(metaclass=Authentication):
 
         tag_columns = ['targetcode']
         self.final_result.index = pandas.DatetimeIndex(self.final_result.index, tz='Asia/Shanghai')
-        # print(self.result)
+
+        print(self.result)
         return self.final_result, tag_columns
 
 
 if __name__ == "__main__":
     opc = OpNominalAmount()
-    opc.get(start='2023-02-12 00:00:00', end='2023-02-14 00:00:00')
+    a, b = opc.get(start='2023-02-08 00:00:00', end='2023-02-10 00:00:00')
+    # print(a["vol"].to_list())
+    print(a["vol"].values())

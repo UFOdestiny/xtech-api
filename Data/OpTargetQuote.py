@@ -24,8 +24,8 @@ class OpTargetQuote(metaclass=Authentication):
         self.df = None
 
     def get_data(self, start, end):
-        df = get_bars(security=self.code, start_date=start, end_date=end, fq='pre', frequency='minute',
-                      fields=['close', 'pre_close'], panel=False)
+        df = get_price(security=self.code, start_date=start, end_date=end, fq='pre', frequency='minute',
+                       fields=['close', 'pre_close'], panel=False)
         if len(df) == 0:
             return
 
