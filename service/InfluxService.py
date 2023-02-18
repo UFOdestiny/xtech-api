@@ -135,9 +135,17 @@ class InfluxService(metaclass=Singleton):
 
         q = f"""
                 from(bucket: "{self.INFLUX.bucket}")
-                |> range(start: {start}, stop: {end})
-                |> filter(fn: (r) => r["_measurement"] == "{measurement}")
+                |> range(
              """
+        if start:
+            q += f"""start: {start}, """
+        if end:
+            q += f"""stop: {end}"""
+        q += ")"
+
+        if measurement:
+            q += f"""|> filter(fn: (r) => r["_measurement"] == "{measurement}")"""
+
         if targetcode:
             q += f"""|> filter(fn: (r) => r["targetcode"] == "{targetcode}")"""
         if opcode:
@@ -225,8 +233,8 @@ if __name__ == "__main__":
     # mysqlService = MysqlService()
     # influxdbService.client.drop_database("test_hello_world")
 
-    influxdbService.delete_data("2023-02-01T00:00:00Z", "2023-02-20T00:00:00Z", "opcontractinfo")
-    influxdbService.empty("opcontractinfo")
+    influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-20T00:00:00Z", "opnominalamount")
+    influxdbService.empty("opnominalamount")
     # influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-16T00:00:00Z", "opcontractinfo")
     # q = [
     #     'test1,targetcode=510050.XSHG price=2.76,pct=2.754 1673956372162814720',

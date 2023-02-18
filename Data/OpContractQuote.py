@@ -14,7 +14,6 @@ from jqdatasdk import get_ticks, opt, query, get_price
 
 from service.InfluxService import InfluxService
 from utils.GreeksIV import Greeks, ImpliedVolatility
-from utils.InfluxTime import InfluxTime
 from utils.JoinQuant import Authentication
 
 
@@ -313,8 +312,8 @@ if __name__ == "__main__":
     opc = OpContractQuote()
     # opc.get(code="10004405.XSHG", start='2023-02-01 00:00:00', end='2023-02-14 00:00:00')
     # c = opc.collect_info(start='2020-01-01 00:00:00', end='2023-02-11 00:00:00')
-    c, f = opc.get(code="10001926.XSHG", start='2020-01-02 00:00:00', end='2020-03-25 00:00:00')
-    print(c)
+    #c, f = opc.get(code="10001926.XSHG", start='2020-01-02 00:00:00', end='2020-03-25 00:00:00')
+    #print(c)
 
     # print(len(c))
     # for i in range(len(c)):

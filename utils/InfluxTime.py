@@ -18,6 +18,9 @@ class InfluxTime:
     def utc(*args, timestamp_=False):
         res = []
         for t in args:
+            if not t:
+                res.append(None)
+                continue
             if type(t) == str:
                 if t.isnumeric():
                     timestamp = int(t) / 10e4
@@ -93,9 +96,9 @@ if __name__ == '__main__':
     # s = SplitTime()
 
     # print(s.split("2022-08-09 10:27:00", "2022-08-10 10:28:00", interval_day=1))
-    #g = ['2023-02-17', '2023-02-17', '2023-02-17']
+    # g = ['2023-02-17', '2023-02-17', '2023-02-17']
 
-    #print(InfluxTime.utc(*g, timestamp_=True))
+    # print(InfluxTime.utc(*g, timestamp_=True))
 
-    #InfluxTime.utc("1676563200.0")
+    # InfluxTime.utc("1676563200.0")
     print(time.localtime(1676563200))
