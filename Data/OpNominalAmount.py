@@ -20,7 +20,7 @@ from utils.JoinQuant import Authentication
 class OpNominalAmount(metaclass=Authentication):
     def __init__(self):
         self.targetcode = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
-                           '159922.XSHE', '000852.XSHG', '000300.XSHG', "000016.XSHG"]
+                           '159922.XSHE', '000852.XSHG', '000300.XSHG', "000016.XSHG", "000016.XSHE", '000852.XSHE']
         self.db = InfluxService()
 
         self.daily = None
@@ -32,8 +32,6 @@ class OpNominalAmount(metaclass=Authentication):
 
         self.df = None
         self.result = None
-
-        self.figured = []
 
         self.final_result = None
         self.adjust = None
@@ -50,19 +48,18 @@ class OpNominalAmount(metaclass=Authentication):
 
     def pre_set(self, start, end):
         self.result = get_price(self.targetcode, fields=['close'], frequency='60m', start_date=start, end_date=end, )
-        # self.result["targetcode"] = code
+        print(self.result)
+        self.result["money_c"] = 0
+        self.result["money_p"] = 0
+        self.result["money"] = 0
 
-        self.result["vol_c"] = 0
-        self.result["vol_p"] = 0
-        self.result["vol"] = 0
+        self.result["money_c_00"] = 0
+        self.result["money_p_00"] = 0
+        self.result["money_00"] = 0
 
-        self.result["vol_c_00"] = 0
-        self.result["vol_p_00"] = 0
-        self.result["vol_00"] = 0
-
-        self.result["vol_c_01"] = 0
-        self.result["vol_p_01"] = 0
-        self.result["vol_01"] = 0
+        self.result["money_c_01"] = 0
+        self.result["money_p_01"] = 0
+        self.result["money_01"] = 0
 
         del self.result["close"]
 
@@ -118,7 +115,7 @@ class OpNominalAmount(metaclass=Authentication):
         self.code_00 = self.daily_00["code"].values
         self.code_01 = self.daily_01["code"].values
 
-    def vol(self, code, start, end, types):
+    def vol(self, code, start, end):
         df = get_price(code, start, end, frequency='60m', fields=['close', 'volume'])
         if len(df) == 0:
             return
@@ -126,46 +123,43 @@ class OpNominalAmount(metaclass=Authentication):
         temp = self.daily[self.daily["code"] == code].iloc[0]
         unit = temp["contract_unit"]
         type_ = temp["contract_type"]
+        targetcode = temp["underlying_symbol"]
 
         df["unit"] = unit
-        # df.fillna(method='ffill', inplace=True)
-
-        # print(df["close"], df["unit"], df["volume"])
         df["close"] = df["close"] * df["unit"] * df["volume"]
         del df["unit"]
 
-        if types == 0:
-            res_seg = ""
-        elif types == 1:
-            res_seg = "_00"
+        if code in self.code_00:
+            suffix = "_00"
+        elif code in self.code_01:
+            suffix = "_01"
         else:
-            res_seg = "_01"
-            # print(df)
+            suffix = ""
 
-        index_c = f"money_c{res_seg}"
-        index_p = f"money_p{res_seg}"
-
-        # print(code)
-        # print(df)
-
-        if type_:
-            self.result[index_c] = self.result[index_c].add(df["close"], fill_value=0)
+        if type_ == "CO":
+            type_ = "_c"
         else:
-            self.result[index_p] = self.result[index_p].add(df["close"], fill_value=0)
+            type_ = "_p"
+
+        index = f"money{type_}{suffix}"
+
+        self.result[self.result["code" == targetcode]][index] = self.result[self.result["code" == targetcode]][
+            index].add(df["close"], fill_value=0)
+
+        if suffix:
+            index = f"money{type_}"
+            self.result[self.result["code" == targetcode]][index] = self.result[self.result["code" == targetcode]][
+                index].add(df["close"], fill_value=0)
+
+        # df.fillna(method='ffill', inplace=True)
 
     def vol_aggregate(self, start, end):
         if self.code is None:
             self.result = None
             return
 
-        for i in self.code:
-            self.vol(i, start, end, 0)
-
-        for i in self.code_00:
-            self.vol(i, start, end, 1)
-
-        for i in self.code_01:
-            self.vol(i, start, end, 2)
+        for i in self.code[:3]:
+            self.vol(i, start, end)
 
         if self.result is None or len(self.result) == 0:
             return
@@ -209,12 +203,13 @@ class OpNominalAmount(metaclass=Authentication):
 
 if __name__ == "__main__":
     opc = OpNominalAmount()
-    start = '2023-01-02 00:00:00'
-    end = '2023-01-03 00:00:00'
+    start = '2023-01-03 00:00:00'
+    end = '2023-01-04 00:00:00'
 
-    opc.get_adjust()
-    opc.pre_set(start, end)
-    opc.daily_info(start, end)
+    opc.get(start=start, end=end)
+    # opc.get_adjust()
+    # opc.pre_set(start, end)
+    # opc.daily_info(start, end)
     # print(opc.result)
     #
     # start_tm = time.mktime(time.strptime(start, InfluxTime.yearmd_hourms_format))
