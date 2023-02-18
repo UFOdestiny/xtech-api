@@ -80,7 +80,8 @@ class OpContractQuote(metaclass=Authentication):
         if not np.isnan(self.pre_open.iloc[0]["ex_contract_unit"]):
             for i in range(len(self.pre_open)):
                 index = self.pre_open.index[i]
-                if index < self.pre_open.loc[index, "adj_date"]:
+                dt = datetime.datetime.strptime(index.strftime("%Y-%m-%d %H:%M:%S"), "%Y-%m-%d %H:%M:%S")
+                if dt < self.pre_open.loc[index, "adj_date"]:
                     self.pre_open.loc[index, "exercise_price"] = self.pre_open.loc[index, "ex_exercise_price"]
                     self.pre_open.loc[index, "contract_unit"] = self.pre_open.loc[index, "ex_contract_unit"]
 
