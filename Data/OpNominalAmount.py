@@ -19,7 +19,7 @@ from utils.JoinQuant import Authentication
 class OpNominalAmount(metaclass=Authentication):
     def __init__(self):
         self.targetcode = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
-                           '159922.XSHE', '000852.XSHG', '000300.XSHG', "000016.XSHG", "000016.XSHE", '000852.XSHE']
+                           '159922.XSHE', '000852.XSHG', '000300.XSHG', "000016.XSHG"]
         self.db = InfluxService()
 
         self.daily = None
@@ -208,8 +208,8 @@ class OpNominalAmount(metaclass=Authentication):
 if __name__ == "__main__":
     pandas.set_option('display.max_columns', None)
     opc = OpNominalAmount()
-    start = '2023-01-03 00:00:00'
-    end = '2023-01-04 00:00:00'
+    start = '2023-01-05 00:00:00'
+    end = '2023-01-06 00:00:00'
 
     a, _ = opc.get(start=start, end=end)
-    print(a.columns)
+    print(a)

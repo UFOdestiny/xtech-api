@@ -7,6 +7,7 @@
 
 import datetime
 import math
+import time
 
 import numpy as np
 import pandas
@@ -14,6 +15,7 @@ from jqdatasdk import get_ticks, opt, query, get_price
 
 from service.InfluxService import InfluxService
 from utils.GreeksIV import Greeks, ImpliedVolatility
+from utils.InfluxTime import InfluxTime
 from utils.JoinQuant import Authentication
 
 
@@ -30,26 +32,67 @@ class OpContractQuote(metaclass=Authentication):
         self.iv = ImpliedVolatility()
         self.code_minute = None
 
+        self.adjust = None
+
+    def get_adjust(self):
+        q = query(opt.OPT_ADJUSTMENT.adj_date,
+                  opt.OPT_ADJUSTMENT.code,
+                  opt.OPT_ADJUSTMENT.ex_exercise_price,
+                  opt.OPT_ADJUSTMENT.ex_contract_unit, )
+        df = opt.run_query(q)
+        df.dropna(how="any", inplace=True)
+        df.drop_duplicates(keep="first", inplace=True)
+        self.adjust = df
+        return df
+
     def daily_info(self, code, start_date, end_date):
         start_date = start_date[:11] + "00:00:00"
 
-        q = query(opt.OPT_DAILY_PREOPEN.date,
-                  opt.OPT_DAILY_PREOPEN.code,
-                  opt.OPT_DAILY_PREOPEN.underlying_symbol,
-                  opt.OPT_DAILY_PREOPEN.exercise_price,
-                  opt.OPT_DAILY_PREOPEN.expire_date,
-                  opt.OPT_DAILY_PREOPEN.contract_type, ).filter(
-            opt.OPT_DAILY_PREOPEN.code == code,
-            opt.OPT_DAILY_PREOPEN.date >= start_date,
-            opt.OPT_DAILY_PREOPEN.date <= end_date)
-        self.pre_open = opt.run_query(q)
+        q = query(opt.OPT_CONTRACT_INFO.code,
+                  opt.OPT_CONTRACT_INFO.underlying_symbol,
+                  opt.OPT_CONTRACT_INFO.exercise_price,
+                  opt.OPT_CONTRACT_INFO.contract_type,
+                  opt.OPT_CONTRACT_INFO.contract_unit,
+                  opt.OPT_CONTRACT_INFO.expire_date,
+                  opt.OPT_CONTRACT_INFO.is_adjust).filter(opt.OPT_CONTRACT_INFO.code == code)
 
-        self.pre_open['days'] = (self.pre_open["expire_date"] - self.pre_open["date"]).apply(lambda x: x.days / 365)
-        self.pre_open.set_index("date", inplace=True)
+        # q = query(opt.OPT_DAILY_PREOPEN.date,
+        #           opt.OPT_DAILY_PREOPEN.code,
+        #           opt.OPT_DAILY_PREOPEN.underlying_symbol,
+        #           opt.OPT_DAILY_PREOPEN.exercise_price,
+        #           opt.OPT_DAILY_PREOPEN.expire_date,
+        #           opt.OPT_DAILY_PREOPEN.contract_type, ).filter(
+        #     opt.OPT_DAILY_PREOPEN.code == code,
+        #     opt.OPT_DAILY_PREOPEN.date >= start_date,
+        #     opt.OPT_DAILY_PREOPEN.date <= end_date)
+
+        self.pre_open = opt.run_query(q)
+        time_list = pandas.date_range(start_date, end_date)
+        temp = self.pre_open.iloc[0]
+        for i in range(len(time_list) - 1):
+            self.pre_open.loc[self.pre_open.shape[0]] = temp
+
+        year, month, day = time.strptime(start_date, InfluxTime.yearmd_hourms_format)[:3]
+        temp_ad = self.adjust[self.adjust["adj_date"] >= datetime.date(year, month, day)]
+        self.pre_open = pandas.merge(left=self.pre_open, right=temp_ad, on="code", how="left")
+        self.pre_open.set_index(time_list, inplace=True)
+
+        if not np.isnan(self.pre_open.iloc[0]["ex_contract_unit"]):
+            for i in range(len(self.pre_open)):
+                index = self.pre_open.index[i]
+                if index < self.pre_open.loc[index, "adj_date"]:
+                    self.pre_open.loc[index, "exercise_price"] = self.pre_open.loc[index, "ex_exercise_price"]
+                    self.pre_open.loc[index, "contract_unit"] = self.pre_open.loc[index, "ex_contract_unit"]
+
+        self.pre_open.drop(["is_adjust", "adj_date", "ex_exercise_price", "ex_contract_unit"], inplace=True, axis=1)
+        opc.pre_open["expire_date"] = pandas.to_datetime(opc.pre_open["expire_date"])
+        self.pre_open['days'] = (self.pre_open["expire_date"] - self.pre_open.index).apply(lambda x: x.days / 365)
+
+        # self.pre_open.set_index("date", inplace=True)
 
         self.code = code
-
         self.underlying_symbol = self.pre_open["underlying_symbol"][0]
+
         self.pre_open.drop(["expire_date", "underlying_symbol", "code"], axis=1, inplace=True)
 
     def get_his_vol(self, start_date, end_date):
@@ -145,10 +188,23 @@ class OpContractQuote(metaclass=Authentication):
         self.symbol_minute.index -= pandas.Timedelta(minutes=1)
 
     def get_minute_price(self, code, start, end):
-        self.code_minute = get_price(code, frequency='minute', start_date=start, end_date=end)
+        self.code_minute = get_price(code, frequency='minute', start_date=start, end_date=end,
+                                     fields=['open', 'close', 'high', 'low', 'volume', 'money', 'pre_close'])
         self.code_minute.index -= pandas.Timedelta(minutes=1)
-        self.code_minute["pct"] = np.log(self.code_minute["close"].div(self.code_minute["close"].shift()))
-        self.code_minute["pct"][0] = 0
+
+        # print(self.code_minute)
+        temp = self.code_minute.index[0]
+        for i in range(len(self.code_minute)):
+            index = self.code_minute.index[i]
+            if datetime.time(9, 30) == index.time():
+                temp = self.code_minute.loc[index, "pre_close"]
+            else:
+                self.code_minute.iloc[i, -1] = temp
+        # print(self.code_minute)
+        self.code_minute["pct"] = (self.code_minute["close"] - self.code_minute["pre_close"]) / self.code_minute[
+            "pre_close"]
+        # self.code_minute["pct"] = np.log(self.code_minute["close"].div(self.code_minute["close"].shift()))
+        # self.code_minute["pct"][0] = 0
 
     def get_tick(self, code, start_date, end_date):
         """
@@ -184,11 +240,17 @@ class OpContractQuote(metaclass=Authentication):
         self.code_minute["code"] = self.code
         self.code_minute["underlying_symbol"] = self.underlying_symbol
 
-        if len(self.constant) > 1:
-            self.code_minute[["his_vol", "exercise_price", "contract_type", "days"]] = self.constant
-        else:
-            for i in ["his_vol", "exercise_price", "contract_type", "days"]:
-                self.code_minute[i] = self.constant.iloc[0][i]
+        for i in ["his_vol", "exercise_price", "contract_type", "days"]:
+            for j in range(len(self.constant)):
+                self.code_minute.loc[self.constant.index[j], i] = self.constant.iloc[j][i]
+
+        # if len(self.constant) > 1:
+        #     print(self.code_minute)
+        #     print(self.constant)
+        #     self.code_minute[["his_vol", "exercise_price", "contract_type", "days"]] = self.constant
+        # else:
+        #     for i in ["his_vol", "exercise_price", "contract_type", "days"]:
+        #         self.code_minute[i] = self.constant.iloc[0][i]
 
         # print(self.code_minute)
 
@@ -247,6 +309,7 @@ class OpContractQuote(metaclass=Authentication):
         start = kwargs["start"]
         end = kwargs["end"]
 
+        self.adjust = self.get_adjust()
         self.daily_info(code, start, end)
         self.get_his_vol(start, end)
         self.process_constant()
@@ -309,11 +372,15 @@ class OpContractQuote(metaclass=Authentication):
 
 
 if __name__ == "__main__":
+    pandas.set_option('display.max_rows', None)
     opc = OpContractQuote()
-    # opc.get(code="10004405.XSHG", start='2023-02-01 00:00:00', end='2023-02-14 00:00:00')
-    # c = opc.collect_info(start='2020-01-01 00:00:00', end='2023-02-11 00:00:00')
-    #c, f = opc.get(code="10001926.XSHG", start='2020-01-02 00:00:00', end='2020-03-25 00:00:00')
-    #print(c)
+    start = '2023-02-01 00:00:00'
+    end = '2023-02-03 00:00:00'
+    # opc.daily_info("10004405.XSHG", '2023-02-01 00:00:00','2023-02-03 00:00:00')
+    code = "10004405.XSHG"
+
+    c, f = opc.get(code=code, start=start, end=end)
+    print(c)
 
     # print(len(c))
     # for i in range(len(c)):
