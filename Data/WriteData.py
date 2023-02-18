@@ -116,7 +116,7 @@ class Write:
                 wait(all_task, return_when=ALL_COMPLETED)
 
         elif self.source == OpNominalAmount:
-            times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=1)
+            times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=1, reverse=True)
             length = len(times)
             l_ = [{"start": t[0], "end": t[1], "length": length} for t in times]
             with ThreadPoolExecutor(max_workers=min(10, length)) as e:
@@ -129,8 +129,8 @@ class Write:
 
 
 if __name__ == '__main__':
-    start = "2023-02-01 00:00:00"
-    end = '2023-02-05 00:00:00'
+    start = "2020-01-01 00:00:00"
+    end = '2023-02-25 00:00:00'
 
     # Write(source=OpContractInfo)(start=start, end=end)
     # Write(source=OpTargetQuote)(start=start, end=end)

@@ -61,7 +61,7 @@ class SplitTime:
     format = "%Y-%m-%d %H:%M:%S"
 
     @staticmethod
-    def split(start, end, interval_day=7):
+    def split(start, end, interval_day=7, reverse=False):
         start = datetime.strptime(start, SplitTime.format)
         end = datetime.strptime(end, SplitTime.format)
         interval = timedelta(days=interval_day)
@@ -77,7 +77,10 @@ class SplitTime:
             for j in [0, 1]:
                 result[i][j] = result[i][j].strftime(SplitTime.format)
 
-        return result
+        if reverse:
+            return result[::-1]
+        else:
+            return result
 
 
 if __name__ == '__main__':
