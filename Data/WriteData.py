@@ -86,6 +86,7 @@ class Write:
             return True
 
     def thread(self, **kw):
+
         indicator = self.submit(**kw)
         if indicator:
             self.lock.acquire()

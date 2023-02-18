@@ -80,15 +80,15 @@ class OpContractQuote(metaclass=Authentication):
         if not np.isnan(self.pre_open.iloc[0]["ex_contract_unit"]):
             for i in range(len(self.pre_open)):
                 index = self.pre_open.index[i]
-                dt = datetime.datetime.strptime(index.strftime("%Y-%m-%d %H:%M:%S"), "%Y-%m-%d %H:%M:%S")
-                if dt < self.pre_open.loc[index, "adj_date"]:
+                if index.date() < self.pre_open.loc[index, "adj_date"]:
                     self.pre_open.loc[index, "exercise_price"] = self.pre_open.loc[index, "ex_exercise_price"]
                     self.pre_open.loc[index, "contract_unit"] = self.pre_open.loc[index, "ex_contract_unit"]
 
         self.pre_open.drop(["is_adjust", "adj_date", "ex_exercise_price", "ex_contract_unit"], inplace=True, axis=1)
-        opc.pre_open["expire_date"] = pandas.to_datetime(opc.pre_open["expire_date"])
+        self.pre_open["expire_date"] = pandas.to_datetime(self.pre_open["expire_date"])
         self.pre_open['days'] = (self.pre_open["expire_date"] - self.pre_open.index).apply(lambda x: x.days / 365)
 
+        # print("ok2")
         # self.pre_open.set_index("date", inplace=True)
 
         self.code = code
@@ -288,7 +288,6 @@ class OpContractQuote(metaclass=Authentication):
 
         self.code_minute.drop(["symbol_price", "exercise_price", "days", "his_vol", "contract_type"],
                               axis=1, inplace=True)
-        # print("done!")
 
     def write_excel(self):
         """
@@ -383,11 +382,10 @@ class OpContractQuote(metaclass=Authentication):
 if __name__ == "__main__":
     # pandas.set_option('display.max_rows', None)
     opc = OpContractQuote()
-    start = '2023-02-01 00:00:00'
-    end = '2023-02-03 00:00:00'
+    start = '2023-01-05 00:00:00'
+    end = '2023-02-22 00:00:00'
     # opc.daily_info("10004405.XSHG", '2023-02-01 00:00:00','2023-02-03 00:00:00')
-    code = "10004405.XSHG"
+    code = "10004993.XSHG"
 
-    # c, f = opc.get(code=code, start=start, end=end)
-    # print(c)
-    opc.collect_info(start='2023-01-01 00:00:00', end='2023-02-03 00:00:00')
+    c, f = opc.get(code=code, start=start, end=end)
+    print(c)
