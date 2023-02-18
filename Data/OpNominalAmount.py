@@ -7,7 +7,6 @@
 import datetime
 import time
 
-import numpy as np
 import pandas
 from jqdatasdk import opt, query, get_price
 from sqlalchemy import or_
@@ -30,10 +29,8 @@ class OpNominalAmount(metaclass=Authentication):
         self.daily_01 = None
         self.code_01 = None
 
-        self.df = None
         self.result = None
 
-        self.final_result = None
         self.adjust = None
 
     def get_adjust(self):
@@ -48,7 +45,10 @@ class OpNominalAmount(metaclass=Authentication):
 
     def pre_set(self, start, end):
         self.result = get_price(self.targetcode, fields=['close'], frequency='60m', start_date=start, end_date=end, )
-        # self.result.set_index("time", inplace=True)
+
+        if len(self.result) == 0:
+            self.result = None
+
         self.result["money_c"] = 0
         self.result["money_p"] = 0
         self.result["money"] = 0
@@ -169,8 +169,8 @@ class OpNominalAmount(metaclass=Authentication):
         if self.code is None:
             self.result = None
             return
-
-        for i in self.code[:100]:
+        print(len(self.code))
+        for i in self.code:
             self.vol(i, start, end)
 
         if self.result is None or len(self.result) == 0:
@@ -179,14 +179,6 @@ class OpNominalAmount(metaclass=Authentication):
         self.result["money"] = self.result["money_c"] + self.result["money_p"]
         self.result["money_00"] = self.result["money_c_00"] + self.result["money_p_00"]
         self.result["money_01"] = self.result["money_c_01"] + self.result["money_p_01"]
-        # self.result["money"]=self.result["vol"]*1
-
-        # self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
-        # self.result = self.result[['time', "targetcode", 'vol_c', 'vol_p', 'vol', 'vol_c_00', 'vol_p_00',
-        #                            "vol_00", 'vol_c_01', 'vol_p_01', "vol_01"]]
-
-        self.final_result = pandas.concat([self.final_result, self.result])
-        # print(self.final_result)
 
     def get(self, **kwargs):
         start = kwargs["start"]
@@ -196,20 +188,21 @@ class OpNominalAmount(metaclass=Authentication):
 
         for t in times:
             self.pre_set(t[0], t[1])
+            if self.result is None:
+                continue
             self.daily_info(t[0], t[1])
             self.vol_aggregate(t[0], t[1])
-            length = len(self.result) if self.result is not None else 0
-            print(t[0], t[1], length)
 
-        if self.final_result is None:
+        if self.result is None:
             return None, None
-        self.final_result.dropna(inplace=True)
+        self.result.dropna(inplace=True)
 
+        self.result.set_index("time", inplace=True)
+        self.result.index = pandas.DatetimeIndex(self.result.index, tz='Asia/Shanghai')
+
+        self.result.rename({"code": "targetcode"}, inplace=True)
         tag_columns = ['targetcode']
-        self.final_result.set_index("time", inplace=True)
-        self.final_result.index = pandas.DatetimeIndex(self.final_result.index, tz='Asia/Shanghai')
-
-        return self.final_result, tag_columns
+        return self.result, tag_columns
 
 
 if __name__ == "__main__":
@@ -219,18 +212,4 @@ if __name__ == "__main__":
     end = '2023-01-04 00:00:00'
 
     a, _ = opc.get(start=start, end=end)
-    print(a)
-    # opc.get_adjust()
-    # opc.pre_set(start, end)
-    # opc.daily_info(start, end)
-    # print(opc.result)
-    #
-    # start_tm = time.mktime(time.strptime(start, InfluxTime.yearmd_hourms_format))
-    #
-    # f_ = f"""|> filter(fn: (r) => r["_field"] == "expire_date" and r["_value"] >= {start_tm} )"""
-    # t = opc.db.query_influx(start='2023-01-01 00:00:00', end=end, measurement="opcontractinfo", )
-    # print(t)
-
-    # a, b = opc.get(start='2023-02-01 00:00:00', end='2023-02-17 00:00:00')
-    # print(a["vol"].to_list())
-    # print(a["vol"].values())
+    print(a.columns)

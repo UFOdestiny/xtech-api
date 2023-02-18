@@ -119,7 +119,7 @@ class Write:
             times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=1)
             length = len(times)
             l_ = [{"start": t[0], "end": t[1], "length": length} for t in times]
-            with ThreadPoolExecutor(max_workers=10) as e:
+            with ThreadPoolExecutor(max_workers=min(10, length)) as e:
                 all_task = [e.submit(self.thread, **kw) for kw in l_]
                 wait(all_task, return_when=ALL_COMPLETED)
 
@@ -129,8 +129,8 @@ class Write:
 
 
 if __name__ == '__main__':
-    start = "2020-02-01 00:00:00"
-    end = '2023-02-03 00:00:00'
+    start = "2023-02-01 00:00:00"
+    end = '2023-02-05 00:00:00'
 
     # Write(source=OpContractInfo)(start=start, end=end)
     # Write(source=OpTargetQuote)(start=start, end=end)

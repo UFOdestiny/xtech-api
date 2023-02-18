@@ -233,7 +233,7 @@ if __name__ == "__main__":
     # mysqlService = MysqlService()
     # influxdbService.client.drop_database("test_hello_world")
 
-    influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-20T00:00:00Z", "opnominalamount")
+    #influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-20T00:00:00Z", "opnominalamount")
     influxdbService.empty("opnominalamount")
     # influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-16T00:00:00Z", "opcontractinfo")
     # q = [
