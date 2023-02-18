@@ -23,7 +23,7 @@ class InfluxTime:
                 continue
             if type(t) == str:
                 if t.isnumeric():
-                    timestamp = int(t) / 10e4
+                    timestamp = int(t)
                 else:
                     if len(t) == 10:
                         timestamp = time.mktime(time.strptime(t, InfluxTime.yearmd_format))

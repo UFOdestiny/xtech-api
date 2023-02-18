@@ -168,6 +168,7 @@ class InfluxService(metaclass=Singleton):
                 q += f"\"{i}\","
             q += "])"
 
+        # print(q)
         df_ = self.query_api.query_data_frame(q)
         if len(df_) == 0:
             return None
