@@ -231,7 +231,7 @@ class OpNominalAmount(metaclass=Authentication):
 
 if __name__ == "__main__":
     opc = OpNominalAmount()
-    opc.daily_info("000016.XSHG", '2022-02-01 00:00:00', '2023-02-05 00:00:00')
+    opc.daily_info("000300.XSHG", '2022-02-01 00:00:00', '2023-02-05 00:00:00')
 
     # a, b = opc.get(start='2023-02-01 00:00:00', end='2023-02-17 00:00:00')
     # print(a["vol"].to_list())

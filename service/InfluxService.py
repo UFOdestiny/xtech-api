@@ -225,15 +225,15 @@ if __name__ == "__main__":
     # influxdbService.client.drop_database("test_hello_world")
 
     # influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-15T00:00:00Z", "opcontractinfo")
-    # influxdbService.delete_data("2019-01-01T00:00:00Z", "2023-02-15T00:00:00Z", "optargetquote")
+    influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-16T00:00:00Z", "opcontractinfo")
     # q = [
     #     'test1,targetcode=510050.XSHG price=2.76,pct=2.754 1673956372162814720',
     # ]
     # influxdbService.write_data("test", "a", 1, "b", 2, "2023-01-16T09:30:05.000Z")
     # influxdbService.query_data()
 
-    df = influxdbService.query_influx("2023-02-01 00:00:00", "2023-02-14 00:00:00", "opcontractquote",
-                                      "510050.XSHG", "10004405.XSHG")
-    print(df)
-
-    print(df.columns)
+    # df = influxdbService.query_influx("2023-02-01 00:00:00", "2023-02-14 00:00:00", "opcontractquote",
+    #                                   "510050.XSHG", "10004405.XSHG")
+    # print(df)
+    #
+    # print(df.columns)

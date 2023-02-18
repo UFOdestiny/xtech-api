@@ -4,13 +4,14 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
-from datetime import datetime
+
 
 import pandas
 from jqdatasdk import get_price, get_bars  # ,normalize_code
 
 from utils.InfluxTime import SplitTime
 from utils.JoinQuant import Authentication
+import datetime
 
 
 class OpTargetQuote(metaclass=Authentication):
@@ -26,17 +27,23 @@ class OpTargetQuote(metaclass=Authentication):
     def get_data(self, start, end):
         df = get_price(security=self.code, start_date=start, end_date=end, fq='pre', frequency='minute',
                        fields=['close', 'pre_close'], panel=False)
-
-        print(df)
-
         if len(df) == 0:
             return
-
-        start = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
-        end = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
-
         df["time"] -= pandas.Timedelta(minutes=1)
+        # print(df)
+
+        temp = df.iloc[0]["time"]
+        for i in range(len(df)):
+            if datetime.time(9, 30) == df.iloc[i]["time"].time():
+                temp = df.iloc[i]["pre_close"]
+            else:
+                df.iloc[i, 3] = temp
+
+        start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+        end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+
         df = df[(df["time"] >= start) & (df["time"] <= end)]
+
         return df
 
     def process_df(self, df):
@@ -48,7 +55,7 @@ class OpTargetQuote(metaclass=Authentication):
             self.df = pandas.concat([self.df, df])
 
     def get(self, **kwargs):
-        times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=7)
+        times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=30)
         for t in times:
             print(t)
             df = self.get_data(t[0], t[1])
@@ -62,16 +69,17 @@ class OpTargetQuote(metaclass=Authentication):
         self.df.set_index("time", inplace=True)
         self.df.rename(columns={'code': 'targetcode', "close": 'price'}, inplace=True)
         tag_columns = ['targetcode']
-        # pandas.set_option('display.max_rows', None)
-        print(self.df)
+
+        # print(self.df)
 
         return self.df, tag_columns
 
 
 if __name__ == "__main__":
+    # pandas.set_option('display.max_rows', None)
     op = OpTargetQuote()
     start = "2023-02-14 00:00:00"
-    end = "2023-02-14 14:00:00"
-    a = op.get(start=start, end=end)
-    #df = get_bars(security="510050.XSHG", unit='1m', count=10, fields=['close'])
-    #print(df)
+    end = "2023-02-16 00:00:00"
+    a = op.get_data(start=start, end=end)
+    # df = get_bars(security="510050.XSHG", unit='1m', count=10, fields=['close'])
+    # print(df)
