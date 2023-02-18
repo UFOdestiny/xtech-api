@@ -48,7 +48,7 @@ class OpNominalAmount(metaclass=Authentication):
 
     def pre_set(self, start, end):
         self.result = get_price(self.targetcode, fields=['close'], frequency='60m', start_date=start, end_date=end, )
-        print(self.result)
+        # self.result.set_index("time", inplace=True)
         self.result["money_c"] = 0
         self.result["money_p"] = 0
         self.result["money"] = 0
@@ -117,6 +117,7 @@ class OpNominalAmount(metaclass=Authentication):
 
     def vol(self, code, start, end):
         df = get_price(code, start, end, frequency='60m', fields=['close', 'volume'])
+
         if len(df) == 0:
             return
 
@@ -143,13 +144,24 @@ class OpNominalAmount(metaclass=Authentication):
 
         index = f"money{type_}{suffix}"
 
-        self.result[self.result["code" == targetcode]][index] = self.result[self.result["code" == targetcode]][
-            index].add(df["close"], fill_value=0)
+        # print('_________________________')
+        # print(targetcode)
+        # print(index)
+        # print(self.result[self.result["code"] == targetcode][index])
+        # print(df["close"])
+        # print('_________________________')
+
+        ind = self.result[self.result["code"] == targetcode].index
+        df.set_index(ind, inplace=True)
+        t = self.result[self.result["code"] == targetcode][index].add(df["close"], fill_value=0)
+        self.result.loc[ind, index] = t
+        # print(self.result)
 
         if suffix:
             index = f"money{type_}"
-            self.result[self.result["code" == targetcode]][index] = self.result[self.result["code" == targetcode]][
-                index].add(df["close"], fill_value=0)
+            t = self.result[self.result["code"] == targetcode][index].add(df["close"], fill_value=0)
+            ind = self.result[self.result["code"] == targetcode].index
+            self.result.loc[ind, index] = t
 
         # df.fillna(method='ffill', inplace=True)
 
@@ -158,7 +170,7 @@ class OpNominalAmount(metaclass=Authentication):
             self.result = None
             return
 
-        for i in self.code[:3]:
+        for i in self.code[:100]:
             self.vol(i, start, end)
 
         if self.result is None or len(self.result) == 0:
@@ -173,10 +185,8 @@ class OpNominalAmount(metaclass=Authentication):
         # self.result = self.result[['time', "targetcode", 'vol_c', 'vol_p', 'vol', 'vol_c_00', 'vol_p_00',
         #                            "vol_00", 'vol_c_01', 'vol_p_01', "vol_01"]]
 
-        if self.final_result is None:
-            self.final_result = self.result
-        else:
-            self.final_result = pandas.concat([self.final_result, self.result])
+        self.final_result = pandas.concat([self.final_result, self.result])
+        # print(self.final_result)
 
     def get(self, **kwargs):
         start = kwargs["start"]
@@ -196,17 +206,20 @@ class OpNominalAmount(metaclass=Authentication):
         self.final_result.dropna(inplace=True)
 
         tag_columns = ['targetcode']
+        self.final_result.set_index("time", inplace=True)
         self.final_result.index = pandas.DatetimeIndex(self.final_result.index, tz='Asia/Shanghai')
 
         return self.final_result, tag_columns
 
 
 if __name__ == "__main__":
+    pandas.set_option('display.max_columns', None)
     opc = OpNominalAmount()
     start = '2023-01-03 00:00:00'
     end = '2023-01-04 00:00:00'
 
-    opc.get(start=start, end=end)
+    a, _ = opc.get(start=start, end=end)
+    print(a)
     # opc.get_adjust()
     # opc.pre_set(start, end)
     # opc.daily_info(start, end)

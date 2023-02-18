@@ -129,11 +129,12 @@ class Write:
 
 
 if __name__ == '__main__':
-    start = "2020-01-01 00:00:00"
-    end = '2023-03-01 00:00:00'
+    start = "2020-02-01 00:00:00"
+    end = '2023-02-03 00:00:00'
 
     # Write(source=OpContractInfo)(start=start, end=end)
     # Write(source=OpTargetQuote)(start=start, end=end)
+    Write(source=OpNominalAmount)(start=start, end=end)
+
     # Write(source=OpContractQuote)(start=start, end=end)  # , code="10004405.XSHG"
-    # Write(source=OpNominalAmount)(start=start, end=end)
     # Write(source=PutdMinusCalld)(start=start, end=end)
