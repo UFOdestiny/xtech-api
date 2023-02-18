@@ -7,6 +7,7 @@
 import datetime
 import time
 
+import numpy as np
 import pandas
 from jqdatasdk import opt, query, get_price
 from sqlalchemy import or_
@@ -32,6 +33,8 @@ class OpNominalAmount(metaclass=Authentication):
         self.df = None
         self.result = None
 
+        self.figured = []
+
         self.final_result = None
         self.adjust = None
 
@@ -41,6 +44,7 @@ class OpNominalAmount(metaclass=Authentication):
                   opt.OPT_ADJUSTMENT.ex_exercise_price,
                   opt.OPT_ADJUSTMENT.ex_contract_unit, )
         df = opt.run_query(q)
+        df.dropna(how="any", inplace=True)
         self.adjust = df
         return df
 
@@ -63,13 +67,13 @@ class OpNominalAmount(metaclass=Authentication):
         del self.result["close"]
 
     def daily_info(self, start, end):
-        q = query(opt.OPT_CONTRACT_INFO.list_date,
-                  opt.OPT_CONTRACT_INFO.code,
+        q = query(opt.OPT_CONTRACT_INFO.code,
                   opt.OPT_CONTRACT_INFO.underlying_symbol,
                   opt.OPT_CONTRACT_INFO.exercise_price,
                   opt.OPT_CONTRACT_INFO.contract_type,
                   opt.OPT_CONTRACT_INFO.contract_unit,
-                  opt.OPT_CONTRACT_INFO.expire_date).filter(
+                  opt.OPT_CONTRACT_INFO.expire_date,
+                  opt.OPT_CONTRACT_INFO.is_adjust).filter(
 
             or_(
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
@@ -82,11 +86,22 @@ class OpNominalAmount(metaclass=Authentication):
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
             ),
-
             opt.OPT_CONTRACT_INFO.list_date <= start,
             opt.OPT_CONTRACT_INFO.expire_date >= end, )
 
         self.daily = opt.run_query(q)
+
+        year, month, day = time.strptime(start, InfluxTime.yearmd_hourms_format)[:3]
+        temp_adjust = self.adjust[self.adjust["adj_date"] >= datetime.date(year, month, day)]
+        self.daily = pandas.merge(left=self.daily, right=temp_adjust, on="code", how="left")
+
+        for i in range(len(self.daily)):
+            if self.daily.loc[i, "is_adjust"] == 1:
+                self.daily.loc[i, "exercise_price"] = self.daily.loc[i, "ex_exercise_price"]
+                self.daily.loc[i, "contract_unit"] = self.daily.loc[i, "ex_contract_unit"]
+
+        self.daily.drop(["is_adjust", "adj_date", "ex_exercise_price", "ex_contract_unit"], inplace=True, axis=1)
+
         if len(self.daily) == 0:
             self.code = None
             return None
@@ -127,8 +142,8 @@ class OpNominalAmount(metaclass=Authentication):
             res_seg = "_01"
             # print(df)
 
-        index_c = f"vol_c{res_seg}"
-        index_p = f"vol_p{res_seg}"
+        index_c = f"money_c{res_seg}"
+        index_p = f"money_p{res_seg}"
 
         # print(code)
         # print(df)
@@ -155,9 +170,9 @@ class OpNominalAmount(metaclass=Authentication):
         if self.result is None or len(self.result) == 0:
             return
 
-        self.result["vol"] = self.result["vol_c"] + self.result["vol_p"]
-        self.result["vol_00"] = self.result["vol_c_00"] + self.result["vol_p_00"]
-        self.result["vol_01"] = self.result["vol_c_01"] + self.result["vol_p_01"]
+        self.result["money"] = self.result["money_c"] + self.result["money_p"]
+        self.result["money_00"] = self.result["money_c_00"] + self.result["money_p_00"]
+        self.result["money_01"] = self.result["money_c_01"] + self.result["money_p_01"]
         # self.result["money"]=self.result["vol"]*1
 
         # self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
@@ -194,11 +209,13 @@ class OpNominalAmount(metaclass=Authentication):
 
 if __name__ == "__main__":
     opc = OpNominalAmount()
-    start = '2023-02-14 00:00:00'
-    end = '2023-02-15 00:00:00'
+    start = '2023-01-02 00:00:00'
+    end = '2023-01-03 00:00:00'
 
+    opc.get_adjust()
     opc.pre_set(start, end)
-    print(opc.result)
+    opc.daily_info(start, end)
+    # print(opc.result)
     #
     # start_tm = time.mktime(time.strptime(start, InfluxTime.yearmd_hourms_format))
     #
