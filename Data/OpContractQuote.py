@@ -376,7 +376,7 @@ class OpContractQuote(metaclass=Authentication):
             for j in [1, 2]:
                 result[i][j] = result[i][j].strftime("%Y-%m-%d %H:%M:%S")
 
-        return result
+        return result[::-1]
 
 
 if __name__ == "__main__":
