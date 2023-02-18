@@ -10,7 +10,7 @@ import pandas
 import scipy.interpolate as spi
 from jqdatasdk import opt, query, get_price
 
-from service.InfluxService import InfluxdbService
+from service.InfluxService import InfluxService
 from utils.InfluxTime import InfluxTime
 from utils.InfluxTime import SplitTime
 from utils.JoinQuant import Authentication
@@ -18,7 +18,7 @@ from utils.JoinQuant import Authentication
 
 class PutdMinusCalld(metaclass=Authentication):
     def __init__(self):
-        self.db = InfluxdbService()
+        self.db = InfluxService()
 
         self.underlying_symbol = None
 

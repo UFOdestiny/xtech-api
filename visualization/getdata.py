@@ -5,12 +5,12 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
 
-from service.InfluxService import InfluxdbService
+from service.InfluxService import InfluxService
 
 
 class GetData:
     def __init__(self):
-        self.db = InfluxdbService()
+        self.db = InfluxService()
 
     def get_data(self, start, end, measurement, targetcode=None, opcode=None, df=True, keep=None, filter_=None):
         return self.db.query_influx(start, end, measurement, targetcode=targetcode, opcode=opcode, df=df, keep=keep,

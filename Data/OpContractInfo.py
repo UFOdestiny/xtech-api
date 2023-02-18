@@ -7,8 +7,9 @@
 
 import pandas
 from jqdatasdk import opt, query
+from sqlalchemy import or_
 
-from utils.InfluxTime import SplitTime
+from utils.InfluxTime import SplitTime, InfluxTime
 from utils.JoinQuant import Authentication
 
 
@@ -38,9 +39,22 @@ class OpContractInfo(metaclass=Authentication):
                   opt.OPT_CONTRACT_INFO.contract_type,
                   opt.OPT_CONTRACT_INFO.contract_unit,
                   opt.OPT_CONTRACT_INFO.expire_date,
-                  opt.OPT_CONTRACT_INFO.is_adjust).filter(opt.OPT_CONTRACT_INFO.expire_date >= start,
-                                                          opt.OPT_CONTRACT_INFO.expire_date <= end,
-                                                          )
+                  opt.OPT_CONTRACT_INFO.is_adjust).filter(
+
+            or_(
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "510300.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159919.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159915.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
+            ),
+
+            opt.OPT_CONTRACT_INFO.list_date >= start,
+            opt.OPT_CONTRACT_INFO.list_date <= end, )
 
         df = opt.run_query(q)
         return df
@@ -61,23 +75,35 @@ class OpContractInfo(metaclass=Authentication):
             self.process_df(df)
 
         # print(self.df, self.adjust)
+
         self.df = pandas.merge(left=self.df, right=self.adjust, on="code", how="left")
-        # print(self.df)
 
+        self.df["adj_date"].fillna("1980-01-01", inplace=True)
         self.df["list_date"] = pandas.DatetimeIndex(self.df["list_date"], tz='Asia/Shanghai')
-        self.df["expire_date"] = pandas.DatetimeIndex(self.df["expire_date"], tz='Asia/Shanghai')
-        self.df["adjust_date"] = pandas.DatetimeIndex(self.df["expire_date"], tz='Asia/Shanghai')
 
+        # self.df["expire_date"] = pandas.to_datetime(self.df["expire_date"], utc=True)
+        # self.df["expire_date"] = self.df["expire_date"].dt.tz_convert('Asia/Shanghai')
+
+        # self.df["adj_date"] = pandas.to_datetime(self.df["adj_date"], utc=True)
+        # self.df["adj_date"] = self.df["adj_date"].dt.tz_convert('Asia/Shanghai')
+
+        self.df.fillna(0, inplace=True)
         self.df.set_index(["list_date"], inplace=True)
 
         # ['code', 'underlying_symbol', 'exercise_price', 'contract_type','contract_unit', 'days']
+        self.df.drop_duplicates(inplace=True)
 
         self.df.rename(columns={'code': 'opcode', "underlying_symbol": "targetcode", "contract_type": "type",
                                 "contract_unit": "multiplier", "exercise_price": "strikeprice",
-                                "ex_exercise_price": "ex_strikeprice", "new_contract_unit": "new_multiplier"},
+                                "ex_exercise_price": "ex_strikeprice", "ex_contract_unit": "ex_multiplier"},
                        inplace=True)
 
         tag_columns = ['opcode', 'targetcode', 'type']
+
+        # print(self.df["expire_date"][0])
+        self.df["expire_date"] = InfluxTime.utc(*self.df["expire_date"].astype(str).values, timestamp_=True)
+        self.df["adj_date"] = InfluxTime.utc(*self.df["adj_date"].astype(str).values, timestamp_=True)
+        # self.df[["expire_date", "adj_date"]] = self.df[["expire_date", "adj_date"]].values
 
         return self.df, tag_columns
 
@@ -93,5 +119,10 @@ if __name__ == "__main__":
     # a = opc.get_adjust(start='2020-01-01 00:00:00', end='2020-10-01 00:00:00')
     # print(a)
     # print(opc.get_data(1, 1))
-    a, _ = opc.get(start='2020-01-01 00:00:00', end='2020-10-01 00:00:00')
-    print(a[a["is_adjust"] == 1])
+    # a = opc.get_data(start='2020-01-01 00:00:00', end='2020-02-01 00:00:00')
+    a, _ = opc.get(start='2022-02-10 00:00:00', end='2023-02-20 00:00:00')
+    # print(a[a["is_adjust"] == 1])
+    # print(type(a.iloc[0]["expire_date"]))
+    # print(list(a["opcode"].unique()))
+    # print(a.duplicated())
+    print(a)

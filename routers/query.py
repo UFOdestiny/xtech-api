@@ -7,14 +7,14 @@
 
 from fastapi import APIRouter
 
-from service.InfluxService import InfluxdbService
+from service.InfluxService import InfluxService
 from service.ResponseService import check_exception
 from utils.Model import QueryData
 
 router = APIRouter()
 
 # InfluxDB
-influxdbService = InfluxdbService()
+influxdbService = InfluxService()
 
 
 @router.post("/")

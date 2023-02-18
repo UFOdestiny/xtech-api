@@ -9,13 +9,13 @@ import json
 
 from fastapi import APIRouter
 
-from service.InfluxService import InfluxdbService
+from service.InfluxService import InfluxService
 from service.ResponseService import check_exception
 from utils.Model import Subscribe
 
 router = APIRouter()
 
-influxdbService = InfluxdbService()
+influxdbService = InfluxService()
 
 
 @router.post("/")

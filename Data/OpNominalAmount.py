@@ -8,6 +8,7 @@
 import pandas
 from jqdatasdk import opt, query, get_price
 
+from service.InfluxService import InfluxService
 from utils.InfluxTime import SplitTime
 from utils.JoinQuant import Authentication
 
@@ -15,7 +16,7 @@ from utils.JoinQuant import Authentication
 class OpNominalAmount(metaclass=Authentication):
     def __init__(self):
         self.underlying_symbol = None
-
+        self.db = InfluxService()
         self.daily = None
         self.dic = dict()
         self.code = None
@@ -208,7 +209,7 @@ class OpNominalAmount(metaclass=Authentication):
         start = kwargs["start"]
         end = kwargs["end"]
         codes = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
-                 '159922.XSHE', '000852.XSHG', '000016.XSHG', '000300.XSHG', '000852.XSHE', "000016.XSHG"]
+                 '159922.XSHE', '000852.XSHG', '000016.XSHG', '000300.XSHG', '000852.XSHE', "000016.XSHE"]
 
         for c in codes:
             self.pre_set(c, start, end)
@@ -231,8 +232,9 @@ class OpNominalAmount(metaclass=Authentication):
 
 if __name__ == "__main__":
     opc = OpNominalAmount()
-    opc.daily_info("000300.XSHG", '2022-02-01 00:00:00', '2023-02-05 00:00:00')
+    # opc.daily_info("000300.XSHG", '2022-02-01 00:00:00', '2023-02-05 00:00:00')
 
+    opc.db.query_data()
     # a, b = opc.get(start='2023-02-01 00:00:00', end='2023-02-17 00:00:00')
     # print(a["vol"].to_list())
     # print(a["vol"].values())

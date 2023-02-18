@@ -15,20 +15,23 @@ class InfluxTime:
     yearmd_hourms_format = "%Y-%m-%d %H:%M:%S"
 
     @staticmethod
-    def utc(*args):
+    def utc(*args, timestamp_=False):
         res = []
         for t in args:
             if type(t) == str:
                 if t.isnumeric():
-                    timestamp = int(t) * 10e4
-                    print()
+                    timestamp = int(t) / 10e4
                 else:
-
-                    timestamp = time.mktime(time.strptime(t, InfluxTime.yearmd_hourms_format))
-                    print(timestamp)
+                    if len(t) == 10:
+                        timestamp = time.mktime(time.strptime(t, InfluxTime.yearmd_format))
+                    else:
+                        timestamp = time.mktime(time.strptime(t, InfluxTime.yearmd_hourms_format))
             else:
                 timestamp = t
 
+            if timestamp_:
+                res.append(timestamp)
+                continue
             # timestamp -= 3600 * 8 localtime
             structure = time.gmtime(timestamp)
             string_ = time.strftime(InfluxTime.influx_format, structure)
@@ -77,16 +80,22 @@ class SplitTime:
 if __name__ == '__main__':
     # print(InfluxTime.utc("2022-08-09"))
     # print(InfluxTime.utc("2022-08-09 10:28"))
-    print(InfluxTime.utc("2022-08-09 10:28:00", "2022-08-10 10:28:00"))
+    # print(InfluxTime.utc("2022-08-09 10:28:00", "2022-08-10 10:28:00"))
     # print(InfluxTime.utc("2022-08-09T10:50:00Z"))
     # print(InfluxTime.utc(time.time()))
     # print(InfluxTime.utc('1660026181729'))
     # print(InfluxTime.utc('1660026181729'))
     #
-    print(InfluxTime.utcnow())
-    print(time.time())
-    print(InfluxTime.utc("1676450847655"))
+    # print(InfluxTime.utcnow())
+    # print(time.time())
+    # print(InfluxTime.utc("1676450847655"))
 
     # s = SplitTime()
 
     # print(s.split("2022-08-09 10:27:00", "2022-08-10 10:28:00", interval_day=1))
+    #g = ['2023-02-17', '2023-02-17', '2023-02-17']
+
+    #print(InfluxTime.utc(*g, timestamp_=True))
+
+    #InfluxTime.utc("1676563200.0")
+    print(time.localtime(1676563200))

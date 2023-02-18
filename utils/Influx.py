@@ -9,9 +9,9 @@ import random
 import time
 
 from config import InfluxDBProduct as InfluxDB
-from service.InfluxService import InfluxdbService
+from service.InfluxService import InfluxService
 
-influxdbService = InfluxdbService()
+influxdbService = InfluxService()
 
 
 # influxdbService.write_data("test1", "location", "qingdao", "temperature", 54)

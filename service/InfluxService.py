@@ -33,7 +33,7 @@ class BatchingCallback:
         print(f"Retryable error occurs for batch: {conf}, data: {len(data)} retry: {exception}")
 
 
-class InfluxdbService(metaclass=Singleton):
+class InfluxService(metaclass=Singleton):
     def __init__(self, influxdb=InfluxDB):
         self.log = Logger()
         self.INFLUX = influxdb
@@ -74,11 +74,12 @@ class InfluxdbService(metaclass=Singleton):
         name = record[0].split(",")[0]
         self.log.info(f"{len(record)} records of {name} has been written")
 
-    def write_pandas(self, df, measurement, tag_columns, **kwargs):
+    def write_pandas(self, df, measurement, tag_columns, time_columns=None, **kwargs):
         if measurement in ["opcontractquote", "opnominalamount"]:
             api = self.client.write_api(write_options=SYNCHRONOUS)
             api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,
-                      data_frame_measurement_name=measurement, data_frame_tag_columns=tag_columns,
+                      data_frame_measurement_name=measurement,
+                      data_frame_tag_columns=tag_columns,
                       **kwargs)
         else:
             with self.client as client:
@@ -216,16 +217,17 @@ class InfluxdbService(metaclass=Singleton):
 
 
 if __name__ == "__main__":
-    influxdbService = InfluxdbService()
+    influxdbService = InfluxService()
     # print(f"{time.time() * 1000 * 1000 * 1000:.0f}")
     # q = ['test1,targetcode=510050.XSHG price=2.76,pct=2.754 1662706943248528896']
     # influxdbService.write_batch(q)
-    # influxdbService.empty("opcontractinfo")
+
     # mysqlService = MysqlService()
     # influxdbService.client.drop_database("test_hello_world")
 
-    # influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-15T00:00:00Z", "opcontractinfo")
-    influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-16T00:00:00Z", "opcontractinfo")
+    influxdbService.delete_data("2023-02-01T00:00:00Z", "2023-02-20T00:00:00Z", "opcontractinfo")
+    influxdbService.empty("opcontractinfo")
+    # influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-16T00:00:00Z", "opcontractinfo")
     # q = [
     #     'test1,targetcode=510050.XSHG price=2.76,pct=2.754 1673956372162814720',
     # ]

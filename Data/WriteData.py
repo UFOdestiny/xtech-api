@@ -6,7 +6,7 @@
 # @Desc     :
 
 
-from service.InfluxService import InfluxdbService
+from service.InfluxService import InfluxService
 from utils.Logger import Logger
 from utils.JoinQuant import Authentication
 from Data.OpTargetQuote import OpTargetQuote
@@ -32,7 +32,7 @@ class WriteData:
     }
 
     def __init__(self, source):
-        self.db = InfluxdbService()
+        self.db = InfluxService()
         self.source = source
         self.log = Logger()
         self.count = 0
@@ -62,7 +62,7 @@ class WriteData:
 
 class Write:
     def __init__(self, source):
-        self.db = InfluxdbService()
+        self.db = InfluxService()
         self.source = source
         self.measurement = self.source.__name__.lower()
         self.log = Logger()
@@ -82,7 +82,7 @@ class Write:
         if df is None:
             return False
         else:
-            self.db.write_pandas(df=df, tag_columns=tag_columns, measurement=self.measurement)
+            self.db.write_pandas(df=df, tag_columns=tag_columns, measurement=self.measurement, )
             return True
 
     def thread(self, **kw):
@@ -129,10 +129,10 @@ class Write:
 
 
 if __name__ == '__main__':
-    start = "2020-01-02 00:00:00"
-    end = '2023-02-20 00:00:00'
+    start = "2020-01-01 00:00:00"
+    end = '2023-03-01 00:00:00'
 
-    Write(source=OpContractInfo)(start=start, end=end)
+    # Write(source=OpContractInfo)(start=start, end=end)
     # Write(source=OpTargetQuote)(start=start, end=end)
     # Write(source=OpContractQuote)(start=start, end=end)  # , code="10004405.XSHG"
     # Write(source=OpNominalAmount)(start=start, end=end)

@@ -12,7 +12,7 @@ import numpy as np
 import pandas
 from jqdatasdk import get_ticks, opt, query, get_price
 
-from service.InfluxService import InfluxdbService
+from service.InfluxService import InfluxService
 from utils.GreeksIV import Greeks, ImpliedVolatility
 from utils.InfluxTime import InfluxTime
 from utils.JoinQuant import Authentication
@@ -268,7 +268,7 @@ class OpContractQuote(metaclass=Authentication):
         return self.code_minute, tag_columns
 
     def collect_info(self, **kwargs):
-        db = InfluxdbService()
+        db = InfluxService()
         # q = f"""
         #             from(bucket: "{db.INFLUX.bucket}")
         #                 |> range(start: {start}, stop: {end})

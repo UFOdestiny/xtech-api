@@ -10,7 +10,7 @@ import random
 from fastapi import APIRouter, Depends
 
 from routers.verify import verify_token
-from service.InfluxService import InfluxdbService
+from service.InfluxService import InfluxService
 from service.ResponseService import check_exception
 from utils.InfluxTime import InfluxTime
 from utils.Model import TimeRange, Day
@@ -19,7 +19,7 @@ import time
 router = APIRouter(dependencies=[Depends(verify_token)])
 
 # InfluxDB
-influxdbService = InfluxdbService()
+influxdbService = InfluxService()
 
 
 @router.post("/all")
