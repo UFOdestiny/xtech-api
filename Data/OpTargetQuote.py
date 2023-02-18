@@ -17,10 +17,10 @@ import datetime
 class OpTargetQuote(metaclass=Authentication):
     def __init__(self):
         # self.code = normalize_code(self.code_pre)
-        self.code = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
-                     '159922.XSHE', '000852.XSHG', '000016.XSHG', '000300.XSHG', '000852.XSHE', "000016.XSHG"]
+        self.code2 = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
+                      '159922.XSHE', '000852.XSHG', '000016.XSHE', '000300.XSHG', '000852.XSHG', "000016.XSHG"]
 
-        self.code2 = ['000852.XSHE', "000016.XSHG"]
+        self.code = ['000852.XSHE', "000016.XSHG"]
 
         self.df = None
 
@@ -30,7 +30,7 @@ class OpTargetQuote(metaclass=Authentication):
         if len(df) == 0:
             return
         df["time"] -= pandas.Timedelta(minutes=1)
-        # print(df)
+        print(df)
 
         temp = df.iloc[0]["time"]
         for i in range(len(df)):
@@ -78,7 +78,7 @@ class OpTargetQuote(metaclass=Authentication):
 if __name__ == "__main__":
     # pandas.set_option('display.max_rows', None)
     op = OpTargetQuote()
-    start = "2023-02-14 00:00:00"
+    start = "2023-01-01 00:00:00"
     end = "2023-02-16 00:00:00"
     a = op.get_data(start=start, end=end)
     # df = get_bars(security="510050.XSHG", unit='1m', count=10, fields=['close'])

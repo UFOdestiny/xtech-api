@@ -287,7 +287,7 @@ class OpContractQuote(metaclass=Authentication):
                               keep=["opcode"], unique="opcode", df=True)
         lst = list(df2["opcode"])
 
-        lst = [i for i in lst if i <= "10003755.XSHG"]
+        # lst = [i for i in lst if i <= "10003755.XSHG"]
 
         df["_time"] = pandas.DatetimeIndex(df["_time"], tz='Asia/Shanghai')
 

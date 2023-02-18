@@ -174,7 +174,7 @@ class OpNominalAmount(metaclass=Authentication):
         start = kwargs["start"]
         end = kwargs["end"]
         codes = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
-                 '159922.XSHE', '000852.XSHG', '000016.XSHG', '000300.XSHG', '000852.XSHE', "000016.XSHG"]
+                 '159922.XSHE', '000852.XSHG', '000016.XSHE', '000300.XSHG', '000852.XSHE', "000016.XSHG"]
 
         times = SplitTime.split(start, end, interval_day=1)
         for t in times:
