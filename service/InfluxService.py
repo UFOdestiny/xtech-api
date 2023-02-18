@@ -74,7 +74,7 @@ class InfluxService(metaclass=Singleton):
         name = record[0].split(",")[0]
         self.log.info(f"{len(record)} records of {name} has been written")
 
-    def write_pandas(self, df, measurement, tag_columns, time_columns=None, **kwargs):
+    def write_pandas(self, df, measurement, tag_columns, **kwargs):
         if measurement in ["opcontractquote", "opnominalamount"]:
             api = self.client.write_api(write_options=SYNCHRONOUS)
             api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,
@@ -233,7 +233,7 @@ if __name__ == "__main__":
     # mysqlService = MysqlService()
     # influxdbService.client.drop_database("test_hello_world")
 
-    #influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-20T00:00:00Z", "opnominalamount")
+    # influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-20T00:00:00Z", "opnominalamount")
     influxdbService.empty("opnominalamount")
     # influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-16T00:00:00Z", "opcontractinfo")
     # q = [

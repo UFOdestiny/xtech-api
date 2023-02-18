@@ -200,7 +200,7 @@ class OpNominalAmount(metaclass=Authentication):
         self.result.set_index("time", inplace=True)
         self.result.index = pandas.DatetimeIndex(self.result.index, tz='Asia/Shanghai')
 
-        self.result.rename({"code": "targetcode"}, inplace=True)
+        self.result.rename(columns={"code": "targetcode"}, inplace=True)
         tag_columns = ['targetcode']
         return self.result, tag_columns
 
