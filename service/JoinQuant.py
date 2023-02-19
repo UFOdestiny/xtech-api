@@ -19,7 +19,7 @@ class Authentication(JoinQuantSetting, type):
     def __call__(cls, *args, **kwargs):
         with cls._instance_lock:
             if cls._auth:
-                print(id(cls), cls.__name__, "跳过实例化")
+                # print(id(cls), cls.__name__, "跳过实例化")
                 pass
             else:
                 # print(id(cls), cls.__name__, cls._auth)
