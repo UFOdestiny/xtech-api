@@ -10,25 +10,13 @@ from jqdatasdk import opt, query
 from sqlalchemy import or_
 
 from utils.InfluxTime import SplitTime, InfluxTime
-from utils.JoinQuant import Authentication
+from service.JoinQuant import JQData
 
 
-class OpContractInfo(metaclass=Authentication):
+class OpContractInfo(JQData):
     def __init__(self):
+        super().__init__()
         self.df = None
-        self.adjust = None
-
-    def get_adjust(self, start, end):
-        q = query(opt.OPT_ADJUSTMENT.adj_date,
-                  opt.OPT_ADJUSTMENT.code,
-                  opt.OPT_ADJUSTMENT.ex_exercise_price,
-                  opt.OPT_ADJUSTMENT.ex_contract_unit,
-                  # opt.OPT_ADJUSTMENT.new_exercise_price,
-                  # opt.OPT_ADJUSTMENT.new_contract_unit,
-                  )
-        df = opt.run_query(q)
-        self.adjust = df
-        return df
 
     @staticmethod
     def get_data(start, end):
@@ -68,7 +56,7 @@ class OpContractInfo(metaclass=Authentication):
 
     def get(self, **kwargs):
         times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=30)
-        self.get_adjust(kwargs["start"], kwargs["end"])
+        self.get_adjust()
         for t in times:
             print(t)
             df = self.get_data(t[0], t[1])

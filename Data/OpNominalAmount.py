@@ -13,15 +13,14 @@ from sqlalchemy import or_
 
 from service.InfluxService import InfluxService
 from utils.InfluxTime import SplitTime, InfluxTime
-from utils.JoinQuant import Authentication
+from service.JoinQuant import JQData
 
 
-class OpNominalAmount(metaclass=Authentication):
+class OpNominalAmount(JQData):
     def __init__(self):
-        self.targetcode = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
-                           '159922.XSHE', '000852.XSHG', '000300.XSHG', "000016.XSHG"]
-        self.db = InfluxService()
+        super().__init__()
 
+        self.db = InfluxService()
         self.daily = None
         self.code = None
         self.daily_00 = None
@@ -31,20 +30,8 @@ class OpNominalAmount(metaclass=Authentication):
 
         self.result = None
 
-        self.adjust = None
-
-    def get_adjust(self):
-        q = query(opt.OPT_ADJUSTMENT.adj_date,
-                  opt.OPT_ADJUSTMENT.code,
-                  opt.OPT_ADJUSTMENT.ex_exercise_price,
-                  opt.OPT_ADJUSTMENT.ex_contract_unit, )
-        df = opt.run_query(q)
-        df.dropna(how="any", inplace=True)
-        self.adjust = df
-        return df
-
     def pre_set(self, start, end):
-        self.result = get_price(self.targetcode, fields=['close'], frequency='60m', start_date=start, end_date=end, )
+        self.result = get_price(self.targetcodes, fields=['close'], frequency='60m', start_date=start, end_date=end, )
 
         if len(self.result) == 0:
             self.result = None

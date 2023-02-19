@@ -13,13 +13,13 @@ from jqdatasdk import opt, query, get_price
 from service.InfluxService import InfluxService
 from utils.InfluxTime import InfluxTime
 from utils.InfluxTime import SplitTime
-from utils.JoinQuant import Authentication
+from service.JoinQuant import JQData
 
 
-class PutdMinusCalld(metaclass=Authentication):
+class PutdMinusCalld(JQData):
     def __init__(self):
+        super().__init__()
         self.db = InfluxService()
-
         self.underlying_symbol = None
 
         self.CO = None
@@ -38,21 +38,22 @@ class PutdMinusCalld(metaclass=Authentication):
 
         self.final_result = None
 
-    def pre_set(self, code, start, end):
-        self.result = get_price(code, fields=['close'], frequency='1m', start_date=start, end_date=end, )
+    def pre_set(self, start, end):
+        self.result = get_price(self.targetcodes, fields=['close'], frequency='1m', start_date=start, end_date=end)
 
         if len(self.result) == 0:
             return None
 
         self.result.index -= pandas.Timedelta(minutes=1)
-        self.result["targetcode"] = code
+
+        # self.result["targetcode"] = code
         self.result["putd"] = 0
         self.result["calld"] = 0
         self.result["putd_calld"] = 0
 
         del self.result["close"]
 
-    def daily_info(self, code, start, end):
+    def daily_info(self, start, end):
         if len(self.result) == 0:
             return None
 
@@ -176,21 +177,16 @@ class PutdMinusCalld(metaclass=Authentication):
         #                            "vol_00", 'vol_c_01', 'vol_p_01', "vol_01"]]
 
     def get(self, **kwargs):
-        codes = [kwargs["code"]] if "code" in kwargs else ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG',
-                                                           '159915.XSHE', '159901.XSHE', '159922.XSHE', '000852.XSHG',
-                                                           '000016.XSHG', '000300.XSHG', ]
-
         start = kwargs["start"]
         end = kwargs["end"]
 
         times = SplitTime.split(start, end, interval_day=1)
 
-        for code in codes:
-            self.pre_set(code, start, end)
-            for t in times:
-                print(code, t)
-                self.daily_info(code, t[0], t[1])
-                self.vol_aggregate(t[0], t[1], code)
+        self.pre_set(start, end)
+        for t in times:
+            print(t)
+            self.daily_info(code, t[0], t[1])
+            self.vol_aggregate(t[0], t[1], code)
 
             # self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
             # self.result.reset_index(drop=True, inplace=True)

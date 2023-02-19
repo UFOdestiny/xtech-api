@@ -16,11 +16,12 @@ from jqdatasdk import get_ticks, opt, query, get_price
 from service.InfluxService import InfluxService
 from utils.GreeksIV import Greeks, ImpliedVolatility
 from utils.InfluxTime import InfluxTime
-from utils.JoinQuant import Authentication
+from service.JoinQuant import JQData
 
 
-class OpContractQuote(metaclass=Authentication):
+class OpContractQuote(JQData):
     def __init__(self):
+        super().__init__()
         self.symbol_minute = None
         self.tick = None
         self.code = None
@@ -31,19 +32,6 @@ class OpContractQuote(metaclass=Authentication):
         self.g = Greeks()
         self.iv = ImpliedVolatility()
         self.code_minute = None
-
-        self.adjust = None
-
-    def get_adjust(self):
-        q = query(opt.OPT_ADJUSTMENT.adj_date,
-                  opt.OPT_ADJUSTMENT.code,
-                  opt.OPT_ADJUSTMENT.ex_exercise_price,
-                  opt.OPT_ADJUSTMENT.ex_contract_unit, )
-        df = opt.run_query(q)
-        df.dropna(how="any", inplace=True)
-        df.drop_duplicates(keep="first", inplace=True)
-        self.adjust = df
-        return df
 
     def daily_info(self, code, start_date, end_date):
         start_date = start_date[:11] + "00:00:00"

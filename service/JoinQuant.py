@@ -5,7 +5,7 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     : 登陆聚宽API，以便后续的查找。
 
-from jqdatasdk import JQDataClient, auth
+from jqdatasdk import JQDataClient, auth, query, opt
 from config import JoinQuantSetting
 from threading import Lock
 
@@ -25,6 +25,25 @@ class Authentication(JoinQuantSetting, type):
                 cls._auth = "already"
 
         return type.__call__(cls, *args, **kwargs)
+
+
+class JQData(metaclass=Authentication):
+    def __init__(self):
+        self.adjust = None
+        self.targetcodes = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
+                            '159922.XSHE', '000852.XSHG', '000300.XSHG', "000016.XSHG"]
+
+    def get_adjust(self):
+        q = query(opt.OPT_ADJUSTMENT.adj_date,
+                  opt.OPT_ADJUSTMENT.code,
+                  opt.OPT_ADJUSTMENT.ex_exercise_price,
+                  opt.OPT_ADJUSTMENT.ex_contract_unit, )
+
+        df = opt.run_query(q)
+        df.dropna(how="any", inplace=True)
+        df.drop_duplicates(keep="first", inplace=True)
+        self.adjust = df
+        return df
 
 
 if __name__ == "__main__":
