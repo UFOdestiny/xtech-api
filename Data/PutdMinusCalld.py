@@ -22,22 +22,14 @@ class PutdMinusCalld(JQData):
         super().__init__()
         self.db = InfluxService()
 
-        self.CO = None
-        self.PO = None
         self.code = None
-        self.CO_code = None
-        self.CO_code_all = None
-        self.PO_code = None
-        self.PO_code_all = None
 
         self.daily = None
 
         self.month1 = None
         self.result = None
 
-        self.dic = dict()
-
-        self.iv_delta = None
+        self.iv_delta = dict()
 
     def pre_set(self, start, end):
         self.result = get_price(self.targetcodes, fields=['close'], frequency='1m', start_date=start, end_date=end)
@@ -46,7 +38,7 @@ class PutdMinusCalld(JQData):
             return None
 
         self.result["time"] -= pandas.Timedelta(minutes=1)
-        self.result.set_index("time", inplace=True)
+        # self.result.set_index("time", inplace=True)
         # self.result.index -= pandas.Timedelta(minutes=1)
 
         # self.result["targetcode"] = code
@@ -111,11 +103,15 @@ class PutdMinusCalld(JQData):
         # print(self.PO_code)
 
     def get_all_iv_delta(self, start, end):
+        self.code = ['MO2309-C-7000.CCFX', 'MO2309-C-6800.CCFX', 'MO2309-C-6000.CCFX',
+                     "MO2306-P-5200.CCFX", "MO2306-P-5400.CCFX", "MO2306-P-5600.CCFX", ]
+
         co = [f"r[\"opcode\"] == \"{i}\"" for i in self.code]
         co = " or ".join(co)
+
         filter_ = f"""|> filter(fn: (r) => {co})"""
-        filter_ += f"""|> filter(fn: (r) => r["type"] == "1.0" or r["type"] == "-1.0")"""
-        filter_ += """|> filter(fn: (r) => r["_field"] == "delta" or r["_field"] == "iv")"""
+        filter_ += f"""|> filter(fn: (r) => r["type"] == "CO" or r["type"] == "PO")
+                       |> filter(fn: (r) => r["_field"] == "delta" or r["_field"] == "iv")"""
 
         df = self.db.query_influx(start=start, end=end, measurement="opcontractquote", filter_=filter_,
                                   keep=["_time", "targetcode", "delta", "iv", "type"])
@@ -125,49 +121,94 @@ class PutdMinusCalld(JQData):
             return None, None
 
         df.set_index("_time", inplace=True)
+
         targetcode = df["targetcode"].unique().tolist()
         for tc in targetcode:
             df_temp = df[df["targetcode"] == tc]
-            delta = df_temp["delta"]
-            iv = delta = df_temp["iv"]
-            # self.dic[tc] =
+            self.iv_delta[tc] = df_temp
 
-        # df.drop(df[(df.iv == 0) & (df.delta == 1) & (df.delta == 0)].index, inplace=True)
-        # df.drop_duplicates(subset=['delta'], keep="first", inplace=True)
-        # df.sort_values(by=['delta'], inplace=True)
+            # df_co = df_temp[df_temp["type"] == "CO"]
+            # df_po = df_temp[df_temp["type"] == "PO"]
 
-        self.iv_delta = df
+            # df_co.drop(df[(df.iv == 0) & (df.delta == 1) & (df.delta == 0)].index, inplace=True)
+            # df_po.drop(df[(df.iv == 0) & (df.delta == 1) & (df.delta == 0)].index, inplace=True)
+            #
+            # calld = df_co.sort_values(by='delta').drop_duplicates(subset=['delta'], keep='first')
+            # putd = df_po.sort_values(by='delta').drop_duplicates(subset=['delta'], keep='first')
+            #
+            # dic_temp = {"CO": [calld["delta"].to_list(), calld["iv"].to_list()],
+            #             "PO": [putd["delta"].to_list(), putd["iv"].to_list()]}
+            #
+            # self.dic[tc] = dic_temp
+            # df.drop(df[(df.iv == 0) & (df.delta == 1) & (df.delta == 0)].index, inplace=True)
+            # df.drop_duplicates(subset=['delta'], keep="first", inplace=True)
+            # df.sort_values(by=['delta'], inplace=True)
+            # self.iv_delta = df_temp  # df
+            # return df["delta"].tolist(), df["iv"].tolist()
 
-        # return df["delta"].tolist(), df["iv"].tolist()
+    @staticmethod
+    def group_f(df):
+        df.drop(df[(df.iv == 0) & (df.delta == 1) & (df.delta == 0)].index, inplace=True)
+        df_co = df[df["type"] == "CO"]
+        df_po = df[df["type"] == "PO"]
 
-    def vol_aggregate(self, start, end):
-        if self.CO is None:
-            return None
+        calld = df_co.sort_values(by='delta').drop_duplicates(subset=['delta'], keep='first')
+        putd = df_po.sort_values(by='delta').drop_duplicates(subset=['delta'], keep='first')
 
-        indexes = self.result.index[(self.result.index >= start) & (self.result.index <= end)]
-        pairs = [(str(indexes[i]), str(indexes[i + 1])) for i in range(len(indexes) - 1)]
-        pairs.append()
+        co_delta, co_iv = calld["delta"], calld["iv"]
+        po_delta, po_iv = putd["delta"], putd["iv"]
 
-        for s, e in pairs:
-            # print(s)
-            CO_delta, CO_iv = self.get_all_iv_delta(start, end)
-            PO_delta, PO_iv = self.get_all_iv_delta(start, end)
+        tck1 = spi.splrep(co_delta, co_iv, k=1)
+        ivc0 = spi.splev([0.25, 0.5], tck1, ext=0)
 
-            tck1 = spi.splrep(CO_delta, CO_iv, k=1)
-            ivc0 = spi.splev([0.25, 0.5], tck1, ext=0)
+        if len(co_delta) <= 1 or len(po_delta) <= 1:
+            putd, calld, putd_calld = np.nan, np.nan, np.nan
+        else:
+            tck2 = spi.splrep(po_delta, po_iv, k=1)
+            ivp0 = spi.splev([-0.25, -0.5], tck2, ext=0)
 
-            if len(CO_delta) <= 1 or len(PO_delta) <= 1:
-                putd, calld, putd_calld = np.nan, np.nan, np.nan
-            else:
-                tck2 = spi.splrep(PO_delta, PO_iv, k=1)
-                ivp0 = spi.splev([-0.25, -0.5], tck2, ext=0)
-                putd = ivp0[0] - ivp0[1]
-                calld = ivc0[0] - ivc0[1]
-                putd_calld = putd - calld
+            putd = ivp0[0] - ivp0[1]
+            calld = ivc0[0] - ivc0[1]
+            putd_calld = putd - calld
 
-            self.result.loc[s, "putd"] = putd
-            self.result.loc[s, "calld"] = calld
-            self.result.loc[s, "putd_calld"] = putd_calld
+        return pandas.DataFrame({"putd": [putd], "calld": [calld], "putd_calld": [putd_calld]})
+
+    def aggregate(self):
+        for tg in self.iv_delta:
+            df = self.iv_delta[tg]
+            g = df.groupby(df.index)
+            df_ = g.apply(self.group_f)
+            # df_.reset_index("_time", inplace=True)
+            # df_.set_index("_time", inplace=True)
+            index = self.result.loc[self.result["code"] == tg].index
+            self.result.loc[index, "calld"] = df_["calld"].values
+            self.result.loc[index, "putd"] = df_["putd"].values
+            self.result.loc[index, "putd_calld"] = df_["putd_calld"].values
+        #
+        # indexes = self.result.index[(self.result.index >= start) & (self.result.index <= end)]
+        # pairs = [(str(indexes[i]), str(indexes[i + 1])) for i in range(len(indexes) - 1)]
+        # pairs.append()
+        #
+        # for s, e in pairs:
+        #     # print(s)
+        #     CO_delta, CO_iv = self.get_all_iv_delta(start, end)
+        #     PO_delta, PO_iv = self.get_all_iv_delta(start, end)
+        #
+        #     tck1 = spi.splrep(CO_delta, CO_iv, k=1)
+        #     ivc0 = spi.splev([0.25, 0.5], tck1, ext=0)
+        #
+        #     if len(CO_delta) <= 1 or len(PO_delta) <= 1:
+        #         putd, calld, putd_calld = np.nan, np.nan, np.nan
+        #     else:
+        #         tck2 = spi.splrep(PO_delta, PO_iv, k=1)
+        #         ivp0 = spi.splev([-0.25, -0.5], tck2, ext=0)
+        #         putd = ivp0[0] - ivp0[1]
+        #         calld = ivc0[0] - ivc0[1]
+        #         putd_calld = putd - calld
+        #
+        #     self.result.loc[s, "putd"] = putd
+        #     self.result.loc[s, "calld"] = calld
+        #     self.result.loc[s, "putd_calld"] = putd_calld
 
     def get(self, **kwargs):
         start_ = kwargs["start"]
@@ -181,13 +222,14 @@ class PutdMinusCalld(JQData):
                 continue
             self.daily_info(t[0], t[1])
             self.get_all_iv_delta(t[0], t[1])
-            self.vol_aggregate(t[0], t[1])
+            self.aggregate()
 
             # self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
             # self.result.reset_index(drop=True, inplace=True)
 
         if self.result is None:
             return None, None
+
         self.result.dropna(inplace=True)
         self.result.set_index("time", inplace=True)
         self.result.index = pandas.DatetimeIndex(self.result.index, tz='Asia/Shanghai')
@@ -203,7 +245,17 @@ if __name__ == "__main__":
     start = '2023-02-06 00:00:00'
     end = '2023-02-07 00:00:00'
 
-    opc.get_adjust()
-    opc.pre_set(start, end)
-    opc.daily_info(start, end)
-    opc.get_all_iv_delta(start, end)
+    a, _ = opc.get(start=start, end=end)
+    print(a)
+
+    # opc.get_adjust()
+    # opc.pre_set(start, end)
+    # opc.daily_info(start, end)
+    # opc.get_all_iv_delta(start, end)
+    # opc.aggregate()
+
+    # a = opc.iv_delta['000852.XSHG']
+    # b = a.groupby(a.index)
+    # c = b.apply(opc.group_f)
+    # c.reset_index("_time", inplace=True).set_index("_time", inplace=True)
+    # print(c)
