@@ -42,6 +42,8 @@ class PutdMinusCalld(JQData):
         if len(self.result) == 0:
             return None
 
+        self.result["time"] -= pandas.Timedelta(minutes=1)
+        self.result.set_index("time", inplace=True)
         # self.result.index -= pandas.Timedelta(minutes=1)
 
         # self.result["targetcode"] = code
@@ -134,23 +136,23 @@ class PutdMinusCalld(JQData):
 
         return df["delta"].tolist(), df["iv"].tolist()
 
-    def vol_aggregate(self, start, end):
+    def vol_aggregate(self, start, end, code):
         if self.CO is None:
             return None
 
-        indexs = self.result.index[(self.result.index > start) & (self.result.index < end)]
-        pairs = [(str(indexs[i]), str(indexs[i + 1])) for i in range(len(indexs) - 1)]
+        indexes = self.result.index[(self.result.index >= start) & (self.result.index <= end)]
+        pairs = [(str(indexes[i]), str(indexes[i + 1])) for i in range(len(indexes) - 1)]
+        pairs.append()
 
         for s, e in pairs:
             # print(s)
-            start_, end_ = InfluxTime.utc(s, e)
-            CO_delta, CO_iv = self.vol(start_, end_, targetcode=code, mode="CO")
-            PO_delta, PO_iv = self.vol(start_, end_, targetcode=code, mode="PO")
+
+            CO_delta, CO_iv = self.vol(start, end, targetcode=code, mode="CO")
+            PO_delta, PO_iv = self.vol(start, end, targetcode=code, mode="PO")
 
             tck1 = spi.splrep(CO_delta, CO_iv, k=1)
             ivc0 = spi.splev([0.25, 0.5], tck1, ext=0)
 
-            # print(len(CO_delta), len(PO_delta))
             if len(CO_delta) <= 1 or len(PO_delta) <= 1:
                 putd, calld, putd_calld = np.nan, np.nan, np.nan
             else:
@@ -164,16 +166,10 @@ class PutdMinusCalld(JQData):
             self.result.loc[s, "calld"] = calld
             self.result.loc[s, "putd_calld"] = putd_calld
 
-            # print(putd, calld, putd_calld)
-
-    def process_df(self):
-        self.result.dropna(inplace=True)
-        self.result.to_excel("sep2.xlsx")
-
     def get(self, **kwargs):
-        start = kwargs["start"]
-        end = kwargs["end"]
-        times = SplitTime.split(start, end, interval_day=1)
+        start_ = kwargs["start"]
+        end_ = kwargs["end"]
+        times = SplitTime.split(start_, end_, interval_day=1)
         self.get_adjust()
 
         for t in times:

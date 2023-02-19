@@ -264,8 +264,7 @@ class OpContractQuote(JQData):
             lambda x: max(float(0), x["close"] - x["contract_type"] * (x["symbol_price"] - x["exercise_price"])),
             axis=1)
 
-        self.code_minute.drop(["symbol_price", "exercise_price", "days", "his_vol", "contract_type"],
-                              axis=1, inplace=True)
+        self.code_minute.drop(["exercise_price", "contract_type"], axis=1, inplace=True)
 
     def write_excel(self):
         """
@@ -301,8 +300,10 @@ class OpContractQuote(JQData):
 
         self.code_minute.dropna(how="any", inplace=True)
 
-        self.code_minute.rename(columns={'code': 'opcode', "underlying_symbol": "targetcode"}, inplace=True)
-        tag_columns = ['opcode', 'targetcode']
+        self.code_minute.rename(columns={'code': 'opcode', "underlying_symbol": "targetcode",
+                                         "exercise_price": "strikeprice", "contract_type": "type"}, inplace=True)
+
+        tag_columns = ['opcode', 'targetcode', "type"]
 
         self.code_minute.index = pandas.DatetimeIndex(self.code_minute.index, tz='Asia/Shanghai')
         return self.code_minute, tag_columns
