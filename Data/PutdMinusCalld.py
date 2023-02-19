@@ -4,7 +4,6 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
-import time
 import datetime
 
 import numpy as np
@@ -13,9 +12,9 @@ import scipy.interpolate as spi
 from jqdatasdk import opt, query, get_price
 
 from service.InfluxService import InfluxService
+from service.JoinQuant import JQData
 from utils.InfluxTime import InfluxTime
 from utils.InfluxTime import SplitTime
-from service.JoinQuant import JQData
 
 
 class PutdMinusCalld(JQData):
@@ -43,7 +42,7 @@ class PutdMinusCalld(JQData):
         if len(self.result) == 0:
             return None
 
-        self.result.index -= pandas.Timedelta(minutes=1)
+        # self.result.index -= pandas.Timedelta(minutes=1)
 
         # self.result["targetcode"] = code
         self.result["putd"] = 0
@@ -82,7 +81,6 @@ class PutdMinusCalld(JQData):
 
         today = datetime.date.today()
         today_month = today.month
-
         month_00 = today.replace(month=today_month + 1, day=1)
         month_01 = today.replace(month=today_month + 2, day=1)
 
@@ -136,11 +134,10 @@ class PutdMinusCalld(JQData):
 
         return df["delta"].tolist(), df["iv"].tolist()
 
-    def vol_aggregate(self, code, start, end):
-
+    def vol_aggregate(self, start, end):
         if self.CO is None:
             return None
-        # print(self.result)
+
         indexs = self.result.index[(self.result.index > start) & (self.result.index < end)]
         pairs = [(str(indexs[i]), str(indexs[i + 1])) for i in range(len(indexs) - 1)]
 
@@ -171,53 +168,41 @@ class PutdMinusCalld(JQData):
 
     def process_df(self):
         self.result.dropna(inplace=True)
-        # print(self.result)
         self.result.to_excel("sep2.xlsx")
-
-        # self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
-        # self.result = self.result[['time', "targetcode", 'vol_c', 'vol_p', 'vol', 'vol_c_00', 'vol_p_00',
-        #                            "vol_00", 'vol_c_01', 'vol_p_01', "vol_01"]]
 
     def get(self, **kwargs):
         start = kwargs["start"]
         end = kwargs["end"]
-
         times = SplitTime.split(start, end, interval_day=1)
         self.get_adjust()
-        self.pre_set(start, end)
+
         for t in times:
-            print(t)
+            self.pre_set(t[0], t[1])
+            if self.result is None:
+                continue
             self.daily_info(t[0], t[1])
             self.vol_aggregate(t[0], t[1])
 
             # self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
             # self.result.reset_index(drop=True, inplace=True)
 
-            if self.final_result is None:
-                self.final_result = self.result
-            else:
-                self.final_result = pandas.concat([self.final_result, self.result])
-
-        self.final_result.dropna(how="any", inplace=True)
-        # self.final_result.rename(columns={'code': 'opcode', "underlying_symbol": "targetcode"}, inplace=True)
+        if self.result is None:
+            return None, None
+        self.result.dropna(inplace=True)
+        self.result.set_index("time", inplace=True)
+        self.result.index = pandas.DatetimeIndex(self.result.index, tz='Asia/Shanghai')
+        self.result.rename(columns={"code": "targetcode"}, inplace=True)
+        self.result.dropna(how="any", inplace=True)
         tag_columns = ['targetcode']
-        self.final_result.index = pandas.DatetimeIndex(self.final_result.index, tz='Asia/Shanghai')
 
-        print(self.final_result)
-        print(self.final_result.columns)
-        return self.final_result, tag_columns
-
-        # self.final_result = self.final_result[["time", "targetcode", "putd", "calld", "putd_calld"]]
-        # if not self.final_result.isnull().values.any():
-        #     return self.final_result.values.tolist()
-        # else:
-        #     print("error")
+        return self.result, tag_columns
 
 
 if __name__ == "__main__":
     opc = PutdMinusCalld()
-    start = '2020-01-05 00:00:00'
-    end = '2020-01-10 00:00:00'
+    start = '2023-01-05 00:00:00'
+    end = '2023-01-06 00:00:00'
 
     opc.get_adjust()
     opc.pre_set(start, end)
+    opc.daily_info(start, end)
