@@ -5,7 +5,8 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     : influxDB时间格式处理
 import time
-from datetime import datetime, timedelta
+from datetime import timedelta
+import datetime
 
 
 class InfluxTime:
@@ -56,14 +57,19 @@ class InfluxTime:
         string_ = time.strftime(InfluxTime.yearmd_hourms_format, structure)
         return string_
 
+    @staticmethod
+    def to_date(s: str):
+        year, month, day = time.strptime(s, InfluxTime.yearmd_hourms_format)[:3]
+        return datetime.date(year, month, day)
+
 
 class SplitTime:
     format = "%Y-%m-%d %H:%M:%S"
 
     @staticmethod
     def split(start, end, interval_day=7, reverse=False):
-        start = datetime.strptime(start, SplitTime.format)
-        end = datetime.strptime(end, SplitTime.format)
+        start = datetime.datetime.strptime(start, SplitTime.format)
+        end = datetime.datetime.strptime(end, SplitTime.format)
         interval = timedelta(days=interval_day)
         result = []
 

@@ -5,15 +5,13 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
 import datetime
-import time
 
 import pandas
 from jqdatasdk import opt, query, get_price
-from sqlalchemy import or_
 
 from service.InfluxService import InfluxService
-from utils.InfluxTime import SplitTime, InfluxTime
 from service.JoinQuant import JQData
+from utils.InfluxTime import SplitTime, InfluxTime
 
 
 class OpNominalAmount(JQData):
@@ -57,26 +55,13 @@ class OpNominalAmount(JQData):
                   opt.OPT_CONTRACT_INFO.contract_type,
                   opt.OPT_CONTRACT_INFO.contract_unit,
                   opt.OPT_CONTRACT_INFO.expire_date,
-                  opt.OPT_CONTRACT_INFO.is_adjust).filter(
-
-            or_(
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "510300.XSHG",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "159919.XSHE",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "159915.XSHE",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
-            ),
-            opt.OPT_CONTRACT_INFO.list_date <= start,
-            opt.OPT_CONTRACT_INFO.expire_date >= end, )
+                  opt.OPT_CONTRACT_INFO.is_adjust).filter(self.query_underlying_symbol,
+                                                          opt.OPT_CONTRACT_INFO.list_date <= start,
+                                                          opt.OPT_CONTRACT_INFO.expire_date >= end, )
 
         self.daily = opt.run_query(q)
 
-        year, month, day = time.strptime(start, InfluxTime.yearmd_hourms_format)[:3]
-        temp_adjust = self.adjust[self.adjust["adj_date"] >= datetime.date(year, month, day)]
+        temp_adjust = self.adjust[self.adjust["adj_date"] >= InfluxTime.to_date(start)]
         self.daily = pandas.merge(left=self.daily, right=temp_adjust, on="code", how="left")
 
         for i in range(len(self.daily)):

@@ -44,24 +44,14 @@ class OpContractQuote(JQData):
                   opt.OPT_CONTRACT_INFO.expire_date,
                   opt.OPT_CONTRACT_INFO.is_adjust).filter(opt.OPT_CONTRACT_INFO.code == code)
 
-        # q = query(opt.OPT_DAILY_PREOPEN.date,
-        #           opt.OPT_DAILY_PREOPEN.code,
-        #           opt.OPT_DAILY_PREOPEN.underlying_symbol,
-        #           opt.OPT_DAILY_PREOPEN.exercise_price,
-        #           opt.OPT_DAILY_PREOPEN.expire_date,
-        #           opt.OPT_DAILY_PREOPEN.contract_type, ).filter(
-        #     opt.OPT_DAILY_PREOPEN.code == code,
-        #     opt.OPT_DAILY_PREOPEN.date >= start_date,
-        #     opt.OPT_DAILY_PREOPEN.date <= end_date)
-
         self.pre_open = opt.run_query(q)
         time_list = pandas.date_range(start_date, end_date)
         temp = self.pre_open.iloc[0]
         for i in range(len(time_list) - 1):
             self.pre_open.loc[self.pre_open.shape[0]] = temp
 
-        year, month, day = time.strptime(start_date, InfluxTime.yearmd_hourms_format)[:3]
-        temp_ad = self.adjust[self.adjust["adj_date"] >= datetime.date(year, month, day)]
+        temp_ad = self.adjust[self.adjust["adj_date"] >= InfluxTime.to_date(start_date)]
+
         self.pre_open = pandas.merge(left=self.pre_open, right=temp_ad, on="code", how="left")
         self.pre_open.set_index(time_list, inplace=True)
 

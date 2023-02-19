@@ -4,6 +4,8 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
+import time
+import datetime
 
 import numpy as np
 import pandas
@@ -20,7 +22,6 @@ class PutdMinusCalld(JQData):
     def __init__(self):
         super().__init__()
         self.db = InfluxService()
-        self.underlying_symbol = None
 
         self.CO = None
         self.PO = None
@@ -31,8 +32,6 @@ class PutdMinusCalld(JQData):
 
         self.daily = None
 
-        self.df = None
-        self.month0 = None
         self.month1 = None
         self.result = None
 
@@ -56,20 +55,15 @@ class PutdMinusCalld(JQData):
     def daily_info(self, start, end):
         if len(self.result) == 0:
             return None
-
-        q = query(opt.OPT_DAILY_PREOPEN.date,
-                  opt.OPT_DAILY_PREOPEN.code,
-                  opt.OPT_DAILY_PREOPEN.underlying_symbol,
-                  opt.OPT_DAILY_PREOPEN.contract_unit,
-                  opt.OPT_DAILY_PREOPEN.expire_date,
-                  opt.OPT_DAILY_PREOPEN.contract_type,
-
-                  opt.OPT_DAILY_PREOPEN.name,
-
-                  ).filter(
-            opt.OPT_DAILY_PREOPEN.underlying_symbol == code,
-            opt.OPT_DAILY_PREOPEN.date >= start,
-            opt.OPT_DAILY_PREOPEN.date <= end)
+        q = query(opt.OPT_CONTRACT_INFO.code,
+                  opt.OPT_CONTRACT_INFO.underlying_symbol,
+                  opt.OPT_CONTRACT_INFO.exercise_price,
+                  opt.OPT_CONTRACT_INFO.contract_type,
+                  opt.OPT_CONTRACT_INFO.contract_unit,
+                  opt.OPT_CONTRACT_INFO.expire_date,
+                  opt.OPT_CONTRACT_INFO.is_adjust).filter(self.query_underlying_symbol,
+                                                          opt.OPT_CONTRACT_INFO.list_date <= start,
+                                                          opt.OPT_CONTRACT_INFO.expire_date >= end, )
 
         self.daily = opt.run_query(q)
 
@@ -77,29 +71,36 @@ class PutdMinusCalld(JQData):
             self.CO = None
             return None
 
-        self.daily["date"] = pandas.to_datetime(self.daily["date"])
-        self.daily["date"] += pandas.Timedelta(hours=10, minutes=30)
+        temp_adjust = self.adjust[self.adjust["adj_date"] >= InfluxTime.to_date(start)]
+        self.daily = pandas.merge(left=self.daily, right=temp_adjust, on="code", how="left")
+        for i in range(len(self.daily)):
+            if self.daily.loc[i, "is_adjust"] == 1:
+                self.daily.loc[i, "exercise_price"] = self.daily.loc[i, "ex_exercise_price"]
+                self.daily.loc[i, "contract_unit"] = self.daily.loc[i, "ex_contract_unit"]
 
-        self.daily.set_index('date', inplace=True)
+        self.daily.drop(["is_adjust", "adj_date", "ex_exercise_price", "ex_contract_unit"], inplace=True, axis=1)
 
-        # print(self.daily["name"].values.tolist())
+        today = datetime.date.today()
+        today_month = today.month
 
-        date = sorted(self.daily["expire_date"].unique())
-        # print(date)
-        self.month1 = date[1]
-        self.CO = self.daily[(self.daily["expire_date"] == self.month1) & (self.daily["contract_type"] == "CO")]
-        self.PO = self.daily[(self.daily["expire_date"] == self.month1) & (self.daily["contract_type"] == "PO")]
+        month_00 = today.replace(month=today_month + 1, day=1)
+        month_01 = today.replace(month=today_month + 2, day=1)
+
+        df_01 = self.daily[(month_00 <= self.daily["expire_date"]) & (self.daily["expire_date"] <= month_01)]
+
+        self.CO = df_01[df_01["contract_type"] == "CO"]
+        self.PO = df_01[df_01["contract_type"] == "PO"]
 
         self.CO_code = self.CO["code"].values
         self.PO_code = self.PO["code"].values
 
         # print(len(self.CO_code), len(self.PO_code))
 
-        CO = [f"r[\"opcode\"] == \"{i}\"" for i in self.CO_code]
-        self.CO_code_all = " or ".join(CO)
+        co = [f"r[\"opcode\"] == \"{i}\"" for i in self.CO_code]
+        self.CO_code_all = " or ".join(co)
 
-        PO = [f"r[\"opcode\"] == \"{i}\"" for i in self.PO_code]
-        self.PO_code_all = " or ".join(PO)
+        po = [f"r[\"opcode\"] == \"{i}\"" for i in self.PO_code]
+        self.PO_code_all = " or ".join(po)
         # print(self.CO)
         # print(self.PO)
         # print(self.CO_code)
@@ -135,7 +136,8 @@ class PutdMinusCalld(JQData):
 
         return df["delta"].tolist(), df["iv"].tolist()
 
-    def vol_aggregate(self, start, end, code):
+    def vol_aggregate(self, code, start, end):
+
         if self.CO is None:
             return None
         # print(self.result)
@@ -181,12 +183,12 @@ class PutdMinusCalld(JQData):
         end = kwargs["end"]
 
         times = SplitTime.split(start, end, interval_day=1)
-
+        self.get_adjust()
         self.pre_set(start, end)
         for t in times:
             print(t)
-            self.daily_info(code, t[0], t[1])
-            self.vol_aggregate(t[0], t[1], code)
+            self.daily_info(t[0], t[1])
+            self.vol_aggregate(t[0], t[1])
 
             # self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
             # self.result.reset_index(drop=True, inplace=True)
@@ -214,4 +216,8 @@ class PutdMinusCalld(JQData):
 
 if __name__ == "__main__":
     opc = PutdMinusCalld()
-    opc.get(start='2020-01-05 00:00:00', end='2020-01-10 00:00:00')
+    start = '2020-01-05 00:00:00'
+    end = '2020-01-10 00:00:00'
+
+    opc.get_adjust()
+    opc.pre_set(start, end)
