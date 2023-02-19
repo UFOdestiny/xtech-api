@@ -108,4 +108,4 @@ if __name__ == "__main__":
     cp = 'c'  # 看涨期权
     for i in range(1):
         implied_vol = ImpliedVolatility().bs_price(cp, S, K, T, 1)
-        print('Implied vol: %.2f%%' % (implied_vol * 100))
+        print('Implied get_all_iv_delta: %.2f%%' % (implied_vol * 100))

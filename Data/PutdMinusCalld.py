@@ -24,6 +24,7 @@ class PutdMinusCalld(JQData):
 
         self.CO = None
         self.PO = None
+        self.code = None
         self.CO_code = None
         self.CO_code_all = None
         self.PO_code = None
@@ -34,7 +35,9 @@ class PutdMinusCalld(JQData):
         self.month1 = None
         self.result = None
 
-        self.final_result = None
+        self.dic = dict()
+
+        self.iv_delta = None
 
     def pre_set(self, start, end):
         self.result = get_price(self.targetcodes, fields=['close'], frequency='1m', start_date=start, end_date=end)
@@ -87,56 +90,57 @@ class PutdMinusCalld(JQData):
         month_01 = today.replace(month=today_month + 2, day=1)
 
         df_01 = self.daily[(month_00 <= self.daily["expire_date"]) & (self.daily["expire_date"] <= month_01)]
+        self.code = df_01["code"].unique().tolist()
 
-        self.CO = df_01[df_01["contract_type"] == "CO"]
-        self.PO = df_01[df_01["contract_type"] == "PO"]
-
-        self.CO_code = self.CO["code"].values
-        self.PO_code = self.PO["code"].values
+        # self.CO = df_01[df_01["contract_type"] == "CO"]
+        # self.PO = df_01[df_01["contract_type"] == "PO"]
+        #
+        # self.CO_code = self.CO["code"].values
+        # self.PO_code = self.PO["code"].values
 
         # print(len(self.CO_code), len(self.PO_code))
 
-        co = [f"r[\"opcode\"] == \"{i}\"" for i in self.CO_code]
-        self.CO_code_all = " or ".join(co)
-
-        po = [f"r[\"opcode\"] == \"{i}\"" for i in self.PO_code]
-        self.PO_code_all = " or ".join(po)
+        # co = [f"r[\"opcode\"] == \"{i}\"" for i in self.CO_code]
+        # self.CO_code_all = " or ".join(co)
+        #
+        # po = [f"r[\"opcode\"] == \"{i}\"" for i in self.PO_code]
+        # self.PO_code_all = " or ".join(po)
         # print(self.CO)
         # print(self.PO)
         # print(self.CO_code)
         # print(self.PO_code)
 
-    def vol(self, start, end, targetcode, mode="CO"):
-        if mode == "CO":
-            data = self.CO_code_all
-        else:
-            data = self.PO_code_all
+    def get_all_iv_delta(self, start, end):
+        co = [f"r[\"opcode\"] == \"{i}\"" for i in self.code]
+        co = " or ".join(co)
+        filter_ = f"""|> filter(fn: (r) => {co})"""
+        filter_ += f"""|> filter(fn: (r) => r["type"] == "1.0" or r["type"] == "-1.0")"""
+        filter_ += """|> filter(fn: (r) => r["_field"] == "delta" or r["_field"] == "iv")"""
 
-        start, end = InfluxTime.utc(start, end)
-
-        delta2 = f"""
-                    from(bucket: "{self.db.INFLUX.bucket}")
-                      |> range(start: {start}, stop: {end})
-                      |> filter(fn: (r) => r["targetcode"] == "{targetcode}")
-                      |> filter(fn: (r) => {data})
-                      |> filter(fn: (r) => r["_field"] == "delta" or r["_field"] == "iv")
-                      |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-                      |> keep(columns: ["delta", "iv"])
-                """
-
-        df = self.db.query_api.query_data_frame(delta2)
+        df = self.db.query_influx(start=start, end=end, measurement="opcontractquote", filter_=filter_,
+                                  keep=["_time", "targetcode", "delta", "iv", "type"])
 
         if len(df) == 0:
+            print("None...")
             return None, None
 
-        df.drop(["result", "table", ], axis=1, inplace=True)
-        df.drop(df[(df.iv == 0) & (df.delta == 1) & (df.delta == 0)].index, inplace=True)
-        df.drop_duplicates(subset=['delta'], keep="first", inplace=True)
-        df.sort_values(by=['delta'], inplace=True)
+        df.set_index("_time", inplace=True)
+        targetcode = df["targetcode"].unique().tolist()
+        for tc in targetcode:
+            df_temp = df[df["targetcode"] == tc]
+            delta = df_temp["delta"]
+            iv = delta = df_temp["iv"]
+            # self.dic[tc] =
 
-        return df["delta"].tolist(), df["iv"].tolist()
+        # df.drop(df[(df.iv == 0) & (df.delta == 1) & (df.delta == 0)].index, inplace=True)
+        # df.drop_duplicates(subset=['delta'], keep="first", inplace=True)
+        # df.sort_values(by=['delta'], inplace=True)
 
-    def vol_aggregate(self, start, end, code):
+        self.iv_delta = df
+
+        # return df["delta"].tolist(), df["iv"].tolist()
+
+    def vol_aggregate(self, start, end):
         if self.CO is None:
             return None
 
@@ -146,9 +150,8 @@ class PutdMinusCalld(JQData):
 
         for s, e in pairs:
             # print(s)
-
-            CO_delta, CO_iv = self.vol(start, end, targetcode=code, mode="CO")
-            PO_delta, PO_iv = self.vol(start, end, targetcode=code, mode="PO")
+            CO_delta, CO_iv = self.get_all_iv_delta(start, end)
+            PO_delta, PO_iv = self.get_all_iv_delta(start, end)
 
             tck1 = spi.splrep(CO_delta, CO_iv, k=1)
             ivc0 = spi.splev([0.25, 0.5], tck1, ext=0)
@@ -177,6 +180,7 @@ class PutdMinusCalld(JQData):
             if self.result is None:
                 continue
             self.daily_info(t[0], t[1])
+            self.get_all_iv_delta(t[0], t[1])
             self.vol_aggregate(t[0], t[1])
 
             # self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
@@ -196,9 +200,10 @@ class PutdMinusCalld(JQData):
 
 if __name__ == "__main__":
     opc = PutdMinusCalld()
-    start = '2023-01-05 00:00:00'
-    end = '2023-01-06 00:00:00'
+    start = '2023-02-06 00:00:00'
+    end = '2023-02-07 00:00:00'
 
     opc.get_adjust()
     opc.pre_set(start, end)
     opc.daily_info(start, end)
+    opc.get_all_iv_delta(start, end)

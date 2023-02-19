@@ -264,7 +264,8 @@ class OpContractQuote(JQData):
             lambda x: max(float(0), x["close"] - x["contract_type"] * (x["symbol_price"] - x["exercise_price"])),
             axis=1)
 
-        self.code_minute.drop(["exercise_price", "contract_type"], axis=1, inplace=True)
+        self.code_minute.drop(["symbol_price", "days", "his_vol", "pre_close"],
+                              axis=1, inplace=True)
 
     def write_excel(self):
         """
@@ -303,7 +304,10 @@ class OpContractQuote(JQData):
         self.code_minute.rename(columns={'code': 'opcode', "underlying_symbol": "targetcode",
                                          "exercise_price": "strikeprice", "contract_type": "type"}, inplace=True)
 
-        tag_columns = ['opcode', 'targetcode', "type"]
+        tag_columns = ['opcode', 'targetcode', 'type']
+
+        self.code_minute["type"].replace(1, "CO", inplace=True)
+        self.code_minute["type"].replace(-1, "PO", inplace=True)
 
         self.code_minute.index = pandas.DatetimeIndex(self.code_minute.index, tz='Asia/Shanghai')
         return self.code_minute, tag_columns
@@ -330,7 +334,7 @@ class OpContractQuote(JQData):
 
         filter_2 = """|> filter(fn: (r) => r["_field"] == "open")"""
         df2 = db.query_influx(start=kwargs["start"], end=kwargs["end"], measurement="opcontractquote", filter_=filter_2,
-                              keep=["opcode"], unique="opcode", df=True)
+                              keep=["opcode"], unique="opcode")
         lst = list(df2["opcode"])
 
         # lst = [i for i in lst if i <= "10003755.XSHG"]
@@ -359,12 +363,13 @@ class OpContractQuote(JQData):
 
 
 if __name__ == "__main__":
-    # pandas.set_option('display.max_rows', None)
+    pandas.set_option('display.max_columns', None)
     opc = OpContractQuote()
-    start = '2023-01-05 00:00:00'
+    start = '2023-02-10 00:00:00'
     end = '2023-02-22 00:00:00'
     # opc.daily_info("10004405.XSHG", '2023-02-01 00:00:00','2023-02-03 00:00:00')
     code = "10004993.XSHG"
 
     c, f = opc.get(code=code, start=start, end=end)
     print(c)
+    print(c.columns)
