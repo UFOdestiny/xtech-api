@@ -49,8 +49,6 @@ class PutdMinusCalld(JQData):
         del self.result["close"]
 
     def daily_info(self, start, end):
-        if len(self.result) == 0:
-            return None
         q = query(opt.OPT_CONTRACT_INFO.code,
                   opt.OPT_CONTRACT_INFO.underlying_symbol,
                   opt.OPT_CONTRACT_INFO.exercise_price,
@@ -64,7 +62,6 @@ class PutdMinusCalld(JQData):
         self.daily = opt.run_query(q)
 
         if len(self.daily) == 0:
-            self.CO = None
             return None
 
         temp_adjust = self.adjust[self.adjust["adj_date"] >= InfluxTime.to_date(start)]
@@ -221,6 +218,8 @@ class PutdMinusCalld(JQData):
             if self.result is None:
                 continue
             self.daily_info(t[0], t[1])
+            if self.daily is None:
+                continue
             self.get_all_iv_delta(t[0], t[1])
             self.aggregate()
 
@@ -230,7 +229,6 @@ class PutdMinusCalld(JQData):
         if self.result is None:
             return None, None
 
-        self.result.dropna(inplace=True)
         self.result.set_index("time", inplace=True)
         self.result.index = pandas.DatetimeIndex(self.result.index, tz='Asia/Shanghai')
         self.result.rename(columns={"code": "targetcode"}, inplace=True)
