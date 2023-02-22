@@ -35,15 +35,19 @@ class JQData(metaclass=Authentication):
         self.targetcodes = ['510050.XSHG', '510300.XSHG', '159919.XSHE', '510500.XSHG', '159915.XSHE', '159901.XSHE',
                             '159922.XSHE', '000852.XSHG', '000300.XSHG', "000016.XSHG"]
 
+        # self.targetcodes = ['510500.XSHG']
+
         self.query_underlying_symbol = or_(opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
+                                           opt.OPT_CONTRACT_INFO.underlying_symbol == "510500.XSHG",
                                            opt.OPT_CONTRACT_INFO.underlying_symbol == "510300.XSHG",
+                                           opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
                                            opt.OPT_CONTRACT_INFO.underlying_symbol == "159919.XSHE",
                                            opt.OPT_CONTRACT_INFO.underlying_symbol == "159915.XSHE",
-                                           opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
                                            opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
                                            opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
                                            opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
-                                           opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG", )
+                                           opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
+                                           )
 
     def get_adjust(self):
         q = query(opt.OPT_ADJUSTMENT.adj_date,

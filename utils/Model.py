@@ -32,6 +32,7 @@ class QueryData(BaseModel):
     time: list
     targetcode: str
     opcode: str
+    front: str
 
 
 class Subscribe(BaseModel):

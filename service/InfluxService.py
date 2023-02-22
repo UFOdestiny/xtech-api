@@ -130,7 +130,7 @@ class InfluxService(metaclass=Singleton):
         return df
 
     def query_influx(self, start, end, measurement, targetcode=None, opcode=None, df=True, keep=None, filter_=None,
-                     unique=None):
+                     unique=None, unzip=False):
         start, end = InfluxTime.utc(start, end)
 
         q = f"""
@@ -167,8 +167,8 @@ class InfluxService(metaclass=Singleton):
             for i in keep:
                 q += f"\"{i}\","
             q += "])"
+        #print(q)
 
-        # print(q)
         df_ = self.query_api.query_data_frame(q)
 
         if len(df_) == 0:
@@ -178,10 +178,16 @@ class InfluxService(metaclass=Singleton):
 
         if "_time" in df_.columns:
             df_["_time"] = df_["_time"].apply(lambda x: x.tz_convert('Asia/Shanghai').strftime("%Y-%m-%d %H:%M:%S"))
+
+        # print(df_)
         if df:
             return df_
         else:
-            return df_.values.tolist()
+            lst = df_.values.tolist()
+            if unzip:
+                return list(zip(*lst))
+            else:
+                return lst
 
     def process_result(self, tables):
         result = []

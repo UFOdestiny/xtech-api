@@ -33,6 +33,8 @@ class InfluxTime:
                         timestamp = time.mktime(time.strptime(t, InfluxTime.yearmd_format))
                     else:
                         timestamp = time.mktime(time.strptime(t, InfluxTime.yearmd_hourms_format))
+            elif type(t) == int:
+                timestamp = int(t) / 1e3
             else:
                 timestamp = t
 

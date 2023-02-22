@@ -70,6 +70,7 @@ class OpNominalAmount(JQData):
                 self.daily.loc[i, "contract_unit"] = self.daily.loc[i, "ex_contract_unit"]
 
         self.daily.drop(["is_adjust", "adj_date", "ex_exercise_price", "ex_contract_unit"], inplace=True, axis=1)
+        self.daily.dropna(how="any", inplace=True)
 
         if len(self.daily) == 0:
             self.code = None
@@ -94,6 +95,7 @@ class OpNominalAmount(JQData):
             return
 
         temp = self.daily[self.daily["code"] == code].iloc[0]
+
         unit = temp["contract_unit"]
         type_ = temp["contract_type"]
         targetcode = temp["underlying_symbol"]
@@ -124,7 +126,18 @@ class OpNominalAmount(JQData):
         # print('_________________________')
 
         ind = self.result[self.result["code"] == targetcode].index
+
+        # print(df)
+        # print(self.result.iloc[0].code)
+        # print(targetcode)
+        # print(self.result.iloc[0].code==targetcode)
+        # print(self.result[self.result["code"] == targetcode])
         df.set_index(ind, inplace=True)
+        # print(index)
+        # print(self.result[self.result["code"] == targetcode])
+        # print(df["close"])
+        # df_=df.reset_index()
+        # print(self.result)
         t = self.result[self.result["code"] == targetcode][index].add(df["close"], fill_value=0)
         self.result.loc[ind, index] = t
         # print(self.result)
@@ -180,8 +193,8 @@ class OpNominalAmount(JQData):
 if __name__ == "__main__":
     pandas.set_option('display.max_columns', None)
     opc = OpNominalAmount()
-    start = '2023-01-05 00:00:00'
-    end = '2023-01-06 00:00:00'
+    start = '2023-02-17 00:00:00'
+    end = '2023-02-18 00:00:00'
 
     a, _ = opc.get(start=start, end=end)
     print(a)

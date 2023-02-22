@@ -25,15 +25,21 @@ async def get_data(data: QueryData):
     time_series = data.time
     targetcode = data.targetcode
 
+    type_ = data.front
+
     opcode = data.opcode
     if not opcode:
         opcode = None
 
     df = influxdbService.query_influx(start=time_series[0], end=time_series[1], measurement=name,
-                                      targetcode=targetcode, opcode=opcode, df=False)
+                                      targetcode=targetcode, opcode=opcode, df=False, unzip=type_)
 
-    res = df.values.tolist()
+    del df[1]
+
+    # for i in df:
+    #     print(i)
+    # res = df.values.tolist()
 
     # for i in res[:10]:
     #     print(i)
-    return res
+    return df
