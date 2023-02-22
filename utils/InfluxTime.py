@@ -24,7 +24,10 @@ class InfluxTime:
                 continue
             if type(t) == str:
                 if t.isnumeric():
-                    timestamp = int(t)
+                    if len(t) == 13:  # front
+                        timestamp = int(t) / 1e3
+                    else:
+                        timestamp = int(t)
                 else:
                     if len(t) == 10:
                         timestamp = time.mktime(time.strptime(t, InfluxTime.yearmd_format))
@@ -96,7 +99,7 @@ if __name__ == '__main__':
     # print(InfluxTime.utc("2022-08-09T10:50:00Z"))
     # print(InfluxTime.utc(time.time()))
     # print(InfluxTime.utc('1660026181729'))
-    # print(InfluxTime.utc('1660026181729'))
+    print(InfluxTime.utc('1677033575165'))
     #
     # print(InfluxTime.utcnow())
     # print(time.time())
@@ -110,4 +113,4 @@ if __name__ == '__main__':
     # print(InfluxTime.utc(*g, timestamp_=True))
 
     # InfluxTime.utc("1676563200.0")
-    print(time.localtime(1676563200))
+    # print(time.localtime(1676563200))

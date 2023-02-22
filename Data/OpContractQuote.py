@@ -335,7 +335,10 @@ class OpContractQuote(JQData):
         filter_2 = """|> filter(fn: (r) => r["_field"] == "open")"""
         df2 = db.query_influx(start=kwargs["start"], end=kwargs["end"], measurement="opcontractquote", filter_=filter_2,
                               keep=["opcode"], unique="opcode")
-        lst = list(df2["opcode"])
+        if df2 is None:
+            lst = []
+        else:
+            lst = list(df2["opcode"])
 
         # lst = [i for i in lst if i <= "10003755.XSHG"]
 
@@ -353,7 +356,7 @@ class OpContractQuote(JQData):
 
         result = df.values.tolist()
         result = sorted(result, key=lambda x: x[0], reverse=True)
-        # result = [i for i in result if i[0] not in lst]
+        result = [i for i in result if i[0] not in lst]
 
         for i in range(len(result)):
             for j in [1, 2]:

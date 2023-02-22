@@ -34,6 +34,6 @@ async def get_data(data: QueryData):
 
     res = df.values.tolist()
 
-    for i in res[:10]:
-        print(i)
+    # for i in res[:10]:
+    #     print(i)
     return res
