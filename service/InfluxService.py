@@ -77,6 +77,7 @@ class InfluxService(metaclass=Singleton):
     def write_pandas(self, df, measurement, tag_columns, **kwargs):
         if measurement in ["opcontractquote", "opnominalamount"]:
             api = self.client.write_api(write_options=SYNCHRONOUS)
+            # print(df)
             api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,
                       data_frame_measurement_name=measurement,
                       data_frame_tag_columns=tag_columns,
@@ -167,7 +168,7 @@ class InfluxService(metaclass=Singleton):
             for i in keep:
                 q += f"\"{i}\","
             q += "])"
-        #print(q)
+        # print(q)
 
         df_ = self.query_api.query_data_frame(q)
 

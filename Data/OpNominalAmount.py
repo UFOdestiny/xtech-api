@@ -10,6 +10,7 @@ import pandas
 from jqdatasdk import opt, query, get_price
 from service.JoinQuant import JQData
 from utils.InfluxTime import SplitTime, InfluxTime
+from sqlalchemy import or_
 
 
 class OpNominalAmount(JQData):
@@ -27,21 +28,23 @@ class OpNominalAmount(JQData):
 
     def pre_set(self, start, end):
         self.result = get_price(self.targetcodes, fields=['close'], frequency='60m', start_date=start, end_date=end, )
-
+        # print(self.targetcodes)
+        # print(self.result)
         if len(self.result) == 0:
             self.result = None
+            return
 
-        self.result["money_c"] = 0
-        self.result["money_p"] = 0
-        self.result["money"] = 0
+        self.result["money_c"] = 0.0
+        self.result["money_p"] = 0.0
+        self.result["money"] = 0.0
 
-        self.result["money_c_00"] = 0
-        self.result["money_p_00"] = 0
-        self.result["money_00"] = 0
+        self.result["money_c_00"] = 0.0
+        self.result["money_p_00"] = 0.0
+        self.result["money_00"] = 0.0
 
-        self.result["money_c_01"] = 0
-        self.result["money_p_01"] = 0
-        self.result["money_01"] = 0
+        self.result["money_c_01"] = 0.0
+        self.result["money_p_01"] = 0.0
+        self.result["money_01"] = 0.0
 
         del self.result["close"]
 
@@ -52,9 +55,19 @@ class OpNominalAmount(JQData):
                   opt.OPT_CONTRACT_INFO.contract_type,
                   opt.OPT_CONTRACT_INFO.contract_unit,
                   opt.OPT_CONTRACT_INFO.expire_date,
-                  opt.OPT_CONTRACT_INFO.is_adjust).filter(self.query_underlying_symbol,
-                                                          opt.OPT_CONTRACT_INFO.list_date <= start,
-                                                          opt.OPT_CONTRACT_INFO.expire_date >= end, )
+                  opt.OPT_CONTRACT_INFO.is_adjust).filter(
+            or_(opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "510500.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "510300.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159919.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159915.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG", ),
+            opt.OPT_CONTRACT_INFO.list_date <= start,
+            opt.OPT_CONTRACT_INFO.expire_date >= end, )
 
         self.daily = opt.run_query(q)
 
@@ -75,10 +88,12 @@ class OpNominalAmount(JQData):
 
         today = datetime.date.today()
         today_month = today.month
+
+        month_l1 = today.replace(day=1)
         month_00 = today.replace(month=today_month + 1, day=1)
         month_01 = today.replace(month=today_month + 2, day=1)
 
-        self.daily_00 = self.daily[self.daily["expire_date"] <= month_00]
+        self.daily_00 = self.daily[(self.daily["expire_date"] >= month_l1) & (self.daily["expire_date"] <= month_00)]
         self.daily_01 = self.daily[(month_00 <= self.daily["expire_date"]) & (self.daily["expire_date"] <= month_01)]
 
         self.code = self.daily["code"].values
@@ -151,7 +166,7 @@ class OpNominalAmount(JQData):
         if self.code is None:
             self.result = None
             return
-        print(len(self.code))
+        print(start, end, len(self.code))
         for i in self.code:
             self.vol(i, start, end)
 
@@ -163,6 +178,7 @@ class OpNominalAmount(JQData):
         self.result["money_01"] = self.result["money_c_01"] + self.result["money_p_01"]
 
     def get(self, **kwargs):
+        # print(kwargs)
         start = kwargs["start"]
         end = kwargs["end"]
         times = SplitTime.split(start, end, interval_day=1)
@@ -173,10 +189,12 @@ class OpNominalAmount(JQData):
             if self.result is None:
                 print(t[0], t[1], "pass")
                 continue
+
             self.daily_info(t[0], t[1])
             self.vol_aggregate(t[0], t[1])
 
         if self.result is None:
+            print("no..")
             return None, None
         self.result.dropna(inplace=True)
 
@@ -191,8 +209,8 @@ class OpNominalAmount(JQData):
 if __name__ == "__main__":
     pandas.set_option('display.max_columns', None)
     opc = OpNominalAmount()
-    start = '2023-02-17 00:00:00'
-    end = '2023-02-18 00:00:00'
+    start = '2023-02-21 00:00:00'
+    end = '2023-02-22 00:00:00'
 
     a, _ = opc.get(start=start, end=end)
     print(a)

@@ -37,17 +37,16 @@ class JQData(metaclass=Authentication):
 
         # self.targetcodes = ['510500.XSHG']
 
-        self.query_underlying_symbol = or_(opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
-                                           opt.OPT_CONTRACT_INFO.underlying_symbol == "510500.XSHG",
-                                           opt.OPT_CONTRACT_INFO.underlying_symbol == "510300.XSHG",
-                                           opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
-                                           opt.OPT_CONTRACT_INFO.underlying_symbol == "159919.XSHE",
-                                           opt.OPT_CONTRACT_INFO.underlying_symbol == "159915.XSHE",
-                                           opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
-                                           opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
-                                           opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
-                                           opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
-                                           )
+        # self.query_underlying_symbol = or_(opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
+        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "510500.XSHG",
+        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "510300.XSHG",
+        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
+        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "159919.XSHE",
+        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "159915.XSHE",
+        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
+        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
+        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
+        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",)
 
     def get_adjust(self):
         q = query(opt.OPT_ADJUSTMENT.adj_date,
