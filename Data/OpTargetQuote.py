@@ -35,6 +35,7 @@ class OpTargetQuote(JQData):
 
         df = get_price(security=self.targetcodes, start_date=start, end_date=end, fq='pre', frequency='minute',
                        fields=['close', 'pre_close'], panel=False)
+        print(df)
         if len(df) == 0:
             return
 
@@ -88,7 +89,7 @@ class OpTargetQuote(JQData):
 if __name__ == "__main__":
     # pandas.set_option('display.max_rows', None)
     op = OpTargetQuote()
-    start = "2023-02-22 10:31:00"
+    start = "2023-02-22 09:30:00"
     end = "2023-02-22 22:20:00"
     a = op.get(start=start, end=end)
     print(a)

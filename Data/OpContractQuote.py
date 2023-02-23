@@ -65,7 +65,6 @@ class OpContractQuote(JQData):
         self.pre_open.drop(["is_adjust", "adj_date", "ex_exercise_price", "ex_contract_unit"], inplace=True, axis=1)
         self.pre_open["expire_date"] = pandas.to_datetime(self.pre_open["expire_date"])
         self.pre_open['days'] = (self.pre_open["expire_date"] - self.pre_open.index).apply(lambda x: x.days / 365)
-
         # print("ok2")
         # self.pre_open.set_index("date", inplace=True)
 
@@ -141,11 +140,13 @@ class OpContractQuote(JQData):
         :return:
         """
         self.constant = self.his_vol.join(self.pre_open, how="inner")
+
         self.constant.drop(self.constant[self.constant["his_vol"] == 0].index, inplace=True)
         del self.pre_open
         del self.his_vol
+        # print(self.constant)
 
-        self.constant.index += pandas.Timedelta(hours=9, minutes=30)
+        # self.constant.index += pandas.Timedelta(hours=9, minutes=30)
         self.constant["contract_type"].replace("CO", 1, inplace=True)
         self.constant["contract_type"].replace("PO", -1, inplace=True)
 
@@ -167,18 +168,36 @@ class OpContractQuote(JQData):
         self.symbol_minute.index -= pandas.Timedelta(minutes=1)
 
     def get_minute_price(self, code, start, end):
+        start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+        end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+        df_pre = None
+        if start.time() > datetime.time(9, 30):
+            start_temp = start.replace(hour=9, minute=30, second=0, microsecond=0)
+            end_temp = end.replace(hour=9, minute=31, second=0, microsecond=0)
+            df_pre = get_price(code, frequency='minute', start_date=start_temp, end_date=end_temp,
+                               fields=['open', 'close', 'high', 'low', 'volume', 'money', 'pre_close'])
+
+            df_pre = df_pre["pre_close"].values.tolist()
+
+        # print(start, end)
         self.code_minute = get_price(code, frequency='minute', start_date=start, end_date=end,
                                      fields=['open', 'close', 'high', 'low', 'volume', 'money', 'pre_close'])
         self.code_minute.index -= pandas.Timedelta(minutes=1)
 
         # print(self.code_minute)
-        temp = self.code_minute.index[0]
-        for i in range(len(self.code_minute)):
-            index = self.code_minute.index[i]
-            if datetime.time(9, 30) == index.time():
-                temp = self.code_minute.loc[index, "pre_close"]
-            else:
-                self.code_minute.iloc[i, -1] = temp
+
+        if df_pre:
+            self.code_minute["pre_close"] = df_pre[0]
+
+        else:
+            temp = self.code_minute.index[0]
+            for i in range(len(self.code_minute)):
+                index = self.code_minute.index[i]
+                if datetime.time(9, 30) == index.time():
+                    temp = self.code_minute.loc[index, "pre_close"]
+                else:
+                    self.code_minute.iloc[i, -1] = temp
+
         # print(self.code_minute)
         self.code_minute["pct"] = (self.code_minute["close"] - self.code_minute["pre_close"]) / self.code_minute[
             "pre_close"]
@@ -199,9 +218,10 @@ class OpContractQuote(JQData):
                               fields=['time', "a1_p", "a1_v", "b1_p", "b1_v"])  # 'current', 'volume', 'money',
 
         self.tick.set_index('time', inplace=True)
-
+        # print(self.tick)
         self.code_minute[["a1_p", "b1_p"]] = self.tick[["a1_p", "b1_p"]].resample(rule='1Min').last()
         self.code_minute[["a1_v", "b1_v"]] = self.tick[["a1_v", "b1_v"]].resample(rule='1Min').sum()
+        # print(self.code_minute)
 
         df = self.code_minute[["a1_p", "b1_p", "a1_v", "b1_v"]].replace(np.float64(0), np.nan)
 
@@ -219,10 +239,18 @@ class OpContractQuote(JQData):
         self.code_minute["code"] = self.code
         self.code_minute["underlying_symbol"] = self.underlying_symbol
 
+        # print(self.code_minute)
+        # print(self.constant)
+
         for i in ["his_vol", "exercise_price", "contract_type", "days"]:
             for j in range(len(self.constant)):
-                self.code_minute.loc[self.constant.index[j], i] = self.constant.iloc[j][i]
+                today = pandas.to_datetime(self.constant.index[j].date())
+                tomorrow = pandas.to_datetime(self.constant.index[j].date() + datetime.timedelta(days=1))
+                indexes = self.code_minute[
+                    (self.code_minute.index >= today) & (self.code_minute.index <= tomorrow)].index
+                self.code_minute.loc[indexes, i] = self.constant.iloc[j][i]
 
+        # print(self.code_minute)
         # if len(self.constant) > 1:
         #     print(self.code_minute)
         #     print(self.constant)
@@ -366,13 +394,13 @@ class OpContractQuote(JQData):
 
 
 if __name__ == "__main__":
-    pandas.set_option('display.max_columns', None)
+    # pandas.set_option('display.max_columns', None)
     opc = OpContractQuote()
-    start = '2023-02-10 00:00:00'
-    end = '2023-02-22 00:00:00'
+    start = '2023-02-15 10:05:00'
+    end = '2023-02-15 10:09:00'
     # opc.daily_info("10004405.XSHG", '2023-02-01 00:00:00','2023-02-03 00:00:00')
     code = "10004993.XSHG"
 
     c, f = opc.get(code=code, start=start, end=end)
     print(c)
-    print(c.columns)
+    # print(c.columns)
