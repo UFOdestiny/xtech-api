@@ -7,7 +7,7 @@
 
 
 import pandas
-from jqdatasdk import get_price, get_bars  # ,normalize_code
+from jqdatasdk import get_price  # get_bars,normalize_code
 
 from utils.InfluxTime import SplitTime
 from service.JoinQuant import JQData
@@ -21,21 +21,37 @@ class OpTargetQuote(JQData):
         self.df = None
 
     def get_data(self, start, end):
+        start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+        end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+        df_pre = None
+
+        if start.time() > datetime.time(9, 30):
+            start_temp = start.replace(hour=9, minute=30, second=0, microsecond=0)
+            end_temp = end.replace(hour=9, minute=31, second=0, microsecond=0)
+            df_pre = get_price(security=self.targetcodes, start_date=start_temp, end_date=end_temp, fq='pre',
+                               frequency='minute', fields=['pre_close'], panel=False)
+
+            df_pre = df_pre[["code", "pre_close"]].values.tolist()
+
         df = get_price(security=self.targetcodes, start_date=start, end_date=end, fq='pre', frequency='minute',
                        fields=['close', 'pre_close'], panel=False)
         if len(df) == 0:
             return
+
         df["time"] -= pandas.Timedelta(minutes=1)
 
-        temp = df.iloc[0]["time"]
-        for i in range(len(df)):
-            if datetime.time(9, 30) == df.iloc[i]["time"].time():
-                temp = df.iloc[i]["pre_close"]
-            else:
-                df.iloc[i, 3] = temp
+        if df_pre:
+            for i, j in df_pre:
+                indexes = df[df["code"] == i].index
+                df.loc[indexes, "pre_close"] = j
+        else:
+            temp = df.iloc[0]["time"]
+            for i in range(len(df)):
+                if datetime.time(9, 30) == df.iloc[i]["time"].time():
+                    temp = df.iloc[i]["pre_close"]
+                else:
+                    df.iloc[i, 3] = temp
 
-        start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
-        end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
         df = df[(df["time"] >= start) & (df["time"] <= end)]
 
         return df
@@ -72,8 +88,9 @@ class OpTargetQuote(JQData):
 if __name__ == "__main__":
     # pandas.set_option('display.max_rows', None)
     op = OpTargetQuote()
-    start = "2023-01-10 00:00:00"
-    end = "2023-02-16 00:00:00"
-    a = op.get_data(start=start, end=end)
+    start = "2023-02-22 10:31:00"
+    end = "2023-02-22 22:20:00"
+    a = op.get(start=start, end=end)
+    print(a)
     # df = get_bars(security="510050.XSHG", unit='1m', count=10, fields=['close'])
     # print(df)

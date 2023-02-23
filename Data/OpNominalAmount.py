@@ -174,6 +174,7 @@ class OpNominalAmount(JQData):
         for t in times:
             self.pre_set(t[0], t[1])
             if self.result is None:
+                print(t[0], t[1], "pass")
                 continue
             self.daily_info(t[0], t[1])
             self.vol_aggregate(t[0], t[1])
