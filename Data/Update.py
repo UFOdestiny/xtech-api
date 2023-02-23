@@ -9,14 +9,15 @@ import json
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 from datetime import timedelta, datetime
 
+from Data.WriteData import Write
+from utils.Logger import Logger
+from config import FilePath
+
 from Data.OpContractInfo import OpContractInfo
 from Data.OpContractQuote import OpContractQuote
 from Data.OpNominalAmount import OpNominalAmount
 from Data.OpTargetQuote import OpTargetQuote
 from Data.PutdMinusCalld import PutdMinusCalld
-from Data.WriteData import Write
-from utils.Logger import Logger
-from config import FilePath
 
 
 class Update(FilePath):

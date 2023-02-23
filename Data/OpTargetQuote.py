@@ -35,7 +35,7 @@ class OpTargetQuote(JQData):
 
         df = get_price(security=self.targetcodes, start_date=start, end_date=end, fq='pre', frequency='minute',
                        fields=['close', 'pre_close'], panel=False)
-        print(df)
+        # print(df)
         if len(df) == 0:
             return
 

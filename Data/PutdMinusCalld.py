@@ -100,9 +100,9 @@ class PutdMinusCalld(JQData):
         # print(self.PO_code)
 
     def get_all_iv_delta(self, start, end):
-        self.code = ['MO2309-C-7000.CCFX', 'MO2309-C-6800.CCFX', 'MO2309-C-6000.CCFX',
-                     "MO2306-P-5200.CCFX", "MO2306-P-5400.CCFX", "MO2306-P-5600.CCFX", ]
-
+        # self.code = ['MO2309-C-7000.CCFX', 'MO2309-C-6800.CCFX', 'MO2309-C-6000.CCFX',
+        #              "MO2306-P-5200.CCFX", "MO2306-P-5400.CCFX", "MO2306-P-5600.CCFX", ]
+        # print(len(self.code))
         co = [f"r[\"opcode\"] == \"{i}\"" for i in self.code]
         co = " or ".join(co)
 
@@ -112,6 +112,8 @@ class PutdMinusCalld(JQData):
 
         df = self.db.query_influx(start=start, end=end, measurement="opcontractquote", filter_=filter_,
                                   keep=["_time", "targetcode", "delta", "iv", "type"])
+
+        print(df)
 
         if len(df) == 0:
             print("None...")
@@ -178,10 +180,11 @@ class PutdMinusCalld(JQData):
             # df_.reset_index("_time", inplace=True)
             # df_.set_index("_time", inplace=True)
             index = self.result.loc[self.result["code"] == tg].index
+
             self.result.loc[index, "calld"] = df_["calld"].values
             self.result.loc[index, "putd"] = df_["putd"].values
             self.result.loc[index, "putd_calld"] = df_["putd_calld"].values
-        #
+
         # indexes = self.result.index[(self.result.index >= start) & (self.result.index <= end)]
         # pairs = [(str(indexes[i]), str(indexes[i + 1])) for i in range(len(indexes) - 1)]
         # pairs.append()
@@ -239,9 +242,10 @@ class PutdMinusCalld(JQData):
 
 
 if __name__ == "__main__":
+    # pandas.set_option("display.max_rows", None)
     opc = PutdMinusCalld()
-    start = '2023-02-06 00:00:00'
-    end = '2023-02-07 00:00:00'
+    start = '2023-02-01 00:00:00'
+    end = '2023-02-02 00:00:00'
 
     a, _ = opc.get(start=start, end=end)
     print(a)

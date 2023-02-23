@@ -8,8 +8,6 @@ import datetime
 
 import pandas
 from jqdatasdk import opt, query, get_price
-
-from service.InfluxService import InfluxService
 from service.JoinQuant import JQData
 from utils.InfluxTime import SplitTime, InfluxTime
 
@@ -18,7 +16,6 @@ class OpNominalAmount(JQData):
     def __init__(self):
         super().__init__()
 
-        self.db = InfluxService()
         self.daily = None
         self.code = None
         self.daily_00 = None

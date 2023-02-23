@@ -182,6 +182,9 @@ class OpContractQuote(JQData):
         # print(start, end)
         self.code_minute = get_price(code, frequency='minute', start_date=start, end_date=end,
                                      fields=['open', 'close', 'high', 'low', 'volume', 'money', 'pre_close'])
+        self.code_minute.fillna(method='ffill', inplace=True)
+        self.code_minute.fillna(method='bfill', inplace=True)
+
         self.code_minute.index -= pandas.Timedelta(minutes=1)
 
         # print(self.code_minute)
@@ -341,32 +344,22 @@ class OpContractQuote(JQData):
         return self.code_minute, tag_columns
 
     def collect_info(self, **kwargs):
+        update = kwargs.get("update", None)
+
         db = InfluxService()
-        # q = f"""
-        #             from(bucket: "{db.INFLUX.bucket}")
-        #                 |> range(start: {start}, stop: {end})
-        #                 |> filter(fn: (r) => r["_measurement"] == "opcontractinfo")
-        #                 |> filter(fn: (r) => r["_field"] == "days")
-        #                 |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-        #                 |> keep(columns: ["_time", "days", "opcode"])
-        #         """
 
         time_ = InfluxTime.utc(kwargs["start"], timestamp_=True)
+
         filter_ = f"""|> filter(fn: (r) => r["_field"] == "expire_date" and r["_value"]>{time_})"""
+
+        if update:
+            kwargs["start"] = "2022-01-01 00:00:00"
 
         df = db.query_influx(start=kwargs["start"], end=kwargs["end"], measurement="opcontractinfo", filter_=filter_,
                              keep=["_time", "opcode", "expire_date"], unique="opcode")
 
         if len(df) == 0:
             return None
-
-        filter_2 = """|> filter(fn: (r) => r["_field"] == "open")"""
-        df2 = db.query_influx(start=kwargs["start"], end=kwargs["end"], measurement="opcontractquote", filter_=filter_2,
-                              keep=["opcode"], unique="opcode")
-        if df2 is None:
-            lst = []
-        else:
-            lst = list(df2["opcode"])
 
         # lst = [i for i in lst if i <= "10003755.XSHG"]
 
@@ -384,6 +377,19 @@ class OpContractQuote(JQData):
 
         result = df.values.tolist()
         result = sorted(result, key=lambda x: x[0], reverse=True)
+
+        if not update:
+            filter_2 = """|> filter(fn: (r) => r["_field"] == "open")"""
+            df2 = db.query_influx(start=kwargs["start"], end=kwargs["end"], measurement="opcontractquote",
+                                  filter_=filter_2,
+                                  keep=["opcode"], unique="opcode")
+            if df2 is None:
+                lst = []
+            else:
+                lst = list(df2["opcode"])
+        else:
+            lst = []
+
         result = [i for i in result if i[0] not in lst]
 
         for i in range(len(result)):
@@ -396,10 +402,10 @@ class OpContractQuote(JQData):
 if __name__ == "__main__":
     # pandas.set_option('display.max_columns', None)
     opc = OpContractQuote()
-    start = '2023-02-15 10:05:00'
-    end = '2023-02-15 10:09:00'
+    start = '2023-02-23 00:00:00'
+    end = '2023-02-24 00:00:00'
     # opc.daily_info("10004405.XSHG", '2023-02-01 00:00:00','2023-02-03 00:00:00')
-    code = "10004993.XSHG"
+    code = "10005185.XSHG"
 
     c, f = opc.get(code=code, start=start, end=end)
     print(c)

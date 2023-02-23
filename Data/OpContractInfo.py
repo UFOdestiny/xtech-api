@@ -4,6 +4,7 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     : 合约信息
+import datetime
 
 import pandas
 from jqdatasdk import opt, query
@@ -74,6 +75,8 @@ class OpContractInfo(JQData):
         tag_columns = ['opcode', 'targetcode', 'type']
 
         # print(self.df["expire_date"][0])
+        self.df["expire_date"] += datetime.timedelta(days=1)
+
         self.df["expire_date"] = InfluxTime.utc(*self.df["expire_date"].astype(str).values, timestamp_=True)
         self.df["adj_date"] = InfluxTime.utc(*self.df["adj_date"].astype(str).values, timestamp_=True)
         # self.df[["expire_date", "adj_date"]] = self.df[["expire_date", "adj_date"]].values
@@ -93,7 +96,7 @@ if __name__ == "__main__":
     # print(a)
     # print(opc.get_data(1, 1))
     # a = opc.get_data(start='2020-01-01 00:00:00', end='2020-02-01 00:00:00')
-    a, _ = opc.get(start='2022-02-10 00:00:00', end='2023-02-20 00:00:00')
+    a, _ = opc.get(start='2023-02-10 00:00:00', end='2023-02-20 00:00:00')
     # print(a[a["is_adjust"] == 1])
     # print(type(a.iloc[0]["expire_date"]))
     # print(list(a["opcode"].unique()))
