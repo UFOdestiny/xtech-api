@@ -75,7 +75,7 @@ class InfluxService(metaclass=Singleton):
         self.log.info(f"{len(record)} records of {name} has been written")
 
     def write_pandas(self, df, measurement, tag_columns, **kwargs):
-        if measurement in ["opcontractquote", "opnominalamount"]:
+        if measurement in ["opcontractquote", "opnominalamount", "putdminuscalld"]:
             api = self.client.write_api(write_options=SYNCHRONOUS)
             # print(df)
             api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,

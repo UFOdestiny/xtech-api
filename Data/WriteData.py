@@ -49,6 +49,12 @@ class Write:
             self.lock.acquire()
             self.count += 1
             self.lock.release()
+
+        else:  # pass
+            self.lock.acquire()
+            self.count += 1
+            self.lock.release()
+
         self.log.info(f"{list(kw.values())} {self.count}")
 
     def __call__(self, **kwargs):
@@ -73,7 +79,7 @@ class Write:
                 all_task = [e.submit(self.thread, **kw) for kw in l_]
                 wait(all_task, return_when=ALL_COMPLETED)
 
-        elif self.source == OpNominalAmount:
+        elif self.source == OpNominalAmount or self.source == PutdMinusCalld:
             times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=1, reverse=True)
             length = len(times)
             l_ = [{"start": t[0], "end": t[1], "length": length} for t in times]
@@ -87,11 +93,11 @@ class Write:
 
 
 if __name__ == '__main__':
-    start = "2023-02-06 00:00:00"
-    end = '2023-02-11 00:00:00'
+    start = "2023-01-01 00:00:00"
+    end = '2023-02-25 00:00:00'
 
     # Write(source=OpContractInfo)(start=start, end=end)
     # Write(source=OpTargetQuote)(start=start, end=end)
-    Write(source=OpNominalAmount)(start=start, end=end)
-    # Write(source=OpContractQuote)(start=start, end=end, updata=1)  # , updata=1
+    # Write(source=OpNominalAmount)(start=start, end=end)
+    Write(source=OpContractQuote)(start=start, end=end, update=1)  # , updata=1
     # Write(source=PutdMinusCalld)(start=start, end=end)

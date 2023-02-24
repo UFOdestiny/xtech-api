@@ -164,7 +164,6 @@ class OpContractQuote(JQData):
                                        end_date=end_date, )
 
         self.symbol_minute.columns = ["symbol_minute"]
-
         self.symbol_minute.index -= pandas.Timedelta(minutes=1)
 
     def get_minute_price(self, code, start, end):
@@ -315,8 +314,13 @@ class OpContractQuote(JQData):
         :return:
         """
         code = kwargs["code"]
-        start = kwargs["start"]
         end = kwargs["end"]
+        # start = kwargs["start"]
+
+        t = min(datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S"),
+                datetime.datetime.strptime("2023-02-20 00:00:00", "%Y-%m-%d %H:%M:%S")) - datetime.timedelta(days=2)
+
+        start = t.strftime("%Y-%m-%d %H:%M:%S")
 
         self.adjust = self.get_adjust()
         self.daily_info(code, start, end)
@@ -345,15 +349,13 @@ class OpContractQuote(JQData):
 
     def collect_info(self, **kwargs):
         update = kwargs.get("update", None)
-
         db = InfluxService()
-
         time_ = InfluxTime.utc(kwargs["start"], timestamp_=True)
 
         filter_ = f"""|> filter(fn: (r) => r["_field"] == "expire_date" and r["_value"]>{time_})"""
 
         if update:
-            kwargs["start"] = "2022-01-01 00:00:00"
+            kwargs["start"] = "2020-01-01 00:00:00"  # 2021
 
         df = db.query_influx(start=kwargs["start"], end=kwargs["end"], measurement="opcontractinfo", filter_=filter_,
                              keep=["_time", "opcode", "expire_date"], unique="opcode")
@@ -402,11 +404,12 @@ class OpContractQuote(JQData):
 if __name__ == "__main__":
     # pandas.set_option('display.max_columns', None)
     opc = OpContractQuote()
-    start = '2023-02-23 00:00:00'
-    end = '2023-02-24 00:00:00'
+    start = '2023-01-01 00:00:00'
+    end = '2023-02-25 00:00:00'
     # opc.daily_info("10004405.XSHG", '2023-02-01 00:00:00','2023-02-03 00:00:00')
     code = "10005185.XSHG"
+    print(len(opc.collect_info(start=start, end=end, update=1)))
 
-    c, f = opc.get(code=code, start=start, end=end)
-    print(c)
+    # c, f = opc.get(code=code, start=start, end=end)
+    # print(c)
     # print(c.columns)

@@ -71,6 +71,7 @@ class PutdMinusCalld(JQData):
             opt.OPT_CONTRACT_INFO.expire_date >= end, )
 
         self.daily = opt.run_query(q)
+        # print(self.daily)
 
         if len(self.daily) == 0:
             return None
@@ -90,6 +91,8 @@ class PutdMinusCalld(JQData):
         month_01 = today.replace(month=today_month + 2, day=1)
 
         df_01 = self.daily[(month_00 <= self.daily["expire_date"]) & (self.daily["expire_date"] <= month_01)]
+
+        print(df_01)
         self.code = df_01["code"].unique().tolist()
 
         # self.CO = df_01[df_01["contract_type"] == "CO"]
@@ -124,7 +127,7 @@ class PutdMinusCalld(JQData):
         df = self.db.query_influx(start=start, end=end, measurement="opcontractquote", filter_=filter_,
                                   keep=["_time", "targetcode", "delta", "iv", "type"])
 
-        print(df)
+        # print(df)
 
         if len(df) == 0:
             print("None...")
@@ -168,12 +171,13 @@ class PutdMinusCalld(JQData):
         co_delta, co_iv = calld["delta"], calld["iv"]
         po_delta, po_iv = putd["delta"], putd["iv"]
 
-        tck1 = spi.splrep(co_delta, co_iv, k=1)
-        ivc0 = spi.splev([0.25, 0.5], tck1, ext=0)
+        # print(co_delta, co_iv)
 
         if len(co_delta) <= 1 or len(po_delta) <= 1:
             putd, calld, putd_calld = np.nan, np.nan, np.nan
         else:
+            tck1 = spi.splrep(co_delta, co_iv, k=1)
+            ivc0 = spi.splev([0.25, 0.5], tck1, ext=0)
             tck2 = spi.splrep(po_delta, po_iv, k=1)
             ivp0 = spi.splev([-0.25, -0.5], tck2, ext=0)
 
@@ -253,10 +257,11 @@ class PutdMinusCalld(JQData):
 
 
 if __name__ == "__main__":
-    # pandas.set_option("display.max_rows", None)
+    pandas.set_option("display.max_rows", None)
+
     opc = PutdMinusCalld()
-    start = '2023-02-01 00:00:00'
-    end = '2023-02-02 00:00:00'
+    start = '2023-02-22 00:00:00'
+    end = '2023-02-23 00:00:00'
 
     a, _ = opc.get(start=start, end=end)
     print(a)
