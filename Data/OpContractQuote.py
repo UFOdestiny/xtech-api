@@ -269,7 +269,6 @@ class OpContractQuote(JQData):
         self.code_minute[["his_vol", "exercise_price", "contract_type", "days"]] = df
 
     def greekiv(self, start, end):
-
         start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
         end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
         self.code_minute = self.code_minute[(self.code_minute.index >= start) & (self.code_minute.index <= end)]

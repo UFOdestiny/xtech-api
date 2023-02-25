@@ -92,7 +92,7 @@ class PutdMinusCalld(JQData):
 
         df_01 = self.daily[(month_00 <= self.daily["expire_date"]) & (self.daily["expire_date"] <= month_01)]
 
-        print(df_01)
+        # print(df_01)
         self.code = df_01["code"].unique().tolist()
 
         # self.CO = df_01[df_01["contract_type"] == "CO"]
