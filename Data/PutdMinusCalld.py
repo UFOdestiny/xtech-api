@@ -68,7 +68,7 @@ class PutdMinusCalld(JQData):
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG", ),
             opt.OPT_CONTRACT_INFO.list_date <= start,
-            opt.OPT_CONTRACT_INFO.expire_date >= end, )
+            opt.OPT_CONTRACT_INFO.expire_date >= start, )
 
         self.daily = opt.run_query(q)
         # print(self.daily)

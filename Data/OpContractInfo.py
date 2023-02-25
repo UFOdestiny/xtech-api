@@ -8,6 +8,7 @@ import datetime
 
 import pandas
 from jqdatasdk import opt, query
+from sqlalchemy import or_
 
 from service.JoinQuant import JQData
 from utils.InfluxTime import SplitTime, InfluxTime
@@ -26,9 +27,19 @@ class OpContractInfo(JQData):
                   opt.OPT_CONTRACT_INFO.contract_type,
                   opt.OPT_CONTRACT_INFO.contract_unit,
                   opt.OPT_CONTRACT_INFO.expire_date,
-                  opt.OPT_CONTRACT_INFO.is_adjust).filter(self.query_underlying_symbol,
-                                                          opt.OPT_CONTRACT_INFO.list_date >= start,
-                                                          opt.OPT_CONTRACT_INFO.list_date <= end, )
+                  opt.OPT_CONTRACT_INFO.is_adjust).filter(
+            or_(opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "510500.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "510300.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159919.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159915.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG", ),
+            opt.OPT_CONTRACT_INFO.list_date >= start,
+            opt.OPT_CONTRACT_INFO.list_date <= end, )
 
         df = opt.run_query(q)
         return df

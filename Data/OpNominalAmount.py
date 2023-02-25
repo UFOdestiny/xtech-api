@@ -67,7 +67,7 @@ class OpNominalAmount(JQData):
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG", ),
             opt.OPT_CONTRACT_INFO.list_date <= start,
-            opt.OPT_CONTRACT_INFO.expire_date >= end, )
+            opt.OPT_CONTRACT_INFO.expire_date >= start, )
 
         self.daily = opt.run_query(q)
 
@@ -187,14 +187,14 @@ class OpNominalAmount(JQData):
         for t in times:
             self.pre_set(t[0], t[1])
             if self.result is None:
-                print(t[0], t[1], "pass")
+                # print(kwargs, "pass")
                 continue
 
             self.daily_info(t[0], t[1])
             self.vol_aggregate(t[0], t[1])
 
         if self.result is None:
-            print("no..")
+            # print(kwargs, "no..")
             return None, None
         self.result.dropna(inplace=True)
 
@@ -209,8 +209,8 @@ class OpNominalAmount(JQData):
 if __name__ == "__main__":
     pandas.set_option('display.max_columns', None)
     opc = OpNominalAmount()
-    start = '2023-02-21 00:00:00'
-    end = '2023-02-22 00:00:00'
+    start = '2023-02-20 00:00:00'
+    end = '2023-02-21 00:00:00'
 
     a, _ = opc.get(start=start, end=end)
     print(a)

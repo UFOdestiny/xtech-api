@@ -13,6 +13,8 @@ from Data.OpContractInfo import OpContractInfo
 from Data.OpContractQuote import OpContractQuote
 from Data.OpNominalAmount import OpNominalAmount
 from Data.PutdMinusCalld import PutdMinusCalld
+from Data.OpDiscount import OpDiscount
+
 from utils.InfluxTime import SplitTime
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 from threading import Lock
@@ -94,10 +96,11 @@ class Write:
 
 if __name__ == '__main__':
     start = "2020-01-01 00:00:00"
-    end = '2023-02-25 00:00:00'
+    end = '2023-02-20 00:00:00'
 
     # Write(source=OpContractInfo)(start=start, end=end)
     # Write(source=OpTargetQuote)(start=start, end=end)
-    # Write(source=OpNominalAmount)(start=start, end=end)
+    Write(source=OpNominalAmount)(start=start, end=end)
     # Write(source=OpContractQuote)(start=start, end=end, update=1)  # , updata=1
-    Write(source=PutdMinusCalld)(start=start, end=end)
+    # Write(source=PutdMinusCalld)(start=start, end=end)
+    # Write(source=OpDiscount)(start=start, end=end)
