@@ -81,7 +81,7 @@ class Write:
                 all_task = [e.submit(self.thread, **kw) for kw in l_]
                 wait(all_task, return_when=ALL_COMPLETED)
 
-        elif self.source == OpNominalAmount or self.source == PutdMinusCalld:
+        elif self.source in [OpNominalAmount, PutdMinusCalld, OpDiscount]:
             times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=1, reverse=True)
             length = len(times)
             l_ = [{"start": t[0], "end": t[1], "length": length} for t in times]
@@ -95,12 +95,12 @@ class Write:
 
 
 if __name__ == '__main__':
-    start = "2020-01-01 00:00:00"
-    end = '2023-02-20 00:00:00'
+    start = "2023-01-01 00:00:00"
+    end = '2023-02-26 00:00:00'
 
     # Write(source=OpContractInfo)(start=start, end=end)
     # Write(source=OpTargetQuote)(start=start, end=end)
-    Write(source=OpNominalAmount)(start=start, end=end)
+    # Write(source=OpNominalAmount)(start=start, end=end)
     # Write(source=OpContractQuote)(start=start, end=end, update=1)  # , updata=1
     # Write(source=PutdMinusCalld)(start=start, end=end)
-    # Write(source=OpDiscount)(start=start, end=end)
+    Write(source=OpDiscount)(start=start, end=end)

@@ -23,17 +23,17 @@ class OpDiscount(JQData):
         self.daily_01 = None
         self.daily_02 = None
         self.dic = dict()
-        self.result_dic = dict()
+
         self.result = None
 
     def pre_set(self, start, end):
         self.result = get_price(self.targetcodes, fields=['close'], frequency='1m', start_date=start, end_date=end, )
-        self.result["time"] -= pandas.Timedelta(minutes=1)
-
-        # self.result.set_index("time", inplace=True)
         if len(self.result) == 0:
             self.result = None
             return
+        self.result["time"] -= pandas.Timedelta(minutes=1)
+
+        # self.result.set_index("time", inplace=True)
 
         self.result["discount_l_00"] = 0.0
         self.result["discount_l_01"] = 0.0
@@ -75,7 +75,9 @@ class OpDiscount(JQData):
                 self.daily.loc[i, "exercise_price"] = self.daily.loc[i, "ex_exercise_price"]
                 self.daily.loc[i, "contract_unit"] = self.daily.loc[i, "ex_contract_unit"]
 
-        self.daily.drop(["is_adjust", "adj_date", "ex_exercise_price", "ex_contract_unit"], inplace=True, axis=1)
+        self.daily.drop(columns=["is_adjust", "adj_date", "ex_exercise_price", "ex_contract_unit", "contract_unit"],
+                        inplace=True, axis=1)
+
         self.daily.dropna(how="any", inplace=True)
 
         if len(self.daily) == 0:
@@ -97,7 +99,6 @@ class OpDiscount(JQData):
 
         for c in code:
             self.dic[c] = dict()
-            self.result_dic[c] = dict()
 
             df_temp_00 = self.daily_00[self.daily_00["underlying_symbol"] == c]
             df_co_00 = df_temp_00[df_temp_00["contract_type"] == "CO"]["exercise_price"].unique().tolist()
@@ -122,6 +123,8 @@ class OpDiscount(JQData):
 
     @staticmethod
     def takeClosest(lst, target):
+        if not lst:
+            return None
         if target > lst[-1]:
             return lst[-1]
         if target < lst[0]:
@@ -141,14 +144,16 @@ class OpDiscount(JQData):
             return before
 
     def get_pp_pc(self, code, minute):
-        time_ = datetime.datetime.strptime(minute, "%Y-%m-%d %H:%M:%S")
-        time_ += datetime.timedelta(minutes=1)
-        df = get_price(code, fields=['close'], frequency='1m', start_date=time_, end_date=time_, )
+        # time_ = datetime.datetime.strptime(minute, "%Y-%m-%d %H:%M:%S")
+        minute += pandas.Timedelta(minutes=1)
+        df = get_price(code, fields=['close'], frequency='1m', start_date=minute, end_date=minute, )
         df.index -= pandas.Timedelta(minutes=1)
         return df.iloc[0]["close"]
 
     def vol_aggregate(self):
         for i in range(len(self.result)):
+            if i % 10 == 0:
+                print(f"{i}/{len(self.result)}")
             temp = self.result.iloc[i]
 
             time_ = temp["time"]
@@ -156,42 +161,49 @@ class OpDiscount(JQData):
             close = temp["close"]
 
             strike_00 = self.takeClosest(self.dic[code]["00"]["CO"], close)
-            codes_00 = self.daily_00[(self.daily_00["exercise_price"] == strike_00)]
-            code_co_00 = codes_00[codes_00["contract_type" == "CO"]]["code"].iloc[0]
-            code_po_00 = codes_00[codes_00["contract_type" == "PO"]]["code"].iloc[0]
-            p_co_00 = self.get_pp_pc(code_co_00, time_)
-            p_po_00 = self.get_pp_pc(code_po_00, time_)
+            if strike_00:
+                codes_00 = self.daily_00[(self.daily_00["exercise_price"] == strike_00) &
+                                         (self.daily_00["underlying_symbol"] == code)]
 
-            discount_l_00 = (strike_00 + p_po_00 - p_co_00 - close) / close
-            discount_s_00 = (strike_00 - p_po_00 + p_co_00 - close) / close
+                code_co_00 = codes_00[codes_00["contract_type"] == "CO"].iloc[0]["code"]
+                code_po_00 = codes_00[codes_00["contract_type"] == "PO"].iloc[0]["code"]
+                p_co_00 = self.get_pp_pc(code_co_00, time_)
+                p_po_00 = self.get_pp_pc(code_po_00, time_)
+
+                discount_l_00 = (strike_00 + p_po_00 - p_co_00 - close) / close
+                discount_s_00 = (strike_00 - p_po_00 + p_co_00 - close) / close
+                self.result.loc[i, "discount_l_00"] = discount_l_00
+                self.result.loc[i, "discount_s_00"] = discount_s_00
 
             strike_01 = self.takeClosest(self.dic[code]["01"]["CO"], close)
-            codes_01 = self.daily_01[(self.daily_01["exercise_price"] == strike_01)]
-            code_co_01 = codes_01[codes_01["contract_type" == "CO"]]["code"].iloc[0]
-            code_po_01 = codes_01[codes_01["contract_type" == "PO"]]["code"].iloc[0]
-            p_co_01 = self.get_pp_pc(code_co_01, time_)
-            p_po_01 = self.get_pp_pc(code_po_01, time_)
+            if strike_01:
+                codes_01 = self.daily_01[(self.daily_01["exercise_price"] == strike_01) &
+                                         (self.daily_01["underlying_symbol"] == code)]
 
-            discount_l_01 = (strike_01 + p_po_01 - p_co_01 - close) / close
-            discount_s_01 = (strike_01 - p_po_01 + p_co_01 - close) / close
+                code_co_01 = codes_01[codes_01["contract_type"] == "CO"].iloc[0]["code"]
+                code_po_01 = codes_01[codes_01["contract_type"] == "PO"].iloc[0]["code"]
+                p_co_01 = self.get_pp_pc(code_co_01, time_)
+                p_po_01 = self.get_pp_pc(code_po_01, time_)
+
+                discount_l_01 = (strike_01 + p_po_01 - p_co_01 - close) / close
+                discount_s_01 = (strike_01 - p_po_01 + p_co_01 - close) / close
+                self.result.loc[i, "discount_l_01"] = discount_l_01
+                self.result.loc[i, "discount_s_01"] = discount_s_01
 
             strike_02 = self.takeClosest(self.dic[code]["02"]["CO"], close)
-            codes_02 = self.daily_02[(self.daily_02["exercise_price"] == strike_02)]
-            code_co_02 = codes_02[codes_02["contract_type" == "CO"]]["code"].iloc[0]
-            code_po_02 = codes_02[codes_02["contract_type" == "PO"]]["code"].iloc[0]
-            p_co_02 = self.get_pp_pc(code_co_02, time_)
-            p_po_02 = self.get_pp_pc(code_po_02, time_)
 
-            discount_l_02 = (strike_02 + p_po_02 - p_co_02 - close) / close
-            discount_s_02 = (strike_02 - p_po_02 + p_co_02 - close) / close
+            if strike_02:
+                codes_02 = self.daily_02[(self.daily_02["exercise_price"] == strike_02) &
+                                         (self.daily_02["underlying_symbol"] == code)]
+                code_co_02 = codes_02[codes_02["contract_type"] == "CO"].iloc[0]["code"]
+                code_po_02 = codes_02[codes_02["contract_type"] == "PO"].iloc[0]["code"]
+                p_co_02 = self.get_pp_pc(code_co_02, time_)
+                p_po_02 = self.get_pp_pc(code_po_02, time_)
 
-            self.result.loc[i, "discount_l_00"] = discount_l_00
-            self.result.loc[i, "discount_l_01"] = discount_l_01
-            self.result.loc[i, "discount_l_02"] = discount_l_02
-
-            self.result.loc[i, "discount_s_00"] = discount_s_00
-            self.result.loc[i, "discount_s_01"] = discount_s_01
-            self.result.loc[i, "discount_s_02"] = discount_s_02
+                discount_l_02 = (strike_02 + p_po_02 - p_co_02 - close) / close
+                discount_s_02 = (strike_02 - p_po_02 + p_co_02 - close) / close
+                self.result.loc[i, "discount_l_02"] = discount_l_02
+                self.result.loc[i, "discount_s_02"] = discount_s_02
 
     def get(self, **kwargs):
         # print(kwargs)
@@ -204,7 +216,7 @@ class OpDiscount(JQData):
             self.pre_set(t[0], t[1])
             if self.result is None:
                 print(t[0], t[1], "pass")
-                continue
+                return None, None
 
             self.daily_info(t[0], t[1])
             self.vol_aggregate()
@@ -216,21 +228,17 @@ class OpDiscount(JQData):
 
         self.result.set_index("time", inplace=True)
         self.result.index = pandas.DatetimeIndex(self.result.index, tz='Asia/Shanghai')
-
+        self.result.drop(columns=["close"], inplace=True, axis=1)
         self.result.rename(columns={"code": "targetcode"}, inplace=True)
         tag_columns = ['targetcode']
         return self.result, tag_columns
 
 
 if __name__ == "__main__":
-    # pandas.set_option('display.max_columns', None)
+    pandas.set_option('display.max_columns', None)
     opc = OpDiscount()
-    start = '2023-02-21 00:00:00'
-    end = '2023-02-22 00:00:00'
-    opc.get_adjust()
-    opc.pre_set(start, end)
-    opc.daily_info(start, end)
-    opc.vol_aggregate()
+    start = '2023-02-25 09:35:00'
+    end = '2023-02-26 09:36:00'
 
-    # a, _ = opc.get(start=start, end=end)
-    # print(a)
+    a, _ = opc.get(start=start, end=end)
+    print(a)
