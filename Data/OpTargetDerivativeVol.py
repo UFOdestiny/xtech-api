@@ -131,7 +131,9 @@ class OpTargetDerivativeVol(JQData):
         vol_1h.dropna(inplace=True)
 
         tag_columns = ['targetcode']
-        return [vol_1d, vol_2h, vol_1h], tag_columns
+        return [(vol_1d, "optargetderivativevol_1d"),
+                (vol_2h, "optargetderivativevol_2h"),
+                (vol_1h, "optargetderivativevol_1h")], tag_columns
 
 
 if __name__ == "__main__":

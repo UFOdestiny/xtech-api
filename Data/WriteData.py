@@ -47,8 +47,8 @@ class Write:
         if len(df) == 0:
             return False
 
-        for df_ in df:
-            self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=self.measurement, )
+        for df_, m in df:
+            self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=m, )
         return True
 
     def thread(self, **kw):

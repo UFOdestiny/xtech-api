@@ -76,7 +76,7 @@ class InfluxService(metaclass=Singleton):
 
     def write_pandas(self, df, measurement, tag_columns, **kwargs):
         if measurement in ["opcontractquote", "opnominalamount", "putdminuscalld", "opdiscount",
-                           "optargetderivativevol"]:
+                           "optargetderivativevol_1d","optargetderivativevol_1h","optargetderivativevol_2h"]:
             api = self.client.write_api(write_options=SYNCHRONOUS)
             # print(df)
             api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,
@@ -170,6 +170,7 @@ class InfluxService(metaclass=Singleton):
             for i in keep:
                 q += f"\"{i}\","
             q += "])"
+
         # print(q)
 
         df_ = self.query_api.query_data_frame(q)
@@ -244,8 +245,8 @@ if __name__ == "__main__":
     # mysqlService = MysqlService()
     # influxdbService.client.drop_database("test_hello_world")
 
-    influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-25T00:00:00Z", "opcontractquote")
-    influxdbService.empty("opcontractquote")
+    influxdbService.delete_data("2023-01-25T00:00:00Z", "2023-02-27T00:00:00Z", "optargetderivativevol")
+    influxdbService.empty("optargetderivativevol")
     # influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-16T00:00:00Z", "opcontractinfo")
     # q = [
     #     'test1,targetcode=510050.XSHG price=2.76,pct=2.754 1673956372162814720',
