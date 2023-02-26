@@ -152,8 +152,8 @@ class OpDiscount(JQData):
 
     def vol_aggregate(self):
         for i in range(len(self.result)):
-            if i % 10 == 0:
-                print(f"{i}/{len(self.result)}")
+            # if i % 10 == 0:
+            #     print(f"{i}/{len(self.result)}")
             temp = self.result.iloc[i]
 
             time_ = temp["time"]

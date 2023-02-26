@@ -354,7 +354,7 @@ class OpContractQuote(JQData):
         filter_ = f"""|> filter(fn: (r) => r["_field"] == "expire_date" and r["_value"]>{time_})"""
 
         if update:
-            kwargs["start"] = "2020-01-01 00:00:00"  # 2021
+            kwargs["start"] = "2021-01-01 00:00:00"  # 2021
 
         df = db.query_influx(start=kwargs["start"], end=kwargs["end"], measurement="opcontractinfo", filter_=filter_,
                              keep=["_time", "opcode", "expire_date"], unique="opcode")
