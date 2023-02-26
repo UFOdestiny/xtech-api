@@ -33,6 +33,8 @@ class OpContractQuote(JQData):
         self.iv = ImpliedVolatility()
         self.code_minute = None
 
+        self.indicator = 1
+
     def daily_info(self, code, start_date, end_date):
         start_date = start_date[:11] + "00:00:00"
 
@@ -45,6 +47,11 @@ class OpContractQuote(JQData):
                   opt.OPT_CONTRACT_INFO.is_adjust).filter(opt.OPT_CONTRACT_INFO.code == code)
 
         self.pre_open = opt.run_query(q)
+
+        if len(self.pre_open) == 0:
+            self.indicator = None
+            return
+
         time_list = pandas.date_range(start_date, end_date)
         temp = self.pre_open.iloc[0]
         for i in range(len(time_list) - 1):
@@ -92,6 +99,10 @@ class OpContractQuote(JQData):
                        frequency='daily',
                        start_date=start_date,
                        end_date=end_date, )
+
+        if len(df) == 0:
+            self.indicator = None
+            return
 
         close = df["close"].to_list()
 
@@ -162,6 +173,10 @@ class OpContractQuote(JQData):
                                        frequency='minute',
                                        start_date=start_date,
                                        end_date=end_date, )
+
+        if len(self.symbol_minute) == 0:
+            self.indicator = None
+            return
 
         self.symbol_minute.columns = ["symbol_minute"]
         self.symbol_minute.index -= pandas.Timedelta(minutes=1)
@@ -314,19 +329,24 @@ class OpContractQuote(JQData):
         """
         code = kwargs["code"]
         end = kwargs["end"]
-        # start = kwargs["start"]
+        start = kwargs["start"]
 
-        t = min(datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S"),
-                datetime.datetime.strptime("2023-02-20 00:00:00", "%Y-%m-%d %H:%M:%S")) - datetime.timedelta(days=2)
-
-        start = t.strftime("%Y-%m-%d %H:%M:%S")
+        # t = min(datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S"),
+        #         datetime.datetime.strptime("2023-02-20 00:00:00", "%Y-%m-%d %H:%M:%S")) - datetime.timedelta(days=2)
+        #
+        # start = t.strftime("%Y-%m-%d %H:%M:%S")
 
         self.adjust = self.get_adjust()
         self.daily_info(code, start, end)
+        if not self.indicator:
+            return None, None
         self.get_his_vol(start, end)
+        if not self.indicator:
+            return None, None
         self.process_constant()
-
         self.get_underlying_symbol_price(start, end)
+        if not self.indicator:
+            return None, None
         self.get_minute_price(code, start, end)
 
         self.get_tick(code, start, end)
@@ -347,6 +367,7 @@ class OpContractQuote(JQData):
         return self.code_minute, tag_columns
 
     def collect_info(self, **kwargs):
+        pre_start = kwargs["start"]
         update = kwargs.get("update", None)
         db = InfluxService()
         time_ = InfluxTime.utc(kwargs["start"], timestamp_=True)
@@ -373,7 +394,6 @@ class OpContractQuote(JQData):
             lambda x: time.strftime(InfluxTime.yearmd_hourms_format, time.localtime(float(x))))
         df["expire_date"] = pandas.DatetimeIndex(df["expire_date"], tz='Asia/Shanghai')
 
-        # print(df)
         df = df[["opcode", "_time", "expire_date"]]
 
         result = df.values.tolist()
@@ -393,10 +413,16 @@ class OpContractQuote(JQData):
 
         result = [i for i in result if i[0] not in lst]
 
-        for i in range(len(result)):
-            for j in [1, 2]:
-                result[i][j] = result[i][j].strftime("%Y-%m-%d %H:%M:%S")
+        if not update:
+            for i in range(len(result)):
+                for j in [1, 2]:
+                    result[i][j] = result[i][j].strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            for i in range(len(result)):
+                result[i][1] = pre_start
+                result[i][2] = kwargs["end"]
 
+        print(result[0])
         return result
 
 

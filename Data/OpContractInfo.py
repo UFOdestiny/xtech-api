@@ -60,7 +60,8 @@ class OpContractInfo(JQData):
             self.process_df(df)
 
         # print(self.df, self.adjust)
-
+        if self.df is None:
+            return None, None
         self.df = pandas.merge(left=self.df, right=self.adjust, on="code", how="left")
 
         self.df["adj_date"].fillna("1980-01-01", inplace=True)

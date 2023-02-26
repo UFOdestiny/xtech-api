@@ -107,17 +107,17 @@ if __name__ == '__main__':
         # Write(source=OpContractInfo)(start=start, end=end)
         # Write(source=OpTargetQuote)(start=start, end=end)
         # Write(source=OpNominalAmount)(start=start, end=end)
-        # Write(source=OpContractQuote)(start=start, end=end, update=1)  # , updata=1
+        Write(source=OpContractQuote)(start=start, end=end, update=1)  # , updata=1
         # Write(source=PutdMinusCalld)(start=start, end=end)
         # Write(source=OpDiscount)(start=start, end=end)
         # Write(source=OpTargetDerivativeVol)(start=start, end=end)
     elif len(sys.argv) == 2:
         source = sys.argv[1]
         start, end = InfluxTime.this_minute()
-        Write(source=source)(start=start, end=end)
+        Write(source=source)(start=start, end=end, update=1)
 
     elif len(sys.argv) == 3:
         source = sys.argv[1]
         start = sys.argv[2]
         end = sys.argv[3]
-        Write(source=source)(start=start, end=end)
+        Write(source=source)(start=start, end=end, update=1)
