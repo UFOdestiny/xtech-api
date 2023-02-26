@@ -4,7 +4,7 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
-
+import sys
 
 from service.InfluxService import InfluxService
 from utils.Logger import Logger
@@ -16,7 +16,7 @@ from Data.PutdMinusCalld import PutdMinusCalld
 from Data.OpDiscount import OpDiscount
 from Data.OpTargetDerivativeVol import OpTargetDerivativeVol
 
-from utils.InfluxTime import SplitTime
+from utils.InfluxTime import SplitTime, InfluxTime
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 from threading import Lock
 
@@ -101,13 +101,23 @@ class Write:
 
 
 if __name__ == '__main__':
-    start = "2023-02-01 00:00:00"
-    end = '2023-02-25 00:00:00'
+    if len(sys.argv) == 1:
+        start = "2023-02-26 00:00:00"
+        end = '2023-02-26 10:00:00'
+        # Write(source=OpContractInfo)(start=start, end=end)
+        # Write(source=OpTargetQuote)(start=start, end=end)
+        # Write(source=OpNominalAmount)(start=start, end=end)
+        # Write(source=OpContractQuote)(start=start, end=end, update=1)  # , updata=1
+        # Write(source=PutdMinusCalld)(start=start, end=end)
+        # Write(source=OpDiscount)(start=start, end=end)
+        # Write(source=OpTargetDerivativeVol)(start=start, end=end)
+    elif len(sys.argv) == 2:
+        source = sys.argv[1]
+        start, end = InfluxTime.this_minute()
+        Write(source=source)(start=start, end=end)
 
-    # Write(source=OpContractInfo)(start=start, end=end)
-    # Write(source=OpTargetQuote)(start=start, end=end)
-    # Write(source=OpNominalAmount)(start=start, end=end)
-    # Write(source=OpContractQuote)(start=start, end=end, update=1)  # , updata=1
-    # Write(source=PutdMinusCalld)(start=start, end=end)
-    # Write(source=OpDiscount)(start=start, end=end)
-    Write(source=OpTargetDerivativeVol)(start=start, end=end)
+    elif len(sys.argv) == 3:
+        source = sys.argv[1]
+        start = sys.argv[2]
+        end = sys.argv[3]
+        Write(source=source)(start=start, end=end)

@@ -63,6 +63,15 @@ class InfluxTime:
         return string_
 
     @staticmethod
+    def this_minute():
+        timestamp = datetime.datetime.now()
+        t1 = timestamp.replace(second=0, microsecond=0)
+        t2 = t1 + timedelta(minutes=1)
+        s1 = t1.strftime(InfluxTime.yearmd_hourms_format)
+        s2 = t2.strftime(InfluxTime.yearmd_hourms_format)
+        return s1, s2
+
+    @staticmethod
     def to_date(s: str):
         year, month, day = time.strptime(s, InfluxTime.yearmd_hourms_format)[:3]
         return datetime.date(year, month, day)
@@ -101,7 +110,7 @@ if __name__ == '__main__':
     # print(InfluxTime.utc("2022-08-09T10:50:00Z"))
     # print(InfluxTime.utc(time.time()))
     # print(InfluxTime.utc('1660026181729'))
-    print(InfluxTime.utc('1677033575165'))
+    # print(InfluxTime.utc('1677033575165'))
     #
     # print(InfluxTime.utcnow())
     # print(time.time())
@@ -116,3 +125,4 @@ if __name__ == '__main__':
 
     # InfluxTime.utc("1676563200.0")
     # print(time.localtime(1676563200))
+    print(InfluxTime.this_minute())
