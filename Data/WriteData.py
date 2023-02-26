@@ -14,6 +14,7 @@ from Data.OpContractQuote import OpContractQuote
 from Data.OpNominalAmount import OpNominalAmount
 from Data.PutdMinusCalld import PutdMinusCalld
 from Data.OpDiscount import OpDiscount
+from Data.OpTargetDerivativeVol import OpTargetDerivativeVol
 
 from utils.InfluxTime import SplitTime
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
@@ -41,9 +42,14 @@ class Write:
         df, tag_columns = self.get_data(**kwargs)
         if df is None:
             return False
-        else:
-            self.db.write_pandas(df=df, tag_columns=tag_columns, measurement=self.measurement, )
-            return True
+        if type(df) != list:
+            df = [i for i in df if i is not None]
+        if len(df) == 0:
+            return False
+
+        for df_ in df:
+            self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=self.measurement, )
+        return True
 
     def thread(self, **kw):
         indicator = self.submit(**kw)
@@ -51,13 +57,13 @@ class Write:
             self.lock.acquire()
             self.count += 1
             self.lock.release()
+            self.log.info(f"{list(kw.values())} {self.count}")
 
         else:  # pass
             self.lock.acquire()
             self.count += 1
             self.lock.release()
-
-        self.log.info(f"{list(kw.values())} {self.count}")
+            self.log.info(f"{list(kw.values())} {self.count} PASS")
 
     def __call__(self, **kwargs):
         if self.source == OpContractQuote:
@@ -95,12 +101,13 @@ class Write:
 
 
 if __name__ == '__main__':
-    start = "2023-01-01 00:00:00"
-    end = '2023-02-26 00:00:00'
+    start = "2023-02-01 00:00:00"
+    end = '2023-02-25 00:00:00'
 
     # Write(source=OpContractInfo)(start=start, end=end)
     # Write(source=OpTargetQuote)(start=start, end=end)
     # Write(source=OpNominalAmount)(start=start, end=end)
     # Write(source=OpContractQuote)(start=start, end=end, update=1)  # , updata=1
     # Write(source=PutdMinusCalld)(start=start, end=end)
-    Write(source=OpDiscount)(start=start, end=end)
+    # Write(source=OpDiscount)(start=start, end=end)
+    Write(source=OpTargetDerivativeVol)(start=start, end=end)
