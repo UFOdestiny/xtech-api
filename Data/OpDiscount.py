@@ -18,6 +18,7 @@ class OpDiscount(JQData):
     def __init__(self):
         super().__init__()
 
+        self.indicator = 1
         self.daily = None
         self.daily_00 = None
         self.daily_01 = None
@@ -147,13 +148,17 @@ class OpDiscount(JQData):
         # time_ = datetime.datetime.strptime(minute, "%Y-%m-%d %H:%M:%S")
         minute += pandas.Timedelta(minutes=1)
         df = get_price(code, fields=['close'], frequency='1m', start_date=minute, end_date=minute, )
+        if len(df) == 0:
+            self.indicator = None
+            return
         df.index -= pandas.Timedelta(minutes=1)
         return df.iloc[0]["close"]
 
     def vol_aggregate(self):
         for i in range(len(self.result)):
-            if i > 0 and i % 100 == 0:
-                print(f"{i}/{len(self.result)}")
+            # print(len)
+            # if i > 0 and i % 100 == 0:
+            print(f"{i}/{len(self.result)}")
             temp = self.result.iloc[i]
 
             time_ = temp["time"]
@@ -170,6 +175,9 @@ class OpDiscount(JQData):
                 p_co_00 = self.get_pp_pc(code_co_00, time_)
                 p_po_00 = self.get_pp_pc(code_po_00, time_)
 
+                if not self.indicator:
+                    return
+
                 discount_l_00 = (strike_00 + p_po_00 - p_co_00 - close) / close
                 discount_s_00 = (strike_00 - p_po_00 + p_co_00 - close) / close
                 self.result.loc[i, "discount_l_00"] = discount_l_00
@@ -185,6 +193,9 @@ class OpDiscount(JQData):
                 p_co_01 = self.get_pp_pc(code_co_01, time_)
                 p_po_01 = self.get_pp_pc(code_po_01, time_)
 
+                if not self.indicator:
+                    return
+
                 discount_l_01 = (strike_01 + p_po_01 - p_co_01 - close) / close
                 discount_s_01 = (strike_01 - p_po_01 + p_co_01 - close) / close
                 self.result.loc[i, "discount_l_01"] = discount_l_01
@@ -199,6 +210,9 @@ class OpDiscount(JQData):
                 code_po_02 = codes_02[codes_02["contract_type"] == "PO"].iloc[0]["code"]
                 p_co_02 = self.get_pp_pc(code_co_02, time_)
                 p_po_02 = self.get_pp_pc(code_po_02, time_)
+
+                if not self.indicator:
+                    return
 
                 discount_l_02 = (strike_02 + p_po_02 - p_co_02 - close) / close
                 discount_s_02 = (strike_02 - p_po_02 + p_co_02 - close) / close
@@ -220,7 +234,8 @@ class OpDiscount(JQData):
 
             self.daily_info(t[0], t[1])
             self.vol_aggregate()
-
+        if not self.indicator:
+            return None, None
         if self.result is None:
             print("no..")
             return None, None
@@ -237,8 +252,9 @@ class OpDiscount(JQData):
 if __name__ == "__main__":
     pandas.set_option('display.max_columns', None)
     opc = OpDiscount()
-    start = '2023-02-24 09:35:00'
-    end = '2023-02-24 09:40:00'
+    start = '2023-02-25 09:30:00'
+    end = '2023-02-28 09:31:00'
 
-    a, _ = opc.get(start=start, end=end)
-    print(a)
+    # a, _ = opc.get(start=start, end=end)
+    # print(a)
+    print(get_price("10004556.XSHG", fields=['close'], frequency='1m', start_date=start, end_date=end))

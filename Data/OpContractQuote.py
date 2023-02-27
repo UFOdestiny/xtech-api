@@ -196,6 +196,11 @@ class OpContractQuote(JQData):
         # print(start, end)
         self.code_minute = get_price(code, frequency='minute', start_date=start, end_date=end,
                                      fields=['open', 'close', 'high', 'low', 'volume', 'money', 'pre_close'])
+        if len(self.code_minute) == 0:
+            print(start, end, code)
+            self.indicator = None
+            return
+
         self.code_minute.fillna(method='ffill', inplace=True)
         self.code_minute.fillna(method='bfill', inplace=True)
 
@@ -426,12 +431,10 @@ class OpContractQuote(JQData):
 if __name__ == "__main__":
     # pandas.set_option('display.max_columns', None)
     opc = OpContractQuote()
-    start = '2023-02-23 10:00:00'
-    end = '2023-02-23 10:05:00'
+    start = '2023-02-27 00:00:00'
+    end = '2023-02-27 10:05:00'
     # opc.daily_info("10004405.XSHG", '2023-02-01 00:00:00','2023-02-03 00:00:00')
     code = "10004405.XSHG"
     # print(len(opc.collect_info(start=start, end=end, update=1)))
 
-    # c, f = opc.get(code=code, start=start, end=end)
-
-    # print(c.columns)
+    c, f = opc.get(code=code, start=start, end=end)
