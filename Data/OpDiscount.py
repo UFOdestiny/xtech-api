@@ -62,7 +62,8 @@ class OpDiscount(JQData):
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG", ),
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
+                ),
             opt.OPT_CONTRACT_INFO.list_date <= start,
             opt.OPT_CONTRACT_INFO.expire_date >= start, )
 
@@ -163,6 +164,8 @@ class OpDiscount(JQData):
 
             time_ = temp["time"]
             code = temp["code"]
+            # if code!="510500.XSHG":
+            #     continue
             close = temp["close"]
 
             strike_00 = self.takeClosest(self.dic[code]["00"]["CO"], close)
@@ -177,9 +180,19 @@ class OpDiscount(JQData):
 
                 if not self.indicator:
                     return
+                # print("start")
+                # print(temp)
+                # print(strike_00)
+                # print(p_po_00)
+                # print(p_co_00)
+                # print(close)
 
                 discount_l_00 = (strike_00 + p_po_00 - p_co_00 - close) / close
                 discount_s_00 = (strike_00 - p_po_00 + p_co_00 - close) / close
+
+                # print(discount_l_00)
+                # print(discount_s_00)
+
                 self.result.loc[i, "discount_l_00"] = discount_l_00
                 self.result.loc[i, "discount_s_00"] = discount_s_00
 
@@ -187,7 +200,6 @@ class OpDiscount(JQData):
             if strike_01:
                 codes_01 = self.daily_01[(self.daily_01["exercise_price"] == strike_01) &
                                          (self.daily_01["underlying_symbol"] == code)]
-
                 code_co_01 = codes_01[codes_01["contract_type"] == "CO"].iloc[0]["code"]
                 code_po_01 = codes_01[codes_01["contract_type"] == "PO"].iloc[0]["code"]
                 p_co_01 = self.get_pp_pc(code_co_01, time_)
@@ -198,6 +210,18 @@ class OpDiscount(JQData):
 
                 discount_l_01 = (strike_01 + p_po_01 - p_co_01 - close) / close
                 discount_s_01 = (strike_01 - p_po_01 + p_co_01 - close) / close
+
+                # print("___________________")
+                # print(code_co_01)
+                # print(code_po_01)
+                # print(temp["time"])
+                # print(strike_01)
+                # print(p_po_01)
+                # print(p_co_01)
+                # print(close)
+                # print(discount_l_01)
+                # print(discount_s_01)
+
                 self.result.loc[i, "discount_l_01"] = discount_l_01
                 self.result.loc[i, "discount_s_01"] = discount_s_01
 
@@ -251,10 +275,11 @@ class OpDiscount(JQData):
 
 if __name__ == "__main__":
     pandas.set_option('display.max_columns', None)
+    pandas.set_option('display.max_rows', None)
     opc = OpDiscount()
-    start = '2023-02-25 09:30:00'
-    end = '2023-02-28 09:31:00'
+    start = '2023-02-21 13:18:00'
+    end = '2023-02-21 13:30:00'
 
-    # a, _ = opc.get(start=start, end=end)
+    a, _ = opc.get(start=start, end=end)
     # print(a)
-    print(get_price("10004556.XSHG", fields=['close'], frequency='1m', start_date=start, end_date=end))
+    # print(get_price("10004556.XSHG", fields=['close'], frequency='1m', start_date=start, end_date=end))

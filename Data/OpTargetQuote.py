@@ -19,14 +19,14 @@ class OpTargetQuote(JQData):
         # self.code = normalize_code(self.code_pre)
         super().__init__()
         self.df = None
-
+        # self.targetcodes = ["510050.XSHG"]
         self.indicator = True
 
     def get_data(self, start, end):
         start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
         end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
         df_pre = None
-
+        #############
         if start.time() > datetime.time(9, 30):
             start_temp = start.replace(hour=9, minute=30, second=0, microsecond=0)
             end_temp = end.replace(hour=9, minute=31, second=0, microsecond=0)
@@ -91,8 +91,8 @@ class OpTargetQuote(JQData):
 if __name__ == "__main__":
     pandas.set_option('display.max_rows', None)
     op = OpTargetQuote()
-    start = "2023-02-27 00:00:00"
-    end = "2023-02-28 00:00:00"
+    start = "2023-02-20 14:58:00"
+    end = "2023-02-21 09:33:00"
     a = op.get(start=start, end=end)
     print(a)
     # df = get_bars(security="510050.XSHG", unit='1m', count=10, fields=['close'])

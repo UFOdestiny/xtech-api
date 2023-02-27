@@ -33,9 +33,9 @@ async def get_data(data: QueryData):
 
     df = influxdbService.query_influx(start=time_series[0], end=time_series[1], measurement=name,
                                       targetcode=targetcode, opcode=opcode, df=False, unzip=type_)
-
+    if not df:
+        return [[]] * 22
     del df[1]
-
     # for i in df:
     #     print(i)
     # res = df.values.tolist()
