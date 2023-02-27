@@ -4,7 +4,13 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
+
+import os
 import sys
+
+root_path = os.path.abspath(__file__)
+root_path = '/'.join(root_path.split('/')[:-2])
+sys.path.append(root_path)
 
 from service.InfluxService import InfluxService
 from utils.Logger import Logger
@@ -19,6 +25,10 @@ from Data.OpTargetDerivativeVol import OpTargetDerivativeVol
 from utils.InfluxTime import SplitTime, InfluxTime
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 from threading import Lock
+
+root_path = os.path.abspath(__file__)
+root_path = '/'.join(root_path.split('/')[:-2])
+sys.path.append(root_path)
 
 
 class Write:
@@ -43,16 +53,19 @@ class Write:
         if df is None:
             return False
         if type(df) != list:
-            df = [i for i in df if i is not None]
+            df = [i for i in [df] if i is not None]
         if len(df) == 0:
             return False
-
-        for df_, m in df:
-            self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=m, )
+        if len(df[0]) == 2:
+            for df_, m in df:
+                self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=m, )
+        else:
+            self.db.write_pandas(df=df[0], tag_columns=tag_columns, measurement=self.measurement, )
         return True
 
     def thread(self, **kw):
         indicator = self.submit(**kw)
+
         if indicator:
             self.lock.acquire()
             self.count += 1
@@ -96,28 +109,37 @@ class Write:
                 wait(all_task, return_when=ALL_COMPLETED)
 
         else:
-            self.log.info(" ".join(kwargs.values()))
-            self.submit(**kwargs)
+            indicator = self.submit(**kwargs)
+            if indicator:
+                self.log.info(f"{list(kwargs.values())} {self.count}")
+            else:
+                self.log.info(f"{list(kwargs.values())} {self.count} PASS")
 
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
-        start = "2023-02-26 00:00:00"
-        end = '2023-02-26 10:00:00'
+        start = "2023-02-23 23:00:00"
+        end = '2023-02-23 23:05:00'
         # Write(source=OpContractInfo)(start=start, end=end)
-        # Write(source=OpTargetQuote)(start=start, end=end)
+        Write(source=OpTargetQuote)(start=start, end=end)
         # Write(source=OpNominalAmount)(start=start, end=end)
-        Write(source=OpContractQuote)(start=start, end=end, update=1)  # , updata=1
+        # Write(source=OpContractQuote)(start=start, end=end, update=1, cmd=1)  # , updata=1
+
         # Write(source=PutdMinusCalld)(start=start, end=end)
+
         # Write(source=OpDiscount)(start=start, end=end)
         # Write(source=OpTargetDerivativeVol)(start=start, end=end)
+
     elif len(sys.argv) == 2:
         source = sys.argv[1]
-        start, end = InfluxTime.this_minute()
-        Write(source=source)(start=start, end=end, update=1)
+        if source == "OpContractInfo":
+            start, end = InfluxTime.this_day()
+        else:
+            start, end = InfluxTime.this_minute()
+        Write(source=eval(source))(start=start, end=end, update='1', cmd='1')
 
     elif len(sys.argv) == 3:
         source = sys.argv[1]
         start = sys.argv[2]
         end = sys.argv[3]
-        Write(source=source)(start=start, end=end, update=1)
+        Write(source=eval(source))(start=start, end=end, update='1', cmd='1')

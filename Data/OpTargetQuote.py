@@ -20,6 +20,8 @@ class OpTargetQuote(JQData):
         super().__init__()
         self.df = None
 
+        self.indicator = True
+
     def get_data(self, start, end):
         start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
         end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")

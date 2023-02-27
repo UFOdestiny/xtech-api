@@ -311,17 +311,6 @@ class OpContractQuote(JQData):
         self.code_minute.drop(["symbol_price", "days", "his_vol", "pre_close"],
                               axis=1, inplace=True)
 
-    def write_excel(self):
-        """
-        将数据写入xlsx，表1为最终结果，表2为tick原始数据
-        :return:
-        """
-        filename = self.code.replace(".", "")
-        writer = pandas.ExcelWriter(filename + ".xlsx")
-        self.code_minute.to_excel(writer, sheet_name='minute', index=False)
-
-        writer.save()
-
     def get(self, **kwargs):
         """
         按流程执行
@@ -367,6 +356,14 @@ class OpContractQuote(JQData):
         return self.code_minute, tag_columns
 
     def collect_info(self, **kwargs):
+        cmd = kwargs.get("cmd", None)
+
+        if cmd:
+            return [["10004405.XSHG", kwargs["start"], kwargs["end"]],
+                    ["10004406.XSHG", kwargs["start"], kwargs["end"]],
+                    ["10004407.XSHG", kwargs["start"], kwargs["end"]],
+                    ["10004408.XSHG", kwargs["start"], kwargs["end"]]]
+
         pre_start = kwargs["start"]
         update = kwargs.get("update", None)
         db = InfluxService()
@@ -422,19 +419,19 @@ class OpContractQuote(JQData):
                 result[i][1] = pre_start
                 result[i][2] = kwargs["end"]
 
-        print(result[0])
+        # print(result[0])
         return result
 
 
 if __name__ == "__main__":
     # pandas.set_option('display.max_columns', None)
     opc = OpContractQuote()
-    start = '2023-01-01 00:00:00'
-    end = '2023-02-25 00:00:00'
+    start = '2023-02-23 10:00:00'
+    end = '2023-02-23 10:05:00'
     # opc.daily_info("10004405.XSHG", '2023-02-01 00:00:00','2023-02-03 00:00:00')
-    code = "10005185.XSHG"
-    print(len(opc.collect_info(start=start, end=end, update=1)))
+    code = "10004405.XSHG"
+    # print(len(opc.collect_info(start=start, end=end, update=1)))
 
     # c, f = opc.get(code=code, start=start, end=end)
-    # print(c)
+
     # print(c.columns)
