@@ -1,1 +1,1 @@
-/root/anaconda3/bin/python /root/api/Data/WriteData.py OpTargetQuote
+/root/anaconda3/bin/python /root/api/Data/WriteData.py OpDiscount

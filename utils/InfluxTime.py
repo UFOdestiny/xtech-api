@@ -67,6 +67,7 @@ class InfluxTime:
         timestamp = datetime.datetime.now()
         t1 = timestamp.replace(second=0, microsecond=0)
         t2 = t1 + timedelta(minutes=1)
+        t1 -= timedelta(minutes=2)
         s1 = t1.strftime(InfluxTime.yearmd_hourms_format)
         s2 = t2.strftime(InfluxTime.yearmd_hourms_format)
         return s1, s2

@@ -91,8 +91,8 @@ class OpTargetQuote(JQData):
 if __name__ == "__main__":
     pandas.set_option('display.max_rows', None)
     op = OpTargetQuote()
-    start = "2023-02-22 09:30:00"
-    end = "2023-02-22 22:20:00"
+    start = "2023-02-27 10:00:00"
+    end = "2023-02-28 00:00:00"
     a = op.get(start=start, end=end)
     print(a)
     # df = get_bars(security="510050.XSHG", unit='1m', count=10, fields=['close'])

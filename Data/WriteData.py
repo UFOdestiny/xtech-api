@@ -66,13 +66,13 @@ class Write:
             self.lock.acquire()
             self.count += 1
             self.lock.release()
-            # self.log.info(f"{list(kw.values())}" + str(self.count))
+            self.log.info(f"{list(kw.values())} {self.count}")
 
         else:  # pass
             self.lock.acquire()
             self.count += 1
             self.lock.release()
-            # self.log.info(f"{list(kw.values())}" + str(self.count))
+            self.log.info(f"{list(kw.values())} {self.count} PASS")
 
     def __call__(self, **kwargs):
         if self.source == OpContractQuote:
@@ -107,11 +107,9 @@ class Write:
         else:
             indicator = self.submit(**kwargs)
             if indicator:
-                print(12)
-                # self.log.info(f"{list(kwargs.values())}" + str(self.count))
+                self.log.info(f"{list(kwargs.values())} {self.count}")
             else:
-                print(123)
-                # self.log.info(f"{list(kwargs.values())} PASS" + str(self.count))
+                self.log.info(f"{list(kwargs.values())} {self.count} PASS")
 
 
 if __name__ == '__main__':
