@@ -26,10 +26,6 @@ from utils.InfluxTime import SplitTime, InfluxTime
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 from threading import Lock
 
-root_path = os.path.abspath(__file__)
-root_path = '/'.join(root_path.split('/')[:-2])
-sys.path.append(root_path)
-
 
 class Write:
     def __init__(self, source):
@@ -70,13 +66,13 @@ class Write:
             self.lock.acquire()
             self.count += 1
             self.lock.release()
-            self.log.info(f"{list(kw.values())} {self.count}")
+            # self.log.info(f"{list(kw.values())}" + str(self.count))
 
         else:  # pass
             self.lock.acquire()
             self.count += 1
             self.lock.release()
-            self.log.info(f"{list(kw.values())} {self.count} PASS")
+            # self.log.info(f"{list(kw.values())}" + str(self.count))
 
     def __call__(self, **kwargs):
         if self.source == OpContractQuote:
@@ -111,35 +107,38 @@ class Write:
         else:
             indicator = self.submit(**kwargs)
             if indicator:
-                self.log.info(f"{list(kwargs.values())} {self.count}")
+                print(12)
+                # self.log.info(f"{list(kwargs.values())}" + str(self.count))
             else:
-                self.log.info(f"{list(kwargs.values())} {self.count} PASS")
+                print(123)
+                # self.log.info(f"{list(kwargs.values())} PASS" + str(self.count))
 
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
-        start = "2023-02-23 23:00:00"
-        end = '2023-02-23 23:05:00'
+        start = "2023-02-23 10:00:00"
+        end = '2023-02-23 10:05:00'
         # Write(source=OpContractInfo)(start=start, end=end)
-        Write(source=OpTargetQuote)(start=start, end=end)
+        # Write(source=OpTargetQuote)(start=start, end=end)
         # Write(source=OpNominalAmount)(start=start, end=end)
         # Write(source=OpContractQuote)(start=start, end=end, update=1, cmd=1)  # , updata=1
 
         # Write(source=PutdMinusCalld)(start=start, end=end)
 
-        # Write(source=OpDiscount)(start=start, end=end)
+        Write(source=OpDiscount)(start=start, end=end)
         # Write(source=OpTargetDerivativeVol)(start=start, end=end)
 
     elif len(sys.argv) == 2:
         source = sys.argv[1]
-        if source == "OpContractInfo":
+        if source in ["OpContractInfo", "OpTargetDerivativeVol", "OpNominalAmount"]:
             start, end = InfluxTime.this_day()
         else:
             start, end = InfluxTime.this_minute()
         Write(source=eval(source))(start=start, end=end, update='1', cmd='1')
 
-    elif len(sys.argv) == 3:
+    elif len(sys.argv) > 2:
         source = sys.argv[1]
-        start = sys.argv[2]
-        end = sys.argv[3]
-        Write(source=eval(source))(start=start, end=end, update='1', cmd='1')
+        # start = sys.argv[2]
+        # end = sys.argv[3]
+        start, end = InfluxTime.today()
+        Write(source=eval(source))(start=start, end=end, update='1')

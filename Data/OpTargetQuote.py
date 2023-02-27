@@ -89,7 +89,7 @@ class OpTargetQuote(JQData):
 
 
 if __name__ == "__main__":
-    # pandas.set_option('display.max_rows', None)
+    pandas.set_option('display.max_rows', None)
     op = OpTargetQuote()
     start = "2023-02-22 09:30:00"
     end = "2023-02-22 22:20:00"

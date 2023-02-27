@@ -83,6 +83,15 @@ class InfluxTime:
         return s1, s2
 
     @staticmethod
+    def today():
+        timestamp = datetime.datetime.now()
+        t1 = timestamp.replace(hour=0, minute=0, second=0, microsecond=0)
+        t2 = t1 + timedelta(days=1)
+        s1 = t1.strftime(InfluxTime.yearmd_hourms_format)
+        s2 = t2.strftime(InfluxTime.yearmd_hourms_format)
+        return s1, s2
+
+    @staticmethod
     def to_date(s: str):
         year, month, day = time.strptime(s, InfluxTime.yearmd_hourms_format)[:3]
         return datetime.date(year, month, day)
