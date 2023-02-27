@@ -5,11 +5,12 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
 
+import datetime
+
 import pandas
 from jqdatasdk import get_price
-from utils.InfluxTime import SplitTime
+
 from service.JoinQuant import JQData
-import datetime
 
 
 class OpTargetDerivativeVol(JQData):
