@@ -5,7 +5,9 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
 
+
 import datetime
+import json
 import math
 import time
 
@@ -17,6 +19,7 @@ from service.InfluxService import InfluxService
 from utils.GreeksIV import Greeks, ImpliedVolatility
 from utils.InfluxTime import InfluxTime
 from service.JoinQuant import JQData
+from config import FilePath
 
 
 class OpContractQuote(JQData):
@@ -371,10 +374,10 @@ class OpContractQuote(JQData):
         cmd = kwargs.get("cmd", None)
 
         if cmd:
-            return [["10004405.XSHG", kwargs["start"], kwargs["end"]],
-                    ["10004406.XSHG", kwargs["start"], kwargs["end"]],
-                    ["10004407.XSHG", kwargs["start"], kwargs["end"]],
-                    ["10004408.XSHG", kwargs["start"], kwargs["end"]]]
+            with open(FilePath.path, 'r') as load_f:
+                subscribe = json.load(load_f)["code_list"]
+                lst = [[i, kwargs["start"], kwargs["end"]] for i in subscribe]
+                return lst
 
         pre_start = kwargs["start"]
         update = kwargs.get("update", None)
