@@ -364,6 +364,7 @@ class OpContractQuote(JQData):
         self.code_minute["type"].replace(-1, "PO", inplace=True)
 
         self.code_minute.index = pandas.DatetimeIndex(self.code_minute.index, tz='Asia/Shanghai')
+
         return self.code_minute, tag_columns
 
     def collect_info(self, **kwargs):
@@ -398,8 +399,8 @@ class OpContractQuote(JQData):
 
         # df["days"] = df["days"].apply(lambda x: datetime.timedelta(days=int(x)))
 
-        df["expire_date"] = df["expire_date"].apply(
-            lambda x: time.strftime(InfluxTime.yearmd_hourms_format, time.localtime(float(x))))
+        df["expire_date"] = df["expire_date"].apply(lambda x: time.strftime(InfluxTime.yearmd_hourms_format,
+                                                                            time.localtime(float(x))))
         df["expire_date"] = pandas.DatetimeIndex(df["expire_date"], tz='Asia/Shanghai')
 
         df = df[["opcode", "_time", "expire_date"]]
@@ -437,8 +438,8 @@ class OpContractQuote(JQData):
 if __name__ == "__main__":
     # pandas.set_option('display.max_columns', None)
     opc = OpContractQuote()
-    start = '2023-03-02 09:44:00'
-    end = '2023-03-02 09:55:00'
+    start = '2023-03-02 09:54:00'
+    end = '2023-03-02 09:57:00'
     # opc.daily_info("10004405.XSHG", '2023-02-01 00:00:00','2023-02-03 00:00:00')
     code = "10004405.XSHG"
     # print(len(opc.collect_info(start=start, end=end, update=1)))

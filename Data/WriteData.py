@@ -52,7 +52,8 @@ class Write:
             df = [i for i in [df] if i is not None]
         if len(df) == 0:
             return False
-        if len(df[0]) == 2:
+
+        if type(df[0]) == list:
             for df_, m in df:
                 self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=m, )
         else:
