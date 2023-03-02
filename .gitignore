@@ -3,4 +3,4 @@ __pycache__
 logger/*
 config.py
 test
-visualization/.ipynb_checkpoints
+visualization
