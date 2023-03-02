@@ -71,8 +71,9 @@ class OpContractQuote(JQData):
 
         self.pre_open.drop(["is_adjust", "adj_date", "ex_exercise_price", "ex_contract_unit"], inplace=True, axis=1)
         self.pre_open["expire_date"] = pandas.to_datetime(self.pre_open["expire_date"])
+
         self.pre_open['days'] = (self.pre_open["expire_date"] - self.pre_open.index).apply(lambda x: x.days / 365)
-        # print("ok2")
+
         # self.pre_open.set_index("date", inplace=True)
 
         self.code = code
@@ -117,7 +118,8 @@ class OpContractQuote(JQData):
         """
         # 3、计算某一天的前20天的平均收益率
         """
-        sum(rts[1:]) / (length - 1)
+        # sum(rts[1:]) / (length - 1)
+
         avg = [0.0] * 21
         avg0 = sum(rts[1:21]) / 20
         avg.append(avg0)
@@ -143,6 +145,7 @@ class OpContractQuote(JQData):
 
         df["his_vol"] = variance
         del df["close"]
+
         self.his_vol = df
 
     def process_constant(self):
@@ -296,10 +299,13 @@ class OpContractQuote(JQData):
         self.code_minute["delta"] = self.g.delta(self.code_minute["symbol_price"], self.code_minute["exercise_price"],
                                                  self.code_minute["days"], self.code_minute["his_vol"],
                                                  self.code_minute["contract_type"])
+
         self.code_minute["gamma"] = self.g.gamma(self.code_minute["symbol_price"], self.code_minute["exercise_price"],
                                                  self.code_minute["days"], self.code_minute["his_vol"])
+
         self.code_minute["vega"] = self.g.vega(self.code_minute["symbol_price"], self.code_minute["exercise_price"],
                                                self.code_minute["days"], self.code_minute["his_vol"])
+
         self.code_minute["theta"] = self.g.theta(self.code_minute["symbol_price"], self.code_minute["exercise_price"],
                                                  self.code_minute["days"], self.code_minute["his_vol"],
                                                  self.code_minute["contract_type"])
@@ -431,10 +437,11 @@ class OpContractQuote(JQData):
 if __name__ == "__main__":
     # pandas.set_option('display.max_columns', None)
     opc = OpContractQuote()
-    start = '2023-02-27 00:00:00'
-    end = '2023-02-27 10:05:00'
+    start = '2023-03-02 09:44:00'
+    end = '2023-03-02 09:55:00'
     # opc.daily_info("10004405.XSHG", '2023-02-01 00:00:00','2023-02-03 00:00:00')
     code = "10004405.XSHG"
     # print(len(opc.collect_info(start=start, end=end, update=1)))
 
     c, f = opc.get(code=code, start=start, end=end)
+    print(c)

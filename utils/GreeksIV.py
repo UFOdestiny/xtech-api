@@ -23,8 +23,10 @@ class Greeks:
         return d1, d2
 
     def delta(self, s, k, T, sigma, n=1):
+        # print(s, k, T, sigma)
         d1 = self.d(s, k, T, sigma)[0]
         delta = n * si.norm.cdf(n * d1)
+        # print(delta)
         return delta
 
     def gamma(self, s, k, T, sigma):
@@ -99,13 +101,22 @@ if __name__ == "__main__":
     # print(a["close"], a["exercise_price"], a["days"], a["his_vol"])
     # print(g.delta(0.4, 4.6, 0.167123, 0.1637))
 
-    V_market = 0.8079
-    K = 4.6
-    T = 0.039
+    # 例子
+    St = 2.727
+    K = 2.218
+    T = 0.063014
+    sigma = 0.162854
 
-    S = 3.786
+    delta = Greeks().delta(St, K, T, sigma)
+    print(delta)
 
-    cp = 'c'  # 看涨期权
-    for i in range(1):
-        implied_vol = ImpliedVolatility().bs_price(cp, S, K, T, 1)
-        print('Implied get_all_iv_delta: %.2f%%' % (implied_vol * 100))
+    # V_market = 0.8079
+    # K = 4.6
+    # T = 0.039
+    #
+    # S = 3.786
+    #
+    # cp = 'c'  # 看涨期权
+    # for i in range(1):
+    #     implied_vol = ImpliedVolatility().bs_price(cp, S, K, T, 1)
+    #     print('Implied get_all_iv_delta: %.2f%%' % (implied_vol * 100))

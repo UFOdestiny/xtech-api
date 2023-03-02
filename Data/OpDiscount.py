@@ -157,9 +157,9 @@ class OpDiscount(JQData):
 
     def vol_aggregate(self):
         for i in range(len(self.result)):
-            # print(len)
-            # if i > 0 and i % 100 == 0:
-            print(f"{i}/{len(self.result)}")
+            print(len)
+            if i > 0 and i % 100 == 0:
+                print(f"{i}/{len(self.result)}")
             temp = self.result.iloc[i]
 
             time_ = temp["time"]
@@ -274,12 +274,12 @@ class OpDiscount(JQData):
 
 
 if __name__ == "__main__":
-    pandas.set_option('display.max_columns', None)
-    pandas.set_option('display.max_rows', None)
+    # pandas.set_option('display.max_columns', None)
+    # pandas.set_option('display.max_rows', None)
     opc = OpDiscount()
-    start = '2023-02-21 13:18:00'
-    end = '2023-02-21 13:30:00'
+    start = '2023-03-01 11:28:00'
+    end = '2023-03-01 11:30:00'
 
     a, _ = opc.get(start=start, end=end)
-    # print(a)
+    print(a)
     # print(get_price("10004556.XSHG", fields=['close'], frequency='1m', start_date=start, end_date=end))

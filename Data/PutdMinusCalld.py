@@ -66,7 +66,8 @@ class PutdMinusCalld(JQData):
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG", ),
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
+                ),
             opt.OPT_CONTRACT_INFO.list_date <= start,
             opt.OPT_CONTRACT_INFO.expire_date >= start, )
 
@@ -87,31 +88,17 @@ class PutdMinusCalld(JQData):
 
         today = datetime.date.today()
         today_month = today.month
-        month_00 = today.replace(month=today_month + 1, day=1)
-        month_01 = today.replace(month=today_month + 2, day=1)
+        if today_month == 12:
+            month_00 = today.replace(year=today.year + 1, month=1, day=1)
+            month_01 = today.replace(year=today.year + 1, month=2, day=1)
+        else:
+            month_00 = today.replace(month=today_month + 1, day=1)
+            month_01 = today.replace(month=today_month + 2, day=1)
 
         df_01 = self.daily[(month_00 <= self.daily["expire_date"]) & (self.daily["expire_date"] <= month_01)]
 
         # print(df_01)
         self.code = df_01["code"].unique().tolist()
-
-        # self.CO = df_01[df_01["contract_type"] == "CO"]
-        # self.PO = df_01[df_01["contract_type"] == "PO"]
-        #
-        # self.CO_code = self.CO["code"].values
-        # self.PO_code = self.PO["code"].values
-
-        # print(len(self.CO_code), len(self.PO_code))
-
-        # co = [f"r[\"opcode\"] == \"{i}\"" for i in self.CO_code]
-        # self.CO_code_all = " or ".join(co)
-        #
-        # po = [f"r[\"opcode\"] == \"{i}\"" for i in self.PO_code]
-        # self.PO_code_all = " or ".join(po)
-        # print(self.CO)
-        # print(self.PO)
-        # print(self.CO_code)
-        # print(self.PO_code)
 
     def get_all_iv_delta(self, start, end):
         # self.code = ['MO2309-C-7000.CCFX', 'MO2309-C-6800.CCFX', 'MO2309-C-6000.CCFX',
@@ -127,8 +114,6 @@ class PutdMinusCalld(JQData):
         df = self.db.query_influx(start=start, end=end, measurement="opcontractquote", filter_=filter_,
                                   keep=["_time", "targetcode", "delta", "iv", "type"])
 
-        # print(df)
-
         if len(df) == 0:
             print("None...")
             return None, None
@@ -140,50 +125,46 @@ class PutdMinusCalld(JQData):
             df_temp = df[df["targetcode"] == tc]
             self.iv_delta[tc] = df_temp
 
-            # df_co = df_temp[df_temp["type"] == "CO"]
-            # df_po = df_temp[df_temp["type"] == "PO"]
-
-            # df_co.drop(df[(df.iv == 0) & (df.delta == 1) & (df.delta == 0)].index, inplace=True)
-            # df_po.drop(df[(df.iv == 0) & (df.delta == 1) & (df.delta == 0)].index, inplace=True)
-            #
-            # calld = df_co.sort_values(by='delta').drop_duplicates(subset=['delta'], keep='first')
-            # putd = df_po.sort_values(by='delta').drop_duplicates(subset=['delta'], keep='first')
-            #
-            # dic_temp = {"CO": [calld["delta"].to_list(), calld["iv"].to_list()],
-            #             "PO": [putd["delta"].to_list(), putd["iv"].to_list()]}
-            #
-            # self.dic[tc] = dic_temp
-            # df.drop(df[(df.iv == 0) & (df.delta == 1) & (df.delta == 0)].index, inplace=True)
-            # df.drop_duplicates(subset=['delta'], keep="first", inplace=True)
-            # df.sort_values(by=['delta'], inplace=True)
-            # self.iv_delta = df_temp  # df
-            # return df["delta"].tolist(), df["iv"].tolist()
-
     @staticmethod
     def group_f(df):
+        # print(df)
         df.drop(df[(df.iv == 0) & (df.delta == 1) & (df.delta == 0)].index, inplace=True)
         df_co = df[df["type"] == "CO"]
         df_po = df[df["type"] == "PO"]
 
-        calld = df_co.sort_values(by='delta').drop_duplicates(subset=['delta'], keep='first')
-        putd = df_po.sort_values(by='delta').drop_duplicates(subset=['delta'], keep='first')
+        df_co.sort_values(by='delta', inplace=True)
+        df_co.drop_duplicates(subset=['delta'], keep='first', inplace=True)
+        df_po.sort_values(by='delta', inplace=True)
+        df_po.drop_duplicates(subset=['delta'], keep='first', inplace=True)
 
-        co_delta, co_iv = calld["delta"], calld["iv"]
-        po_delta, po_iv = putd["delta"], putd["iv"]
-
-        # print(co_delta, co_iv)
+        co_delta, co_iv = df_co["delta"].to_list(), df_co["iv"].to_list()
+        po_delta, po_iv = df_po["delta"].to_list(), df_po["iv"].to_list()
+        # print("__________________")
+        # print(co_delta)
+        # print(co_iv)
+        # print(po_delta)
+        # print(po_iv)
 
         if len(co_delta) <= 1 or len(po_delta) <= 1:
             putd, calld, putd_calld = np.nan, np.nan, np.nan
         else:
             tck1 = spi.splrep(co_delta, co_iv, k=1)
+
             ivc0 = spi.splev([0.25, 0.5], tck1, ext=0)
+            # print(ivc0)
+
             tck2 = spi.splrep(po_delta, po_iv, k=1)
+
             ivp0 = spi.splev([-0.25, -0.5], tck2, ext=0)
+            # print(ivp0)
 
             putd = ivp0[0] - ivp0[1]
             calld = ivc0[0] - ivc0[1]
             putd_calld = putd - calld
+
+            # print(putd)
+            # print(calld)
+            # print(putd_calld)
 
         return pandas.DataFrame({"putd": [putd], "calld": [calld], "putd_calld": [putd_calld]})
 
@@ -192,38 +173,18 @@ class PutdMinusCalld(JQData):
             df = self.iv_delta[tg]
             g = df.groupby(df.index)
             df_ = g.apply(self.group_f)
-            # df_.reset_index("_time", inplace=True)
-            # df_.set_index("_time", inplace=True)
-            index = self.result.loc[self.result["code"] == tg].index
+            df_.reset_index("_time", inplace=True)
+            df_.set_index("_time", inplace=True)
+
+            # print(df)
+            df_time = df_.index
+            index = self.result.loc[(self.result["code"] == tg) &
+                                    (self.result["time"] >= df_time[0]) &
+                                    (self.result["time"] <= df_time[-1])].index
 
             self.result.loc[index, "calld"] = df_["calld"].values
             self.result.loc[index, "putd"] = df_["putd"].values
             self.result.loc[index, "putd_calld"] = df_["putd_calld"].values
-
-        # indexes = self.result.index[(self.result.index >= start) & (self.result.index <= end)]
-        # pairs = [(str(indexes[i]), str(indexes[i + 1])) for i in range(len(indexes) - 1)]
-        # pairs.append()
-        #
-        # for s, e in pairs:
-        #     # print(s)
-        #     CO_delta, CO_iv = self.get_all_iv_delta(start, end)
-        #     PO_delta, PO_iv = self.get_all_iv_delta(start, end)
-        #
-        #     tck1 = spi.splrep(CO_delta, CO_iv, k=1)
-        #     ivc0 = spi.splev([0.25, 0.5], tck1, ext=0)
-        #
-        #     if len(CO_delta) <= 1 or len(PO_delta) <= 1:
-        #         putd, calld, putd_calld = np.nan, np.nan, np.nan
-        #     else:
-        #         tck2 = spi.splrep(PO_delta, PO_iv, k=1)
-        #         ivp0 = spi.splev([-0.25, -0.5], tck2, ext=0)
-        #         putd = ivp0[0] - ivp0[1]
-        #         calld = ivc0[0] - ivc0[1]
-        #         putd_calld = putd - calld
-        #
-        #     self.result.loc[s, "putd"] = putd
-        #     self.result.loc[s, "calld"] = calld
-        #     self.result.loc[s, "putd_calld"] = putd_calld
 
     def get(self, **kwargs):
         start_ = kwargs["start"]
@@ -260,8 +221,8 @@ if __name__ == "__main__":
     pandas.set_option("display.max_rows", None)
 
     opc = PutdMinusCalld()
-    start = '2023-02-22 00:00:00'
-    end = '2023-02-23 00:00:00'
+    start = '2023-02-22 10:00:00'
+    end = '2023-02-23 10:05:00'
 
     a, _ = opc.get(start=start, end=end)
     print(a)
