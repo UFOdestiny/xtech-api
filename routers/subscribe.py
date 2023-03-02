@@ -13,6 +13,8 @@ from service.InfluxService import InfluxService
 from service.ResponseService import check_exception
 from utils.Model import Subscribe
 
+from config import FilePath
+
 router = APIRouter()
 
 influxdbService = InfluxService()
@@ -23,5 +25,5 @@ influxdbService = InfluxService()
 async def get_data(data: Subscribe):
     code_list = data.code_list
     dct = {'code_list': code_list}
-    with open("../static/subscribe.json", "w") as f:
+    with open(FilePath.path, "w") as f:
         json.dump(dct, f)
