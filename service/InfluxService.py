@@ -244,8 +244,8 @@ if __name__ == "__main__":
     # mysqlService = MysqlService()
     # influxdbService.client.drop_database("test_hello_world")
 
-    influxdbService.delete_data("2023-01-25T00:00:00Z", "2023-02-27T00:00:00Z", "optargetderivativevol")
-    influxdbService.empty("optargetderivativevol")
+    influxdbService.delete_data("2023-03-01T00:00:00Z", "2023-03-07T00:00:00Z", "opnominalamount")
+    # influxdbService.empty("opnominalamount")
     # influxdbService.delete_data("2020-01-01T00:00:00Z", "2023-02-16T00:00:00Z", "opcontractinfo")
     # q = [
     #     'test1,targetcode=510050.XSHG price=2.76,pct=2.754 1673956372162814720',

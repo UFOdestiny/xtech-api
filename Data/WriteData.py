@@ -53,7 +53,7 @@ class Write:
         if len(df) == 0:
             return False
 
-        if type(df[0]) == list:
+        if type(df[0]) == tuple:
             for df_, m in df:
                 self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=m, )
         else:
@@ -116,12 +116,12 @@ class Write:
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         start = "2023-03-01 00:00:00"
-        end = '2023-03-02 00:00:00'
+        end = '2023-03-06 00:00:00'
 
         # Write(source=OpContractInfo)(start=start, end=end)
         # Write(source=OpTargetQuote)(start=start, end=end, update='1')
-        # Write(source=OpNominalAmount)(start=start, end=end)
-        Write(source=OpContractQuote)(start=start, end=end, update=1)
+        Write(source=OpNominalAmount)(start=start, end=end)
+        # Write(source=OpContractQuote)(start=start, end=end, update=1)
         # Write(source=PutdMinusCalld)(start=start, end=end)
         # Write(source=OpDiscount)(start=start, end=end)
         # Write(source=OpTargetDerivativeVol)(start=start, end=end)

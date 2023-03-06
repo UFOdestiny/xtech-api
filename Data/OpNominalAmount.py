@@ -207,10 +207,10 @@ class OpNominalAmount(JQData):
 
 
 if __name__ == "__main__":
-    pandas.set_option('display.max_columns', None)
+    pandas.set_option('display.max_rows', None)
     opc = OpNominalAmount()
-    start = '2023-02-26 00:00:00'
-    end = '2023-02-26 10:00:00'
+    start = '2023-03-02 00:00:00'
+    end = '2023-03-02 23:00:00'
 
     a, _ = opc.get(start=start, end=end)
     print(a)
