@@ -3,16 +3,19 @@
 # @Date     : 2022/9/9 9:52
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
-# @Desc     : 登陆聚宽API，以便后续的查找。
+# @Desc     : 聚宽API的验权，数据获取的父类。
+
+from threading import Lock
 
 from jqdatasdk import JQDataClient, auth, query, opt
-from sqlalchemy import or_
 
 from config import JoinQuantSetting
-from threading import Lock
 
 
 class Authentication(JoinQuantSetting, type):
+    """
+    聚宽接口验权，单例模式，但是无效，因为auth内部使用了local函数，每一个线程都会重新实例化。
+    """
     _instance_lock = Lock()
     _auth = None
 
@@ -37,18 +40,11 @@ class JQData(metaclass=Authentication):
 
         # self.targetcodes = ['510500.XSHG']
 
-        # self.query_underlying_symbol = or_(opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
-        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "510500.XSHG",
-        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "510300.XSHG",
-        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
-        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "159919.XSHE",
-        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "159915.XSHE",
-        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
-        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
-        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
-        #                                    opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",)
-
     def get_adjust(self):
+        """
+        获取全部合约信息
+        :return:
+        """
         q = query(opt.OPT_ADJUSTMENT.adj_date,
                   opt.OPT_ADJUSTMENT.code,
                   opt.OPT_ADJUSTMENT.ex_exercise_price,

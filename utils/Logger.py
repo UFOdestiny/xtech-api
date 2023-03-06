@@ -3,7 +3,7 @@
 # @Name     : Logger.py
 # @Date     : 2022/9/2 10:45
 # @Auth     : UFOdestiny
-# @Desc     : logger
+# @Desc     : 日志类
 
 import logging
 from datetime import date
@@ -23,7 +23,6 @@ class Logger(LogSetting, metaclass=Singleton):
 
         if path:
             self.path = path
-            # print(self.path)
 
         if mode == "console":
             self.stand_mode()
@@ -57,11 +56,9 @@ class Logger(LogSetting, metaclass=Singleton):
     def file_mode(self, mode="Time"):
         if mode == "Rotating":  # 输出到文件
             file_handler = RotatingFileHandler(filename=self.file_name, maxBytes=1048576 * 1,
-                                               backupCount=10,
-                                               encoding='utf-8')
+                                               backupCount=10, encoding='utf-8')
 
         else:  # 按时间输出
-
             today = str(date.today())
             file_handler = TimedRotatingFileHandler(filename=f"{self.path}/{today}.log",
                                                     when="D", interval=1, backupCount=30, encoding='utf-8')

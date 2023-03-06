@@ -20,6 +20,10 @@ from utils.Singleton import Singleton
 
 
 class BatchingCallback:
+    """
+    InfluxDB batch写入结果的返回类
+    """
+
     def success(self, conf: (str, str, str), data: str):
         """Successfully writen batch."""
         print(f"Written batch: {conf}, data: {len(data)}")
@@ -38,7 +42,7 @@ class InfluxService(metaclass=Singleton):
         self.log = Logger()
         self.INFLUX = influxdb
 
-        self.callback = BatchingCallback()
+        self.batch_callback = BatchingCallback()
         self.client = InfluxDBClient(url=self.INFLUX.url, token=self.INFLUX.token, org=self.INFLUX.org, timeout=0,
                                      retries=Retry(connect=5, read=2, redirect=5), debug=False)
 
@@ -61,79 +65,55 @@ class InfluxService(metaclass=Singleton):
         self.query_api = self.client.query_api()
         self.delete_api = self.client.delete_api()
 
-    def write_batch(self, record):
-        with self.client as _client:
-            with _client.write_api(self.option) as _api:
-                _api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
+    def write_synchronous(self, df, measurement, tag_columns, **kwargs):
+        api = self.client.write_api(write_options=SYNCHRONOUS)
+        api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,
+                  data_frame_measurement_name=measurement,
+                  data_frame_tag_columns=tag_columns,
+                  **kwargs)
+        api.flush()
 
-        name = record[0].split(",")[0]
-        self.log.info(f"{len(record)} records of {name} has been written")
+    def write_batch(self, df, measurement, tag_columns, **kwargs):
+        with self.client as client:
+            batch_size = min(50000, max(len(df) // 2, 1))
 
-    def write_synchronous(self, record):
-        self.write_api_syn.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=record)
-        name = record[0].split(",")[0]
-        self.log.info(f"{len(record)} records of {name} has been written")
+            option = WriteOptions(batch_size=batch_size, flush_interval=10_000, jitter_interval=2_000,
+                                  retry_interval=1_000, max_retries=10, max_retry_delay=30_000, exponential_base=2)
+
+            api = client.write_api(write_options=option, success_callback=self.batch_callback.success,
+                                   error_callback=self.batch_callback.error,
+                                   retry_callback=self.batch_callback.retry)
+            with api as a:
+                a.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,
+                        data_frame_measurement_name=measurement, data_frame_tag_columns=tag_columns,
+                        **kwargs)
 
     def write_pandas(self, df, measurement, tag_columns, **kwargs):
         if measurement in ["opcontractquote", "opnominalamount", "putdminuscalld", "opdiscount",
                            "optargetderivativevol_1d", "optargetderivativevol_1h", "optargetderivativevol_2h"]:
-            api = self.client.write_api(write_options=SYNCHRONOUS)
-            # print(df)
-            api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,
-                      data_frame_measurement_name=measurement,
-                      data_frame_tag_columns=tag_columns,
-                      **kwargs)
-            api.flush()
+
+            self.write_synchronous(df, measurement, tag_columns, **kwargs)
         else:
-            with self.client as client:
-                batch_size = min(50000, max(len(df) // 2, 1))
+            self.write_batch(df, measurement, tag_columns, **kwargs)
 
-                option = WriteOptions(batch_size=batch_size, flush_interval=10_000, jitter_interval=2_000,
-                                      retry_interval=1_000, max_retries=10, max_retry_delay=30_000, exponential_base=2)
-
-                api = client.write_api(write_options=option, success_callback=self.callback.success,
-                                       error_callback=self.callback.error,
-                                       retry_callback=self.callback.retry)
-
-                with api as a:
-                    a.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,
-                            data_frame_measurement_name=measurement, data_frame_tag_columns=tag_columns,
-                            **kwargs)
-
-        # self.write_api.write(bucket=self.INFLUX.bucket, org=self.INFLUX.org, record=df,
-        #                      data_frame_measurement_name=measurement, data_frame_tag_columns=tag_columns,
-        #                      **kwargs)
         self.log.info(f"{len(df)} records of {measurement} has been written")
-
-    def query_data(self, start="-1h", stop='', filters=''):
-        source = f"from(bucket:\"{self.INFLUX.bucket}\")"
-
-        pipe_forward = "|>"
-
-        time_range = f"range(start: {start})"
-        stop_range = f", stop: {stop})"
-        if stop:
-            time_range = time_range.replace(")", stop_range)
-
-        query = source + pipe_forward + time_range
-
-        if filters:
-            filter_skeleton = f"filter(fn: (r) => {filters})"
-            query = query + pipe_forward + filter_skeleton
-
-        print(query)
-        tables = self.query_api.query(query, org=self.INFLUX.org)
-
-        return self.process_result(tables)
-
-    def query_data_raw(self, raw_query):
-        df = self.query_api.query_data_frame(raw_query)
-        df.drop(["result", "table", "_start", "_stop"], axis=1, inplace=True)
-        df["_time"] = df["_time"].apply(lambda x: x.tz_convert('Asia/Shanghai').strftime("%Y-%m-%d %H:%M:%S"))
-        return df
 
     def query_influx(self, start, end, measurement, targetcode=None, opcode=None, df=True, keep=None, filter_=None,
                      unique=None, unzip=False):
+        """
+        查询InfluxDB
+        :param start: 开始时间，北京时间格式
+        :param end:
+        :param measurement:
+        :param targetcode: 标的代码
+        :param opcode: 合约代码
+        :param df: True返回DataFrame格式，False返回list格式
+        :param keep: 保留列
+        :param filter_: 自定义过滤条件
+        :param unique: 去重列
+        :param unzip: 前端格式返回，
+        :return:
+        """
         start, end = InfluxTime.utc(start, end)
 
         q = f"""
@@ -192,14 +172,14 @@ class InfluxService(metaclass=Singleton):
             else:
                 return lst
 
-    def process_result(self, tables):
-        result = []
-        for table in tables:
-            for record in table.records:
-                result.append(record)
-        return result
-
     def delete_data(self, start, stop, measurement=None, ):
+        """
+        以天为单位，删除数据
+        :param start:
+        :param stop:
+        :param measurement:
+        :return:
+        """
         if not measurement:
             measurement = self.INFLUX.measurement
 
@@ -220,15 +200,15 @@ class InfluxService(metaclass=Singleton):
                                    f'_measurement="{measurement}"',
                                    bucket=self.INFLUX.bucket,
                                    org=self.INFLUX.org)
-        # self.delete_api.delete(start, stop,
-        #                        f'_measurement="{measurement}"',
-        #                        bucket=self.INFLUX.bucket,
-        #                        org=self.INFLUX.org)
 
     def empty(self, measurement):
+        """
+        清空表
+        :param measurement:
+        :return:
+        """
         self.delete_api.delete(start="1970-01-01T00:00:00Z",
                                stop=InfluxTime.utc(time.time()),
-                               # predicate=f'_measurement="{self.INFLUX.measurement}"',
                                predicate=f'_measurement="{measurement}"',
                                bucket=self.INFLUX.bucket,
                                org=self.INFLUX.org)
