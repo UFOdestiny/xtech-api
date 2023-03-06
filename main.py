@@ -7,9 +7,9 @@
 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
+
 from routers import user, NotionalPrincipal, write, query, subscribe
 from routers.tasks import repeat_task
-from Data.Update import Update
 
 app = FastAPI(title="X-TECH", version="1.0.0", )
 
