@@ -63,11 +63,11 @@ class InfluxTime:
         return string_
 
     @staticmethod
-    def this_minute():
+    def last_minute(minute=2):
         timestamp = datetime.datetime.now()
         t1 = timestamp.replace(second=0, microsecond=0)
         t2 = t1 + timedelta(minutes=1)
-        t1 -= timedelta(minutes=2)
+        t1 -= timedelta(minutes=minute)
         s1 = t1.strftime(InfluxTime.yearmd_hourms_format)
         s2 = t2.strftime(InfluxTime.yearmd_hourms_format)
         return s1, s2
@@ -146,4 +146,4 @@ if __name__ == '__main__':
 
     # InfluxTime.utc("1676563200.0")
     # print(time.localtime(1676563200))
-    print(InfluxTime.this_minute())
+    print(InfluxTime.last_minute())

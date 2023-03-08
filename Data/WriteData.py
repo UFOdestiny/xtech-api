@@ -4,7 +4,7 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
-
+import time
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 from threading import Lock
 
@@ -64,15 +64,15 @@ class Write:
         indicator = self.submit(**kw)
 
         if indicator:
-            self.lock.acquire()
+            # self.lock.acquire()
             self.count += 1
-            self.lock.release()
+            # self.lock.release()
             self.log.info(f"{list(kw.values())} {self.count}")
 
         else:  # pass
-            self.lock.acquire()
+            # self.lock.acquire()
             self.count += 1
-            self.lock.release()
+            # self.lock.release()
             self.log.info(f"{list(kw.values())} {self.count} PASS")
 
     def __call__(self, **kwargs):
@@ -93,7 +93,7 @@ class Write:
                 l_ = [{"code": c, "start": kwargs["start"], "end": kwargs["end"], "length": length} for c in lst]
 
             print(length)
-            with ThreadPoolExecutor(max_workers=min(10, length)) as e:
+            with ThreadPoolExecutor(max_workers=min(20, length)) as e:
                 all_task = [e.submit(self.thread, **kw) for kw in l_]
                 wait(all_task, return_when=ALL_COMPLETED)
 
@@ -101,7 +101,7 @@ class Write:
             times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=1, reverse=True)
             length = len(times)
             l_ = [{"start": t[0], "end": t[1], "length": length} for t in times]
-            with ThreadPoolExecutor(max_workers=min(10, length)) as e:
+            with ThreadPoolExecutor(max_workers=min(20, length)) as e:
                 all_task = [e.submit(self.thread, **kw) for kw in l_]
                 wait(all_task, return_when=ALL_COMPLETED)
 
@@ -114,15 +114,16 @@ class Write:
 
 
 if __name__ == '__main__':
+    start_ = time.time()
     if len(sys.argv) == 1:
-        start = "2023-03-06 00:00:00"
-        end = '2023-03-07 00:00:00'
+        start = "2023-03-07 10:00:00"
+        end = '2023-03-07 10:10:00'
 
         # Write(source=OpContractInfo)(start=start, end=end)
         # Write(source=OpTargetQuote)(start=start, end=end, update='1')
         # Write(source=OpNominalAmount)(start=start, end=end)
-        # Write(source=OpContractQuote)(start=start, end=end, update=1,code="10004405.XSHG")
-        # Write(source=PutdMinusCalld)(start=start, end=end)
+        # Write(source=OpContractQuote)(start=start, end=end, update=1)
+        Write(source=PutdMinusCalld)(start=start, end=end)
         # Write(source=OpDiscount)(start=start, end=end)
         # Write(source=OpTargetDerivativeVol)(start=start, end=end)
 
@@ -130,9 +131,16 @@ if __name__ == '__main__':
         source = sys.argv[1]
         if source in ["OpContractInfo", "OpTargetDerivativeVol", "OpNominalAmount"]:
             start, end = InfluxTime.this_day()
+            Write(source=eval(source))(start=start, end=end, update='1')
+
+        elif source == "OpContractQuote":
+            start, end = InfluxTime.last_minute(10)
+            Write(source=OpContractQuote)(start=start, end=end, update='1')
+            Write(source=PutdMinusCalld)(start=start, end=end, update='1')
+
         else:
-            start, end = InfluxTime.this_minute()
-        Write(source=eval(source))(start=start, end=end, update='1', cmd='1')
+            start, end = InfluxTime.last_minute()
+            Write(source=eval(source))(start=start, end=end, update='1')
 
     elif len(sys.argv) > 2:
         source = sys.argv[1]
@@ -140,3 +148,6 @@ if __name__ == '__main__':
         # end = sys.argv[3]
         start, end = InfluxTime.today()
         Write(source=eval(source))(start=start, end=end, update='1')
+
+    end = time.time() - start_
+    print(end / 60)
