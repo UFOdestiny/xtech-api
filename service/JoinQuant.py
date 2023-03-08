@@ -42,7 +42,7 @@ class JQData(metaclass=Authentication):
 
     def get_adjust(self):
         """
-        获取全部合约信息
+        获取全部合约调整信息
         :return:
         """
         q = query(opt.OPT_ADJUSTMENT.adj_date,

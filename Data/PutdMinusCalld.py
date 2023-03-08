@@ -235,6 +235,6 @@ if __name__ == "__main__":
 
     # a = opc.iv_delta['000852.XSHG']
     # b = a.groupby(a.index)
-    # c = b.apply(opc.group_f)
+    # c = b.apply(opc.group_f1)
     # c.reset_index("_time", inplace=True).set_index("_time", inplace=True)
     # print(c)
