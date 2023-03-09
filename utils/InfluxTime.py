@@ -146,4 +146,8 @@ if __name__ == '__main__':
 
     # InfluxTime.utc("1676563200.0")
     # print(time.localtime(1676563200))
-    print(InfluxTime.last_minute())
+    # print(InfluxTime.last_minute())
+    a = "2022-08-09 10:27:00"
+    yesterday = datetime.datetime.strptime(a, "%Y-%m-%d %H:%M:%S") - datetime.timedelta(days=1)
+    yesterday_str = yesterday.__str__()
+    print(type(yesterday_str))

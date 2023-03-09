@@ -23,6 +23,7 @@ from Data.OpContractQuote import OpContractQuote
 from Data.OpNominalAmount import OpNominalAmount
 from Data.PutdMinusCalld import PutdMinusCalld
 from Data.OpDiscount import OpDiscount
+from Data.CPR import CPR
 from Data.OpTargetDerivativeVol import OpTargetDerivativeVol
 from utils.InfluxTime import SplitTime, InfluxTime
 
@@ -97,7 +98,7 @@ class Write:
                 all_task = [e.submit(self.thread, **kw) for kw in l_]
                 wait(all_task, return_when=ALL_COMPLETED)
 
-        elif self.source in [OpNominalAmount, PutdMinusCalld, OpDiscount]:
+        elif self.source in [OpNominalAmount, PutdMinusCalld, OpDiscount, CPR]:
             times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=1, reverse=True)
             length = len(times)
             l_ = [{"start": t[0], "end": t[1], "length": length} for t in times]
@@ -116,20 +117,21 @@ class Write:
 if __name__ == '__main__':
     start_ = time.time()
     if len(sys.argv) == 1:
-        start = "2023-03-07 10:00:00"
-        end = '2023-03-07 10:10:00'
+        start = "2023-02-01 00:00:00"
+        end = '2023-03-10 00:00:00'
 
         # Write(source=OpContractInfo)(start=start, end=end)
         # Write(source=OpTargetQuote)(start=start, end=end, update='1')
         # Write(source=OpNominalAmount)(start=start, end=end)
         # Write(source=OpContractQuote)(start=start, end=end, update=1)
-        Write(source=PutdMinusCalld)(start=start, end=end)
+        # Write(source=PutdMinusCalld)(start=start, end=end)
         # Write(source=OpDiscount)(start=start, end=end)
         # Write(source=OpTargetDerivativeVol)(start=start, end=end)
+        Write(source=CPR)(start=start, end=end)
 
     elif len(sys.argv) == 2:
         source = sys.argv[1]
-        if source in ["OpContractInfo", "OpTargetDerivativeVol", "OpNominalAmount"]:
+        if source in ["OpContractInfo", "OpTargetDerivativeVol", "OpNominalAmount", ]:
             start, end = InfluxTime.this_day()
             Write(source=eval(source))(start=start, end=end, update='1')
 
@@ -138,6 +140,9 @@ if __name__ == '__main__':
             Write(source=OpContractQuote)(start=start, end=end, update='1')
             Write(source=PutdMinusCalld)(start=start, end=end, update='1')
 
+        elif source == "CPR":
+            start, end = InfluxTime.today()
+            Write(source=CPR)(start=start, end=end)
         else:
             start, end = InfluxTime.last_minute()
             Write(source=eval(source))(start=start, end=end, update='1')
