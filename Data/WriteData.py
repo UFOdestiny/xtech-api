@@ -4,9 +4,11 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
+
 import time
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 from threading import Lock
+from functools import partial
 
 import os
 import sys
@@ -25,6 +27,7 @@ from Data.PutdMinusCalld import PutdMinusCalld
 from Data.OpDiscount import OpDiscount
 from Data.CPR import CPR
 from Data.OpTargetDerivativeVol import OpTargetDerivativeVol
+from Data.OpTargetDerivativePrice import OpTargetDerivativePrice
 from utils.InfluxTime import SplitTime, InfluxTime
 
 
@@ -37,6 +40,22 @@ class Write:
         self.count = 0
         self.lock = Lock()
 
+    def callback(self, future, kw):
+        msg = " ".join(list(map(str, kw.values())))
+        msg = f"{msg} {self.count} "
+
+        t = future.exception()
+        self.lock.acquire()
+        self.count += 1
+
+        if t is not None:
+            self.log.exception(t)
+            self.log.exception(msg)
+        else:
+            self.log.info(msg + future.result())
+
+        self.lock.release()
+
     def get_data(self, **kwargs):
         s = self.source()
         if self.source == OpContractQuote and "code" not in kwargs:
@@ -47,91 +66,83 @@ class Write:
 
     def submit(self, **kwargs):
         df, tag_columns = self.get_data(**kwargs)
+        msg = ""
         if df is None:
             return False
+
         if type(df) != list:
             df = [i for i in [df] if i is not None]
+
         if len(df) == 0:
             return False
 
         if type(df[0]) == tuple:
             for df_, m in df:
-                self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=m, )
+                msg += self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=m, )
         else:
-            self.db.write_pandas(df=df[0], tag_columns=tag_columns, measurement=self.measurement, )
-        return True
+            msg = self.db.write_pandas(df=df[0], tag_columns=tag_columns, measurement=self.measurement, )
+        return msg
 
     def thread(self, **kw):
         indicator = self.submit(**kw)
 
-        if indicator:
-            # self.lock.acquire()
-            self.count += 1
-            # self.lock.release()
-            self.log.info(f"{list(kw.values())} {self.count}")
+        if not indicator:
+            return " Pass"
+        else:
+            return indicator
 
-        else:  # pass
-            # self.lock.acquire()
-            self.count += 1
-            # self.lock.release()
-            self.log.info(f"{list(kw.values())} {self.count} PASS")
+    def multitask(self, kw_lst):
+        if type(kw_lst) != list:
+            kw_lst = [kw_lst]
+
+        length = len(kw_lst)
+
+        with ThreadPoolExecutor(max_workers=min(10, length)) as e:
+            for kw in kw_lst:
+                future = e.submit(self.thread, **kw)
+                future.add_done_callback(partial(self.callback, kw=kw))
 
     def __call__(self, **kwargs):
+        kw = kwargs
         if self.source == OpContractQuote:
             if "code" not in kwargs:
                 lst = self.get_data(**kwargs)
                 length = len(lst)
-
-                # lst_kw = [{"code": c, "start": s, "end": e, "length": length} for c, s, e in lst]
-                l_ = [{"code": c, "start": s, "end": e, "length": length} for c, s, e in lst]
-
+                kw = [{"code": c, "start": s, "end": e, "length": length} for c, s, e in lst]
             else:
                 if type(kwargs["code"]) == str:
                     kwargs["code"] = [kwargs["code"]]
-
                 lst = kwargs["code"]
                 length = len(lst)
-                l_ = [{"code": c, "start": kwargs["start"], "end": kwargs["end"], "length": length} for c in lst]
-
-            print(length)
-            with ThreadPoolExecutor(max_workers=min(20, length)) as e:
-                all_task = [e.submit(self.thread, **kw) for kw in l_]
-                wait(all_task, return_when=ALL_COMPLETED)
+                kw = [{"code": c, "start": kwargs["start"], "end": kwargs["end"], "length": length} for c in lst]
 
         elif self.source in [OpNominalAmount, PutdMinusCalld, OpDiscount, CPR]:
             times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=1, reverse=True)
             length = len(times)
-            l_ = [{"start": t[0], "end": t[1], "length": length} for t in times]
-            with ThreadPoolExecutor(max_workers=min(20, length)) as e:
-                all_task = [e.submit(self.thread, **kw) for kw in l_]
-                wait(all_task, return_when=ALL_COMPLETED)
+            kw = [{"start": t[0], "end": t[1], "length": length} for t in times]
 
-        else:
-            indicator = self.submit(**kwargs)
-            if indicator:
-                self.log.info(f"{list(kwargs.values())} {self.count}")
-            else:
-                self.log.info(f"{list(kwargs.values())} {self.count} PASS")
+        self.multitask(kw)
 
 
 if __name__ == '__main__':
     start_ = time.time()
     if len(sys.argv) == 1:
-        start = "2023-02-01 00:00:00"
-        end = '2023-03-10 00:00:00'
+        start = "2023-03-06 00:00:00"
+        end = '2023-03-09 00:00:00'
 
         # Write(source=OpContractInfo)(start=start, end=end)
         # Write(source=OpTargetQuote)(start=start, end=end, update='1')
         # Write(source=OpNominalAmount)(start=start, end=end)
-        # Write(source=OpContractQuote)(start=start, end=end, update=1)
+        Write(source=OpContractQuote)(start=start, end=end, update=1)
         # Write(source=PutdMinusCalld)(start=start, end=end)
         # Write(source=OpDiscount)(start=start, end=end)
         # Write(source=OpTargetDerivativeVol)(start=start, end=end)
-        Write(source=CPR)(start=start, end=end)
+        # Write(source=OpTargetDerivativePrice)(start=start, end=end)
+        # Write(source=CPR)(start=start, end=end)
 
     elif len(sys.argv) == 2:
         source = sys.argv[1]
-        if source in ["OpContractInfo", "OpTargetDerivativeVol", "OpNominalAmount", ]:
+        if source in ["OpContractInfo", "OpTargetDerivativeVol", "OpNominalAmount", "OpTargetDerivativePrice"]:
             start, end = InfluxTime.this_day()
             Write(source=eval(source))(start=start, end=end, update='1')
 

@@ -6,6 +6,7 @@
 # @Desc     :
 
 import datetime
+import random
 from bisect import bisect_left
 import pandas
 from jqdatasdk import opt, query, get_price
@@ -26,6 +27,9 @@ class OpDiscount(JQData):
         self.dic = dict()
 
         self.result = None
+        # self.targetcodes = ["510050.XSHG", "510500.XSHG"]
+
+        self.baseline = {i: {"price": None, 0: None, 1: None, 2: None} for i in self.targetcodes}
 
     def pre_set(self, start, end):
         self.result = get_price(self.targetcodes, fields=['close'], frequency='1m', start_date=start, end_date=end, )
@@ -121,6 +125,8 @@ class OpDiscount(JQData):
             df_po_02 = df_temp_02[df_temp_02["contract_type"] == "PO"]["exercise_price"].unique().tolist()
             df_co_02.sort()
             df_po_02.sort()
+
+            # print(df_temp_02)
             self.dic[c]["02"] = {"CO": df_co_02, "PO": df_po_02}
 
     @staticmethod
@@ -156,10 +162,10 @@ class OpDiscount(JQData):
         return df.iloc[0]["close"]
 
     def vol_aggregate(self):
+        x = random.randint(0, 100)
         for i in range(len(self.result)):
-            print(len)
             if i > 0 and i % 100 == 0:
-                print(f"{i}/{len(self.result)}")
+                print(f"{x},{i}/{len(self.result)}")
             temp = self.result.iloc[i]
 
             time_ = temp["time"]
@@ -168,7 +174,16 @@ class OpDiscount(JQData):
             #     continue
             close = temp["close"]
 
-            strike_00 = self.takeClosest(self.dic[code]["00"]["CO"], close)
+            if not self.baseline[code]["price"] or abs((close - self.baseline[code]["price"]) / close) > 0.02:
+                if self.baseline[code]["price"]:
+                    print(abs((close - self.baseline[code]["price"]) / close))
+
+                self.baseline[code]["price"] = close
+                self.baseline[code][0] = self.takeClosest(self.dic[code]["00"]["CO"], close)
+                self.baseline[code][1] = self.takeClosest(self.dic[code]["01"]["CO"], close)
+                self.baseline[code][2] = self.takeClosest(self.dic[code]["02"]["CO"], close)
+
+            strike_00 = self.baseline[code][0]  # self.takeClosest(self.dic[code]["00"]["CO"], close)
             if strike_00:
                 codes_00 = self.daily_00[(self.daily_00["exercise_price"] == strike_00) &
                                          (self.daily_00["underlying_symbol"] == code)]
@@ -196,7 +211,7 @@ class OpDiscount(JQData):
                 self.result.loc[i, "discount_l_00"] = discount_l_00
                 self.result.loc[i, "discount_s_00"] = discount_s_00
 
-            strike_01 = self.takeClosest(self.dic[code]["01"]["CO"], close)
+            strike_01 = self.baseline[code][1]  # self.takeClosest(self.dic[code]["01"]["CO"], close)
             if strike_01:
                 codes_01 = self.daily_01[(self.daily_01["exercise_price"] == strike_01) &
                                          (self.daily_01["underlying_symbol"] == code)]
@@ -225,7 +240,7 @@ class OpDiscount(JQData):
                 self.result.loc[i, "discount_l_01"] = discount_l_01
                 self.result.loc[i, "discount_s_01"] = discount_s_01
 
-            strike_02 = self.takeClosest(self.dic[code]["02"]["CO"], close)
+            strike_02 = self.baseline[code][2]  # self.takeClosest(self.dic[code]["02"]["CO"], close)
 
             if strike_02:
                 codes_02 = self.daily_02[(self.daily_02["exercise_price"] == strike_02) &
@@ -240,11 +255,14 @@ class OpDiscount(JQData):
 
                 discount_l_02 = (strike_02 + p_po_02 - p_co_02 - close) / close
                 discount_s_02 = (strike_02 - p_po_02 + p_co_02 - close) / close
+
+                # print(discount_l_02)
+                # print(discount_s_02)
+
                 self.result.loc[i, "discount_l_02"] = discount_l_02
                 self.result.loc[i, "discount_s_02"] = discount_s_02
 
     def get(self, **kwargs):
-        # print(kwargs)
         start = kwargs["start"]
         end = kwargs["end"]
         times = SplitTime.split(start, end, interval_day=1)
@@ -253,7 +271,7 @@ class OpDiscount(JQData):
         for t in times:
             self.pre_set(t[0], t[1])
             if self.result is None:
-                print(t[0], t[1], "pass")
+                # print(t[0], t[1], "pass")
                 return None, None
 
             self.daily_info(t[0], t[1])
@@ -270,15 +288,17 @@ class OpDiscount(JQData):
         self.result.drop(columns=["close"], inplace=True, axis=1)
         self.result.rename(columns={"code": "targetcode"}, inplace=True)
         tag_columns = ['targetcode']
+
+        print(self.result)
         return self.result, tag_columns
 
 
 if __name__ == "__main__":
-    # pandas.set_option('display.max_columns', None)
-    # pandas.set_option('display.max_rows', None)
+    pandas.set_option('display.max_columns', None)
+    pandas.set_option('display.max_rows', None)
     opc = OpDiscount()
-    start = '2023-03-01 11:28:00'
-    end = '2023-03-01 11:30:00'
+    start = '2023-03-01 00:00:00'
+    end = '2023-03-09 00:00:00'
 
     a, _ = opc.get(start=start, end=end)
     print(a)

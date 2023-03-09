@@ -102,7 +102,7 @@ class CPR(JQData):
             lst = []
             for s, e, d in [(start, end, self.dic2), (yesterday, end, self.dic1), ]:
                 for type_ in ["CO", "PO"]:
-                    print(target_code, s, e, type_)
+                    # print(target_code, s, e, type_)
                     df1 = get_price(security=d[target_code][type_], start_date=s, end_date=e, fq='pre',
                                     frequency='60m', fields=['volume', 'money', 'open_interest'], panel=False)
                     if len(df1) == 0:
@@ -121,11 +121,6 @@ class CPR(JQData):
             # print(df_y_c)
             # print(df_y_p)
 
-            # df_t_c["targetcode"] = target_code
-            # df_t_c["money"] = df_t_c["money"] / df_t_p["money"]
-            # df_t_c["volume"] = df_t_c["volume"] / df_t_p["volume"]
-            # df_t_c["oi"] = df_t_c["open_interest"] / df_t_p["open_interest"]
-
             length_t = len(df_t_c)
             for i in range(length_t - 1, -1, -1):
                 df_t_c.iloc[i] = df_t_c.iloc[:i + 1].sum() / df_t_p.iloc[:i + 1].sum()
@@ -135,9 +130,6 @@ class CPR(JQData):
             length_y = len(df_y_c)
             for i in range(length_y - 1, 3, -1):
                 df_y_c.iloc[i] = df_y_c.iloc[i - 3:i + 1].sum() / df_y_p.iloc[i - 3:i + 1].sum()
-            # df_t_c["money_scroll"] = df_y_c["money"] / df_y_p["money"]
-            # df_t_c["volume_scroll"] = df_y_c["volume"] / df_y_p["volume"]
-            # df_t_c["oi_scroll"] = df_y_c["open_interest"] / df_y_p["open_interest"]
 
             # print(df_y_c)
 
@@ -147,13 +139,22 @@ class CPR(JQData):
             # print(df_t_c)
             self.df = pandas.concat([df_t_c, self.df])
 
+    def find_valid_yesterday(self, yesterday):
+        while True:
+            df1 = get_price(security="510050.XSHG", start_date=yesterday, end_date=yesterday,
+                            fq='pre', frequency='1d', fields=['volume'], panel=False)
+            if len(df1) != 0:
+                return yesterday
+            else:
+                yesterday -= datetime.timedelta(days=1)
+
     def get(self, **kwargs):
         times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=1)
         for t in times:
-            print(t)
+            # print(t)
             time_ = datetime.datetime.strptime(t[0], "%Y-%m-%d %H:%M:%S")
             yesterday = time_ - datetime.timedelta(days=1)
-
+            yesterday = self.find_valid_yesterday(yesterday)
             today = time_.replace(hour=0, minute=0, second=0, microsecond=0)
             tmr = today + datetime.timedelta(days=1)
 
@@ -179,8 +180,8 @@ if __name__ == "__main__":
     pandas.set_option('display.max_rows', None)
     pandas.set_option('display.max_columns', None)
     op = CPR()
-    start = "2023-03-06 00:00:00"
-    end = "2023-03-07 00:00:00"
+    start = "2023-02-13 00:00:00"
+    end = "2023-02-14 00:00:00"
     # op.get_pre_data()
     # a = op.get_data(start=start, end=end)
     # print(a)

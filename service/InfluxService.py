@@ -90,13 +90,17 @@ class InfluxService(metaclass=Singleton):
 
     def write_pandas(self, df, measurement, tag_columns, **kwargs):
         if measurement in ["opcontractquote", "opnominalamount", "putdminuscalld", "opdiscount", "cpr",
-                           "optargetderivativevol_1d", "optargetderivativevol_1h", "optargetderivativevol_2h"]:
+                           "optargetderivativevol_1d", "optargetderivativevol_1h", "optargetderivativevol_2h",
+                           "optargetderivativeprice_1d", "optargetderivativeprice_1h", "optargetderivativeprice_2h",
+                           "optargetderivativeprice_5m", "optargetderivativeprice_15m", "optargetderivativeprice_30m",
+                           ]:
 
             self.write_synchronous(df, measurement, tag_columns, **kwargs)
         else:
             self.write_batch(df, measurement, tag_columns, **kwargs)
 
-        self.log.info(f"{len(df)} records of {measurement} has been written")
+        # self.log.info(f"{len(df)} records of {measurement} has been written")
+        return f"{len(df)} records of {measurement} written"
 
     def query_influx(self, start, end, measurement, targetcode=None, opcode=None, df=True, keep=None, filter_=None,
                      unique=None, unzip=False):
