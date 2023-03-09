@@ -102,7 +102,7 @@ class CPR(JQData):
             lst = []
             for s, e, d in [(start, end, self.dic2), (yesterday, end, self.dic1), ]:
                 for type_ in ["CO", "PO"]:
-                    # print(target_code, s, e, type_)
+                    print(target_code, s, e, type_)
                     df1 = get_price(security=d[target_code][type_], start_date=s, end_date=e, fq='pre',
                                     frequency='60m', fields=['volume', 'money', 'open_interest'], panel=False)
                     if len(df1) == 0:
@@ -179,8 +179,8 @@ if __name__ == "__main__":
     pandas.set_option('display.max_rows', None)
     pandas.set_option('display.max_columns', None)
     op = CPR()
-    start = "2023-03-04 00:00:00"
-    end = "2023-03-05 00:00:00"
+    start = "2023-03-06 00:00:00"
+    end = "2023-03-07 00:00:00"
     # op.get_pre_data()
     # a = op.get_data(start=start, end=end)
     # print(a)

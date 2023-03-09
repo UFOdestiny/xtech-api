@@ -63,13 +63,13 @@ class OpTargetDerivativePrice(JQData):
             df_30m.dropna(inplace=True)
             df_30m.reset_index(inplace=True)
 
-            self.pre_dic[code] = [[df_1d, 250 ** 0.5, "1d_price"],
-                                  [df_2h, 500 ** 0.5, "2h_price"],
-                                  [df_1h, 1000 ** 0.5, "1h_price"],
+            self.pre_dic[code] = [[df_1d, 1, "1d_price"],
+                                  [df_2h, 1, "2h_price"],
+                                  [df_1h, 1, "1h_price"],
 
-                                  [df_5m, 250 ** 0.5, "5m_price"],
-                                  [df_15m, 500 ** 0.5, "15m_price"],
-                                  [df_30m, 1000 ** 0.5, "30m_price"]]
+                                  [df_5m, 1, "5m_price"],
+                                  [df_15m, 1, "15m_price"],
+                                  [df_30m, 1, "30m_price"]]
 
     def process_df(self):
         for code in self.targetcodes:

@@ -89,7 +89,7 @@ class InfluxService(metaclass=Singleton):
                         **kwargs)
 
     def write_pandas(self, df, measurement, tag_columns, **kwargs):
-        if measurement in ["opcontractquote", "opnominalamount", "putdminuscalld", "opdiscount",
+        if measurement in ["opcontractquote", "opnominalamount", "putdminuscalld", "opdiscount", "cpr",
                            "optargetderivativevol_1d", "optargetderivativevol_1h", "optargetderivativevol_2h"]:
 
             self.write_synchronous(df, measurement, tag_columns, **kwargs)
