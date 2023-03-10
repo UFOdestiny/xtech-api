@@ -114,9 +114,8 @@ class PutdMinusCalld(JQData):
         df = self.db.query_influx(start=start, end=end, measurement="opcontractquote", filter_=filter_,
                                   keep=["_time", "targetcode", "delta", "iv", "type"])
 
-        if len(df) == 0:
-            print("None...")
-            return None, None
+        if not df or len(df) == 0:
+            return False
 
         df.set_index("_time", inplace=True)
 
@@ -124,6 +123,7 @@ class PutdMinusCalld(JQData):
         for tc in targetcode:
             df_temp = df[df["targetcode"] == tc]
             self.iv_delta[tc] = df_temp
+        return True
 
     @staticmethod
     def group_f(df):
@@ -199,7 +199,9 @@ class PutdMinusCalld(JQData):
             self.daily_info(t[0], t[1])
             if self.daily is None:
                 continue
-            self.get_all_iv_delta(t[0], t[1])
+            index = self.get_all_iv_delta(t[0], t[1])
+            if not index:
+                return None, None
             self.aggregate()
 
             # self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
