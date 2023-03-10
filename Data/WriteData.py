@@ -78,9 +78,18 @@ class Write:
 
         if type(df[0]) == tuple:
             for df_, m in df:
-                msg += self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=m, )
+                msg += self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=m, method="syn")
         else:
-            msg = self.db.write_pandas(df=df[0], tag_columns=tag_columns, measurement=self.measurement, )
+            if self.measurement in ["opcontractquote", "opnominalamount", "putdminuscalld", "opdiscount", "cpr",
+                                    "optargetderivativevol_1d", "optargetderivativevol_1h", "optargetderivativevol_2h",
+                                    "optargetderivativeprice_1d", "optargetderivativeprice_1h",
+                                    "optargetderivativeprice_2h", "optargetderivativeprice_5m",
+                                    "optargetderivativeprice_15m",
+                                    "optargetderivativeprice_30m", ]:
+                method = "batch"
+            else:
+                method = "syn"
+            msg = self.db.write_pandas(df=df[0], tag_columns=tag_columns, measurement=self.measurement, method=method)
         return msg
 
     def thread(self, **kw):

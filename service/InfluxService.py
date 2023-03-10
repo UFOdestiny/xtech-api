@@ -88,13 +88,8 @@ class InfluxService(metaclass=Singleton):
                         data_frame_measurement_name=measurement, data_frame_tag_columns=tag_columns,
                         **kwargs)
 
-    def write_pandas(self, df, measurement, tag_columns, **kwargs):
-        if measurement in ["opcontractquote", "opnominalamount", "putdminuscalld", "opdiscount", "cpr",
-                           "optargetderivativevol_1d", "optargetderivativevol_1h", "optargetderivativevol_2h",
-                           "optargetderivativeprice_1d", "optargetderivativeprice_1h", "optargetderivativeprice_2h",
-                           "optargetderivativeprice_5m", "optargetderivativeprice_15m", "optargetderivativeprice_30m",
-                           ]:
-
+    def write_pandas(self, df, measurement, tag_columns, method="syn", **kwargs):
+        if method == "syn":
             self.write_synchronous(df, measurement, tag_columns, **kwargs)
         else:
             self.write_batch(df, measurement, tag_columns, **kwargs)
