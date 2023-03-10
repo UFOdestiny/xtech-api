@@ -47,7 +47,8 @@ class InfluxService(metaclass=Singleton):
                                      retries=Retry(connect=5, read=2, redirect=5), debug=False)
 
         if self.client.ping():
-            self.log.info(f"InfluxDB Connected")
+            # self.log.info(f"InfluxDB Connected")
+            pass
         else:
             self.log.error(f"InfluxDB Error")
             raise Exception

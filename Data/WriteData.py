@@ -6,9 +6,10 @@
 # @Desc     :
 
 import time
-from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
+from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
 from functools import partial
+import argparse
 
 import os
 import sys
@@ -40,19 +41,21 @@ class Write:
         self.count = 0
         self.lock = Lock()
 
-    def callback(self, future, kw):
+    def callback(self, future, kw, start_time):
         msg = " ".join(list(map(str, kw.values())))
-        msg = f"{msg} {self.count} "
+        msg = f"{self.measurement} {msg}"
 
         t = future.exception()
         self.lock.acquire()
         self.count += 1
+        msg = f"{msg} {self.count} "
 
+        end_time = f" {round((time.time() - start_time) / 60, 3)}min"
         if t is not None:
-            self.log.exception(t)
-            self.log.exception(msg)
+            # self.log.exception(t)
+            self.log.exception(msg + end_time)
         else:
-            self.log.info(msg + future.result())
+            self.log.info(msg + future.result() + end_time)
 
         self.lock.release()
 
@@ -78,17 +81,13 @@ class Write:
 
         if type(df[0]) == tuple:
             for df_, m in df:
-                msg += self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=m, method="syn")
+                msg += self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=m, method="batch")
+                msg += " "
         else:
-            if self.measurement in ["opcontractquote", "opnominalamount", "putdminuscalld", "opdiscount", "cpr",
-                                    "optargetderivativevol_1d", "optargetderivativevol_1h", "optargetderivativevol_2h",
-                                    "optargetderivativeprice_1d", "optargetderivativeprice_1h",
-                                    "optargetderivativeprice_2h", "optargetderivativeprice_5m",
-                                    "optargetderivativeprice_15m",
-                                    "optargetderivativeprice_30m", ]:
-                method = "batch"
-            else:
+            if self.measurement in ["opcontractquote", "opnominalamount", "putdminuscalld", "opdiscount", "cpr"]:
                 method = "syn"
+            else:
+                method = "batch"
             msg = self.db.write_pandas(df=df[0], tag_columns=tag_columns, measurement=self.measurement, method=method)
         return msg
 
@@ -96,7 +95,7 @@ class Write:
         indicator = self.submit(**kw)
 
         if not indicator:
-            return " Pass"
+            return "PASS"
         else:
             return indicator
 
@@ -106,10 +105,11 @@ class Write:
 
         length = len(kw_lst)
 
-        with ThreadPoolExecutor(max_workers=min(10, length)) as e:
+        with ThreadPoolExecutor(max_workers=min(20, length)) as e:
             for kw in kw_lst:
                 future = e.submit(self.thread, **kw)
-                future.add_done_callback(partial(self.callback, kw=kw))
+                start_time = time.time()
+                future.add_done_callback(partial(self.callback, kw=kw, start_time=start_time))
 
     def __call__(self, **kwargs):
         kw = kwargs
@@ -133,11 +133,31 @@ class Write:
         self.multitask(kw)
 
 
+start_ = time.time()
+parser = argparse.ArgumentParser()
+parser.add_argument('--source', type=str, default=None, help='measurement')
+parser.add_argument('--update', type=str, default='True', help='update?')
+parser.add_argument('--time', type=str, default='minute', help='type of time')
+args = parser.parse_args()
+
+source = args.source
+if source:
+    time_ = args.time
+    if time_ == "today":
+        start, end = InfluxTime.today()
+    elif time_ == "minute":
+        start, end = InfluxTime.last_minute()
+    else:
+        start, end = InfluxTime.last_minute(10)
+
+    Write(source=eval(source))(start=start, end=end, update=args.update)
+    if source == "OpContractQuote":
+        Write(source=PutdMinusCalld)(start=start, end=end, update=args.update)
+
 if __name__ == '__main__':
-    start_ = time.time()
-    if len(sys.argv) == 1:
-        start = "2023-03-06 00:00:00"
-        end = '2023-03-09 00:00:00'
+    if not source:
+        start = "2023-03-01 00:00:00"
+        end = '2023-03-10 00:00:00'
 
         # Write(source=OpContractInfo)(start=start, end=end)
         # Write(source=OpTargetQuote)(start=start, end=end, update='1')
@@ -149,30 +169,5 @@ if __name__ == '__main__':
         # Write(source=OpTargetDerivativePrice)(start=start, end=end)
         # Write(source=CPR)(start=start, end=end)
 
-    elif len(sys.argv) == 2:
-        source = sys.argv[1]
-        if source in ["OpContractInfo", "OpTargetDerivativeVol", "OpNominalAmount", "OpTargetDerivativePrice"]:
-            start, end = InfluxTime.this_day()
-            Write(source=eval(source))(start=start, end=end, update='1')
-
-        elif source == "OpContractQuote":
-            start, end = InfluxTime.last_minute(10)
-            Write(source=OpContractQuote)(start=start, end=end, update='1')
-            Write(source=PutdMinusCalld)(start=start, end=end, update='1')
-
-        elif source == "CPR":
-            start, end = InfluxTime.today()
-            Write(source=CPR)(start=start, end=end)
-        else:
-            start, end = InfluxTime.last_minute()
-            Write(source=eval(source))(start=start, end=end, update='1')
-
-    elif len(sys.argv) > 2:
-        source = sys.argv[1]
-        # start = sys.argv[2]
-        # end = sys.argv[3]
-        start, end = InfluxTime.today()
-        Write(source=eval(source))(start=start, end=end, update='1')
-
-    end = time.time() - start_
-    print(end / 60)
+    # end = time.time() - start_
+    # print(end / 60)

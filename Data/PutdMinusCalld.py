@@ -114,7 +114,7 @@ class PutdMinusCalld(JQData):
         df = self.db.query_influx(start=start, end=end, measurement="opcontractquote", filter_=filter_,
                                   keep=["_time", "targetcode", "delta", "iv", "type"])
 
-        if not df or len(df) == 0:
+        if df is None or len(df) == 0:
             return False
 
         df.set_index("_time", inplace=True)
@@ -132,13 +132,14 @@ class PutdMinusCalld(JQData):
         df_co = df[df["type"] == "CO"]
         df_po = df[df["type"] == "PO"]
 
-        df_co.sort_values(by='delta', inplace=True)
-        df_co.drop_duplicates(subset=['delta'], keep='first', inplace=True)
-        df_po.sort_values(by='delta', inplace=True)
-        df_po.drop_duplicates(subset=['delta'], keep='first', inplace=True)
+        df_co_ = df_co.sort_values(by='delta')
+        df_co_.drop_duplicates(subset=['delta'], keep='first', inplace=True)
 
-        co_delta, co_iv = df_co["delta"].to_list(), df_co["iv"].to_list()
-        po_delta, po_iv = df_po["delta"].to_list(), df_po["iv"].to_list()
+        df_po_ = df_po.sort_values(by='delta')
+        df_po_.drop_duplicates(subset=['delta'], keep='first', inplace=True)
+
+        co_delta, co_iv = df_co_["delta"].to_list(), df_co_["iv"].to_list()
+        po_delta, po_iv = df_po_["delta"].to_list(), df_po_["iv"].to_list()
         # print("__________________")
         # print(co_delta)
         # print(co_iv)
