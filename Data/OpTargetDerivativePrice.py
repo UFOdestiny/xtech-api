@@ -151,7 +151,7 @@ if __name__ == "__main__":
     pandas.set_option('display.max_rows', None)
     # pandas.set_option('display.max_columns', None)
     op = OpTargetDerivativePrice()
-    start = "2023-03-07 00:00:00"
+    start = "2023-03-01 00:00:00"
     end = "2023-03-08 00:00:00"
 
     a, b = op.get(start=start, end=end)

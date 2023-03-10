@@ -47,7 +47,7 @@ class PutdMinusCalld(JQData):
         self.result["calld"] = 0
         self.result["putd_calld"] = 0
 
-        del self.result["close"]
+        # del self.result["close"]
 
     def daily_info(self, start, end):
         q = query(opt.OPT_CONTRACT_INFO.code,
@@ -210,7 +210,7 @@ class PutdMinusCalld(JQData):
 
         self.result.set_index("time", inplace=True)
         self.result.index = pandas.DatetimeIndex(self.result.index, tz='Asia/Shanghai')
-        self.result.rename(columns={"code": "targetcode"}, inplace=True)
+        self.result.rename(columns={"code": "targetcode", "close": "price"}, inplace=True)
         self.result.dropna(how="any", inplace=True)
         tag_columns = ['targetcode']
 
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     pandas.set_option("display.max_rows", None)
 
     opc = PutdMinusCalld()
-    start = '2023-02-22 10:00:00'
+    start = '2023-02-23 10:00:00'
     end = '2023-02-23 10:05:00'
 
     a, _ = opc.get(start=start, end=end)

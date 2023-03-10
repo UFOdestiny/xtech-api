@@ -1,1 +1,1 @@
-/root/anaconda3/bin/python /root/api/Data/WriteData.py OpContractQuote arg1 arg2
+/root/anaconda3/bin/python /root/api/Data/WriteData.py --source=OpContractQuote --time=today

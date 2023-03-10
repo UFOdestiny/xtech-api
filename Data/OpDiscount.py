@@ -7,9 +7,12 @@
 
 import datetime
 import random
+import time
 from bisect import bisect_left
 import pandas
 from jqdatasdk import opt, query, get_price
+from thriftpy2.transport import TTransportException
+
 from service.JoinQuant import JQData
 from utils.InfluxTime import SplitTime, InfluxTime
 from sqlalchemy import or_
@@ -154,7 +157,13 @@ class OpDiscount(JQData):
     def get_pp_pc(self, code, minute):
         # time_ = datetime.datetime.strptime(minute, "%Y-%m-%d %H:%M:%S")
         minute += pandas.Timedelta(minutes=1)
-        df = get_price(code, fields=['close'], frequency='1m', start_date=minute, end_date=minute, )
+        while True:
+            try:
+                df = get_price(code, fields=['close'], frequency='1m', start_date=minute, end_date=minute, )
+                break
+            except TTransportException:
+                time.sleep(3)
+
         if len(df) == 0:
             self.indicator = None
             return
@@ -285,11 +294,11 @@ class OpDiscount(JQData):
 
         self.result.set_index("time", inplace=True)
         self.result.index = pandas.DatetimeIndex(self.result.index, tz='Asia/Shanghai')
-        self.result.drop(columns=["close"], inplace=True, axis=1)
-        self.result.rename(columns={"code": "targetcode"}, inplace=True)
+        # self.result.drop(columns=["close"], inplace=True, axis=1)
+        self.result.rename(columns={"code": "targetcode", "close": "price"}, inplace=True)
         tag_columns = ['targetcode']
 
-        print(self.result)
+        # print(self.result)
         return self.result, tag_columns
 
 
@@ -297,8 +306,8 @@ if __name__ == "__main__":
     pandas.set_option('display.max_columns', None)
     pandas.set_option('display.max_rows', None)
     opc = OpDiscount()
-    start = '2023-03-01 00:00:00'
-    end = '2023-03-09 00:00:00'
+    start = '2023-03-09 00:00:00'
+    end = '2023-03-10 00:00:00'
 
     a, _ = opc.get(start=start, end=end)
     print(a)

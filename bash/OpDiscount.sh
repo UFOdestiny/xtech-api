@@ -1,1 +1,1 @@
-/root/anaconda3/bin/python /root/api/Data/WriteData.py OpDiscount
+/root/anaconda3/bin/python /root/api/Data/WriteData.py --source=OpDiscount --time=minute
