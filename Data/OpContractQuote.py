@@ -174,7 +174,7 @@ class OpContractQuote(JQData):
         :param end_date:
         :return:
         """
-        self.symbol_minute = get_price(self.underlying_symbol,
+        self.symbol_minute = get_price(security=self.underlying_symbol,
                                        fields=['close'],
                                        frequency='minute',
                                        start_date=start_date,
@@ -194,13 +194,13 @@ class OpContractQuote(JQData):
         if start.time() > datetime.time(9, 30):
             start_temp = start.replace(hour=9, minute=30, second=0, microsecond=0)
             end_temp = end.replace(hour=9, minute=31, second=0, microsecond=0)
-            df_pre = get_price(code, frequency='minute', start_date=start_temp, end_date=end_temp,
+            df_pre = get_price(security=code, frequency='minute', start_date=start_temp, end_date=end_temp,
                                fields=['open', 'close', 'high', 'low', 'volume', 'money', 'pre_close'])
 
             df_pre = df_pre["pre_close"].values.tolist()
 
         # print(start, end)
-        self.code_minute = get_price(code, frequency='minute', start_date=start, end_date=end,
+        self.code_minute = get_price(security=code, frequency='minute', start_date=start, end_date=end,
                                      fields=['open', 'close', 'high', 'low', 'volume', 'money', 'pre_close'])
         if len(self.code_minute) == 0:
             print(start, end, code)

@@ -4,10 +4,11 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     : 聚宽API的验权，数据获取的父类。
-
+import time
 from threading import Lock
 
-from jqdatasdk import JQDataClient, auth, query, opt
+from jqdatasdk import JQDataClient, auth, query, opt, get_price
+from thriftpy2.transport import TTransportException
 
 from config import JoinQuantSetting
 
@@ -55,6 +56,16 @@ class JQData(metaclass=Authentication):
         df.drop_duplicates(keep="first", inplace=True)
         self.adjust = df
         return df
+
+    def get_price(self, **kwargs):
+        max_retry = 10
+        while max_retry:
+            try:
+                df = get_price(**kwargs)
+                return df
+            except TTransportException:
+                max_retry -= 1
+                time.sleep(3)
 
 
 if __name__ == "__main__":

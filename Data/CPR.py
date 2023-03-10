@@ -4,10 +4,12 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
+import time
 
 import pandas
 from jqdatasdk import get_price, query, opt
 from sqlalchemy import or_
+from thriftpy2.transport import TTransportException
 
 from utils.InfluxTime import SplitTime, InfluxTime
 from service.JoinQuant import JQData
@@ -26,12 +28,14 @@ class CPR(JQData):
 
     @staticmethod
     def group_f1(df):
+        df.dropna(inplace=True)
         co = df[df["contract_type"] == "CO"]["code"].to_list()
         po = df[df["contract_type"] == "PO"]["code"].to_list()
         return [co, po]
 
     @staticmethod
     def group_f2(df):
+        df.dropna(inplace=True)
         vol = df["volume"].sum()
         money = df["money"].sum()
         open_interest = df["open_interest"].sum()
@@ -103,8 +107,10 @@ class CPR(JQData):
             for s, e, d in [(start, end, self.dic2), (yesterday, end, self.dic1), ]:
                 for type_ in ["CO", "PO"]:
                     # print(target_code, s, e, type_)
-                    df1 = get_price(security=d[target_code][type_], start_date=s, end_date=e, fq='pre',
-                                    frequency='60m', fields=['volume', 'money', 'open_interest'], panel=False)
+
+                    df1 = self.get_price(security=d[target_code][type_], start_date=s, end_date=e, fq='pre',
+                                         frequency='60m', fields=['volume', 'money', 'open_interest'], panel=False)
+
                     if len(df1) == 0:
                         self.df = None
                         return
@@ -116,6 +122,7 @@ class CPR(JQData):
             # today CO today PO yes CO yes PO
 
             df_t_c, df_t_p, df_y_c, df_y_p = lst
+
             # print(df_t_c)
             # print(df_t_p)
             # print(df_y_c)
@@ -136,13 +143,12 @@ class CPR(JQData):
             df_t_c = df_t_c.merge(df_y_c, how='inner', on='time')
             df_t_c["targetcode"] = target_code
 
-            # print(df_t_c)
             self.df = pandas.concat([df_t_c, self.df])
 
     def find_valid_yesterday(self, yesterday):
         while True:
-            df1 = get_price(security="510050.XSHG", start_date=yesterday, end_date=yesterday,
-                            fq='pre', frequency='1d', fields=['volume'], panel=False)
+            df1 = self.get_price(security="510050.XSHG", start_date=yesterday, end_date=yesterday,
+                                 fq='pre', frequency='1d', fields=['volume'], panel=False)
             if len(df1) != 0:
                 return yesterday
             else:
@@ -164,7 +170,7 @@ class CPR(JQData):
         if self.df is None:
             return None, None
 
-        # self.df["time"] = pandas.DatetimeIndex(self.df["time"], tz='Asia/Shanghai')
+        self.df.index = pandas.DatetimeIndex(self.df.index, tz='Asia/Shanghai')
         # self.df.set_index("time", inplace=True)
         self.df.rename(columns={'volume_x': 'volume', "money_x": 'money', "open_interest_x": 'oi',
                                 'volume_y': 'volume_scroll', "money_y": 'money_scroll',

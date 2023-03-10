@@ -19,7 +19,7 @@ class OpTargetDerivativePrice(JQData):
 
         self.pre_dic = dict()
 
-        # self.targetcodes = ["510050.XSHG", "510500.XSHG"]
+        self.targetcodes = ["510050.XSHG", "510500.XSHG"]
 
         self.result_dic = {i: {"1d_price": None, "2h_price": None, "1h_price": None,
                                "5m_price": None, "15m_price": None, "30m_price": None}
@@ -135,13 +135,13 @@ class OpTargetDerivativePrice(JQData):
         for v in [vol_1d, vol_2h, vol_1h, vol_5m, vol_15m, vol_30m]:
             v["time"] = pandas.DatetimeIndex(v["time"], tz='Asia/Shanghai')
             v.set_index("time", inplace=True)
-            v.rename(columns={'code': 'targetcode'}, inplace=True)
+            v.rename(columns={'code': 'targetcode', "close": "price"}, inplace=True)
             v.dropna(inplace=True)
 
             result_df.append(v)
 
         tag_columns = ['targetcode']
-        name_list = ["optargetderivativeprice_1d", "optargetderivativeprice_1d", "optargetderivativeprice_1d",
+        name_list = ["optargetderivativeprice_1d", "optargetderivativeprice_2h", "optargetderivativeprice_1h",
                      "optargetderivativeprice_5m", "optargetderivativeprice_15m", "optargetderivativeprice_30m"]
 
         return list(zip(result_df, name_list)), tag_columns

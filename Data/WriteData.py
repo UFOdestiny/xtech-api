@@ -41,7 +41,7 @@ class Write:
         self.count = 0
         self.lock = Lock()
 
-    def callback(self, future, kw, start_time):
+    def callback(self, future, kw):
         msg = " ".join(list(map(str, kw.values())))
         msg = f"{self.measurement} {msg}"
 
@@ -50,12 +50,14 @@ class Write:
         self.count += 1
         msg = f"{msg} {self.count} "
 
-        end_time = f" {round((time.time() - start_time) / 60, 3)}min"
         if t is not None:
             # self.log.exception(t)
-            self.log.exception(msg + end_time)
+            self.log.exception(msg)
         else:
-            self.log.info(msg + future.result() + end_time)
+            future_result = future.result()
+            result_msg, s_time = future_result
+            end_time = f" {round((time.time() - s_time) / 60, 3)}min"
+            self.log.info(msg + result_msg + end_time)
 
         self.lock.release()
 
@@ -81,7 +83,7 @@ class Write:
 
         if type(df[0]) == tuple:
             for df_, m in df:
-                msg += self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=m, method="batch")
+                msg += self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=m, method="syn")
                 msg += " "
         else:
             if self.measurement in ["opcontractquote", "opnominalamount", "putdminuscalld", "opdiscount", "cpr"]:
@@ -92,12 +94,13 @@ class Write:
         return msg
 
     def thread(self, **kw):
+        start_time = time.time()
         indicator = self.submit(**kw)
 
         if not indicator:
-            return "PASS"
+            return "PASS", start_time
         else:
-            return indicator
+            return indicator, start_time
 
     def multitask(self, kw_lst):
         if type(kw_lst) != list:
@@ -105,11 +108,10 @@ class Write:
 
         length = len(kw_lst)
 
-        with ThreadPoolExecutor(max_workers=min(20, length)) as e:
+        with ThreadPoolExecutor(max_workers=min(10, length)) as e:
             for kw in kw_lst:
                 future = e.submit(self.thread, **kw)
-                start_time = time.time()
-                future.add_done_callback(partial(self.callback, kw=kw, start_time=start_time))
+                future.add_done_callback(partial(self.callback, kw=kw))
 
     def __call__(self, **kwargs):
         kw = kwargs
@@ -156,18 +158,15 @@ if source:
 
 if __name__ == '__main__':
     if not source:
-        start = "2023-03-01 00:00:00"
-        end = '2023-03-10 00:00:00'
+        start = "2023-01-01 00:00:00"
+        end = '2023-02-01 00:00:00'
 
         # Write(source=OpContractInfo)(start=start, end=end)
         # Write(source=OpTargetQuote)(start=start, end=end, update='1')
         # Write(source=OpNominalAmount)(start=start, end=end)
-        Write(source=OpContractQuote)(start=start, end=end, update=1)
+        # Write(source=OpContractQuote)(start=start, end=end, update=1)
         # Write(source=PutdMinusCalld)(start=start, end=end)
         # Write(source=OpDiscount)(start=start, end=end)
         # Write(source=OpTargetDerivativeVol)(start=start, end=end)
         # Write(source=OpTargetDerivativePrice)(start=start, end=end)
-        # Write(source=CPR)(start=start, end=end)
-
-    # end = time.time() - start_
-    # print(end / 60)
+        Write(source=CPR)(start=start, end=end)

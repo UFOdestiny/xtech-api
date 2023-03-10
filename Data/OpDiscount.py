@@ -30,7 +30,7 @@ class OpDiscount(JQData):
         self.dic = dict()
 
         self.result = None
-        # self.targetcodes = ["510050.XSHG", "510500.XSHG"]
+        self.targetcodes = ["510050.XSHG", "510500.XSHG"]
 
         self.baseline = {i: {"price": None, 0: None, 1: None, 2: None} for i in self.targetcodes}
 
@@ -62,14 +62,14 @@ class OpDiscount(JQData):
                   opt.OPT_CONTRACT_INFO.is_adjust).filter(
             or_(opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "510500.XSHG",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "510300.XSHG",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "159919.XSHE",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "159915.XSHE",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
+                # opt.OPT_CONTRACT_INFO.underlying_symbol == "510300.XSHG",
+                # opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
+                # opt.OPT_CONTRACT_INFO.underlying_symbol == "159919.XSHE",
+                # opt.OPT_CONTRACT_INFO.underlying_symbol == "159915.XSHE",
+                # opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
+                # opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
+                # opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
+                # opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
                 ),
             opt.OPT_CONTRACT_INFO.list_date <= start,
             opt.OPT_CONTRACT_INFO.expire_date >= start, )
@@ -204,10 +204,13 @@ class OpDiscount(JQData):
 
                 if not self.indicator:
                     return
+
                 # print("start")
                 # print(temp)
                 # print(strike_00)
+                # print(code_co_00)
                 # print(p_po_00)
+                # print(code_po_00)
                 # print(p_co_00)
                 # print(close)
 
@@ -216,6 +219,7 @@ class OpDiscount(JQData):
 
                 # print(discount_l_00)
                 # print(discount_s_00)
+                # break
 
                 self.result.loc[i, "discount_l_00"] = discount_l_00
                 self.result.loc[i, "discount_s_00"] = discount_s_00
@@ -306,8 +310,8 @@ if __name__ == "__main__":
     pandas.set_option('display.max_columns', None)
     pandas.set_option('display.max_rows', None)
     opc = OpDiscount()
-    start = '2023-03-09 00:00:00'
-    end = '2023-03-10 00:00:00'
+    start = '2023-03-08 00:00:00'
+    end = '2023-03-09 00:00:00'
 
     a, _ = opc.get(start=start, end=end)
     print(a)
