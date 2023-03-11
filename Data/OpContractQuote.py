@@ -16,6 +16,7 @@ import pandas
 from jqdatasdk import get_ticks, opt, query, get_price
 
 from service.InfluxService import InfluxService
+from service.RedisCache import RedisCache
 from utils.GreeksIV import Greeks, ImpliedVolatility
 from utils.InfluxTime import InfluxTime
 from service.JoinQuant import JQData
@@ -25,6 +26,8 @@ from config import FilePath
 class OpContractQuote(JQData):
     def __init__(self):
         super().__init__()
+        self.redis = RedisCache()
+
         self.symbol_minute = None
         self.tick = None
         self.code = None
