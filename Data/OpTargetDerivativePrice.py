@@ -101,14 +101,16 @@ class OpTargetDerivativePrice(JQData):
                             df.loc[index, columns[5]] = df.loc[index - interval:index, columns[0]].quantile(0.8)
 
                     df.drop(index=list(range(2 * interval)), inplace=True, axis=0)
-                    df.drop(columns=["close"], inplace=True, axis=1)
-                    # print(df.head())
+                    # df.drop(columns=["close"], inplace=True, axis=1)
+                    # print(df.head().iloc[0])
+
+                    # print(df)
 
                     retrieve = self.result_dic[code][prefix]
                     if retrieve is None:
                         self.result_dic[code][prefix] = df
                     else:
-                        df.drop(columns=["code"], inplace=True, axis=1)
+                        df.drop(columns=["code", "close"], inplace=True, axis=1)
                         self.result_dic[code][prefix] = pandas.merge(retrieve, df, how="inner", on="time")
 
     def get(self, **kwargs):
@@ -155,10 +157,9 @@ if __name__ == "__main__":
     end = "2023-03-08 00:00:00"
 
     a, b = op.get(start=start, end=end)
-    x, y, z = a
-    print(x.columns)
-    print(y.columns)
-    print(z.columns)
+    x, y, z, a1, b1, c1 = a
+    print(x[0].columns)
+    print(x[0])
     # a = op.get_data(start, end)
     # df = get_bars(security="510050.XSHG", unit='1m', count=10, fields=['close'])
     # print(df)

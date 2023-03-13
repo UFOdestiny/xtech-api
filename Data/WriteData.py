@@ -81,7 +81,7 @@ class Write:
         if len(df) == 0:
             return False
 
-        if type(df[0]) == tuple:
+        if type(df[0]) == tuple or type(df[0]) == list:
             for df_, m in df:
                 msg += self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=m, method="syn")
                 msg += " "
@@ -166,7 +166,7 @@ if __name__ == '__main__':
         # Write(source=OpNominalAmount)(start=start, end=end)
         # Write(source=OpContractQuote)(start=start, end=end, update=1)
         # Write(source=PutdMinusCalld)(start=start, end=end)
-        Write(source=OpDiscount)(start=start, end=end)
+        # Write(source=OpDiscount)(start=start, end=end)
         Write(source=OpTargetDerivativeVol)(start=start, end=end)
         Write(source=OpTargetDerivativePrice)(start=start, end=end)
         Write(source=CPR)(start=start, end=end)

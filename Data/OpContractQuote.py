@@ -13,14 +13,14 @@ import time
 
 import numpy as np
 import pandas
-from jqdatasdk import get_ticks, opt, query, get_price
+from jqdatasdk import get_ticks, opt, query
 
+from config import FilePath
 from service.InfluxService import InfluxService
+from service.JoinQuant import JQData
 from service.RedisCache import RedisCache
 from utils.GreeksIV import Greeks, ImpliedVolatility
 from utils.InfluxTime import InfluxTime
-from service.JoinQuant import JQData
-from config import FilePath
 
 
 class OpContractQuote(JQData):

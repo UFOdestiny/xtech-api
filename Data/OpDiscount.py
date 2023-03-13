@@ -206,21 +206,8 @@ class OpDiscount(JQData):
                 if not self.indicator:
                     return
 
-                # print("start")
-                # print(temp)
-                # print(strike_00)
-                # print(code_co_00)
-                # print(p_po_00)
-                # print(code_po_00)
-                # print(p_co_00)
-                # print(close)
-
                 discount_l_00 = (strike_00 + p_po_00 - p_co_00 - close) / close
                 discount_s_00 = (strike_00 - p_po_00 + p_co_00 - close) / close
-
-                # print(discount_l_00)
-                # print(discount_s_00)
-                # break
 
                 self.result.loc[i, "discount_l_00"] = discount_l_00
                 self.result.loc[i, "discount_s_00"] = discount_s_00
@@ -239,17 +226,6 @@ class OpDiscount(JQData):
 
                 discount_l_01 = (strike_01 + p_po_01 - p_co_01 - close) / close
                 discount_s_01 = (strike_01 - p_po_01 + p_co_01 - close) / close
-
-                # print("___________________")
-                # print(code_co_01)
-                # print(code_po_01)
-                # print(temp["time"])
-                # print(strike_01)
-                # print(p_po_01)
-                # print(p_co_01)
-                # print(close)
-                # print(discount_l_01)
-                # print(discount_s_01)
 
                 self.result.loc[i, "discount_l_01"] = discount_l_01
                 self.result.loc[i, "discount_s_01"] = discount_s_01

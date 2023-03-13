@@ -44,6 +44,10 @@ class OpTargetDerivativeVol(JQData):
             df_2h = df_temp.resample("2H").first()
             df_1d = df_temp.resample("1d").first()
 
+            df_1d["price"] = df_1d["close"]
+            df_2h["price"] = df_2h["close"]
+            df_1h["price"] = df_1h["close"]
+
             df_1d["close"] = (df_1d["close"].shift() - df_1d["close"]).div(df_1d["close"].shift())
             df_2h["close"] = (df_2h["close"].shift() - df_2h["close"]).div(df_2h["close"].shift())
             df_1h["close"] = (df_1h["close"].shift() - df_1h["close"]).div(df_1h["close"].shift())
@@ -95,7 +99,7 @@ class OpTargetDerivativeVol(JQData):
                     if retrieve is None:
                         self.result_dic[code][prefix] = df
                     else:
-                        df.drop(columns=["code"], inplace=True, axis=1)
+                        df.drop(columns=["code", "price"], inplace=True, axis=1)
                         self.result_dic[code][prefix] = pandas.merge(retrieve, df, how="inner", on="time")
 
     def get(self, **kwargs):
@@ -116,39 +120,48 @@ class OpTargetDerivativeVol(JQData):
         vol_2h = pandas.concat(vol_2h)
         vol_1h = pandas.concat(vol_1h)
 
-        vol_1d["time"] = pandas.DatetimeIndex(vol_1d["time"], tz='Asia/Shanghai')
-        vol_1d.set_index("time", inplace=True)
-        vol_1d.rename(columns={'code': 'targetcode'}, inplace=True)
-        vol_1d.dropna(inplace=True)
+        # vol_1d["time"] = pandas.DatetimeIndex(vol_1d["time"], tz='Asia/Shanghai')
+        # vol_1d.set_index("time", inplace=True)
+        # vol_1d.rename(columns={'code': 'targetcode'}, inplace=True)
+        # vol_1d.dropna(inplace=True)
+        #
+        # vol_2h["time"] = pandas.DatetimeIndex(vol_2h["time"], tz='Asia/Shanghai')
+        # vol_2h.set_index("time", inplace=True)
+        # vol_2h.rename(columns={'code': 'targetcode'}, inplace=True)
+        # vol_2h.dropna(inplace=True)
+        #
+        # vol_1h["time"] = pandas.DatetimeIndex(vol_1h["time"], tz='Asia/Shanghai')
+        # vol_1h.set_index("time", inplace=True)
+        # vol_1h.rename(columns={'code': 'targetcode'}, inplace=True)
+        # vol_1h.dropna(inplace=True)
 
-        vol_2h["time"] = pandas.DatetimeIndex(vol_2h["time"], tz='Asia/Shanghai')
-        vol_2h.set_index("time", inplace=True)
-        vol_2h.rename(columns={'code': 'targetcode'}, inplace=True)
-        vol_2h.dropna(inplace=True)
+        result_df = []
+        for v in [vol_1d, vol_2h, vol_1h]:
+            v["time"] = pandas.DatetimeIndex(v["time"], tz='Asia/Shanghai')
+            v.set_index("time", inplace=True)
+            v.rename(columns={'code': 'targetcode'}, inplace=True)
+            v.dropna(inplace=True)
+            result_df.append(v)
 
-        vol_1h["time"] = pandas.DatetimeIndex(vol_1h["time"], tz='Asia/Shanghai')
-        vol_1h.set_index("time", inplace=True)
-        vol_1h.rename(columns={'code': 'targetcode'}, inplace=True)
-        vol_1h.dropna(inplace=True)
-
+        name_list = ["optargetderivativevol_1d", "optargetderivativevol_2h", "optargetderivativevol_1h"]
         tag_columns = ['targetcode']
-        return [(vol_1d, "optargetderivativevol_1d"),
-                (vol_2h, "optargetderivativevol_2h"),
-                (vol_1h, "optargetderivativevol_1h")], tag_columns
+        return list(zip(result_df, name_list)), tag_columns
 
 
 if __name__ == "__main__":
     pandas.set_option('display.max_rows', None)
-    # pandas.set_option('display.max_columns', None)
+    pandas.set_option('display.max_columns', None)
     op = OpTargetDerivativeVol()
-    start = "2023-03-01 00:00:00"
+    start = "2023-03-06 00:00:00"
     end = "2023-03-07 00:00:00"
 
     a, b = op.get(start=start, end=end)
     x, y, z = a
-    print(x.columns)
-    print(y.columns)
-    print(z.columns)
+    print(x[0].columns)
+    print(y[0].columns)
+    print(z[0].columns)
+
+    print(x[0])
     # a = op.get_data(start, end)
     # df = get_bars(security="510050.XSHG", unit='1m', count=10, fields=['close'])
     # print(df)

@@ -20,7 +20,6 @@ class CPR(JQData):
     def __init__(self):
         super().__init__()
         self.df = None
-        # self.targetcodes = ["510050.XSHG", "510500.XSHG"]
         self.indicator = True
 
         self.dic1 = dict()
@@ -39,7 +38,9 @@ class CPR(JQData):
         vol = df["volume"].sum()
         money = df["money"].sum()
         open_interest = df["open_interest"].sum()
-        return pandas.DataFrame({"volume": [vol], "money": [money], "open_interest": [open_interest]})
+        close = df["close"].iloc[0]
+        return pandas.DataFrame({"volume": [vol], "money": [money], "open_interest": [open_interest],
+                                 "close": [close]})
 
     def get_pre_data(self):
         start, end = InfluxTime.this_day()
@@ -109,7 +110,15 @@ class CPR(JQData):
                     # print(target_code, s, e, type_)
 
                     df1 = self.get_price(security=d[target_code][type_], start_date=s, end_date=e, fq='pre',
-                                         frequency='60m', fields=['volume', 'money', 'open_interest'], panel=False)
+                                         frequency='60m', fields=['volume', 'money', 'open_interest'],
+                                         panel=False)
+
+                    df2 = self.get_price(security=target_code, start_date=s, end_date=e, fq='pre',
+                                         frequency='60m', fields=['close'],
+                                         panel=False)
+
+                    df1.set_index("time", inplace=True)
+                    df1["close"] = df2
 
                     if len(df1) == 0:
                         self.df = None
@@ -127,21 +136,23 @@ class CPR(JQData):
             # print(df_t_p)
             # print(df_y_c)
             # print(df_y_p)
-
+            lst = ['volume', 'money', 'open_interest']
             length_t = len(df_t_c)
             for i in range(length_t - 1, -1, -1):
-                df_t_c.iloc[i] = df_t_c.iloc[:i + 1].sum() / df_t_p.iloc[:i + 1].sum()
+                df_t_c.iloc[i][lst] = df_t_c.iloc[:i + 1][lst].sum() / df_t_p.iloc[:i + 1][lst].sum()
 
             # print(df_t_c)
 
             length_y = len(df_y_c)
             for i in range(length_y - 1, 3, -1):
-                df_y_c.iloc[i] = df_y_c.iloc[i - 3:i + 1].sum() / df_y_p.iloc[i - 3:i + 1].sum()
+                df_y_c.iloc[i][lst] = df_y_c.iloc[i - 3:i + 1][lst].sum() / df_y_p.iloc[i - 3:i + 1][lst].sum()
 
             # print(df_y_c)
 
             df_t_c = df_t_c.merge(df_y_c, how='inner', on='time')
             df_t_c["targetcode"] = target_code
+
+            df_t_c.drop(columns=["close_y"], axis=1, inplace=True)
 
             self.df = pandas.concat([df_t_c, self.df])
 
@@ -153,6 +164,9 @@ class CPR(JQData):
                 return yesterday
             else:
                 yesterday -= datetime.timedelta(days=1)
+
+    def attach_targetprice(self, df):
+        pass
 
     def get(self, **kwargs):
         times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=1)
@@ -174,11 +188,9 @@ class CPR(JQData):
         # self.df.set_index("time", inplace=True)
         self.df.rename(columns={'volume_x': 'volume', "money_x": 'money', "open_interest_x": 'oi',
                                 'volume_y': 'volume_scroll', "money_y": 'money_scroll',
-                                "open_interest_y": 'oi_scroll', }, inplace=True)
+                                "open_interest_y": 'oi_scroll', "close_x": "price"}, inplace=True)
         tag_columns = ['targetcode']
-
         # print(self.df)
-
         return self.df, tag_columns
 
 
