@@ -35,9 +35,8 @@ class OpContractQuote(JQData):
         self.his_vol = None
         self.pre_open = None
         self.constant = None
-        self.g = Greeks()
-        self.iv = ImpliedVolatility()
-        self.code_minute = None
+
+        self.df = None
         self.indicator = 1
 
     def daily_info(self, code, start_date, end_date):
@@ -238,35 +237,34 @@ class OpContractQuote(JQData):
         #     df_pre = df_pre["pre_close"].values.tolist()
 
         # print(start, end)
-        self.code_minute = get_price(security=code, frequency='minute', start_date=start, end_date=end,
-                                     fields=['open', 'close', 'high', 'low', 'volume', 'money', 'pre_close'])
-        if len(self.code_minute) == 0:
+        self.df = get_price(security=code, frequency='minute', start_date=start, end_date=end,
+                            fields=['open', 'close', 'high', 'low', 'volume', 'money', 'pre_close'])
+        if len(self.df) == 0:
             print(start, end, code)
             self.indicator = None
             return
 
-        self.code_minute.fillna(method='ffill', inplace=True)
-        self.code_minute.fillna(method='bfill', inplace=True)
+        self.df.fillna(method='ffill', inplace=True)
+        self.df.fillna(method='bfill', inplace=True)
 
-        self.code_minute.index -= pandas.Timedelta(minutes=1)
+        self.df.index -= pandas.Timedelta(minutes=1)
 
         # print(self.code_minute)
 
         if self.df_pre:
-            self.code_minute["pre_close"] = self.df_pre
+            self.df["pre_close"] = self.df_pre
 
         else:
-            temp = self.code_minute.index[0]
-            for i in range(len(self.code_minute)):
-                index = self.code_minute.index[i]
+            temp = self.df.index[0]
+            for i in range(len(self.df)):
+                index = self.df.index[i]
                 if datetime.time(9, 30) == index.time():
-                    temp = self.code_minute.loc[index, "pre_close"]
+                    temp = self.df.loc[index, "pre_close"]
                 else:
-                    self.code_minute.iloc[i, -1] = temp
+                    self.df.iloc[i, -1] = temp
 
         # print(self.code_minute)
-        self.code_minute["pct"] = (self.code_minute["close"] - self.code_minute["pre_close"]) / self.code_minute[
-            "pre_close"]
+        self.df["pct"] = (self.df["close"] - self.df["pre_close"]) / self.df["pre_close"]
         # self.code_minute["pct"] = np.log(self.code_minute["close"].div(self.code_minute["close"].shift()))
         # self.code_minute["pct"][0] = 0
 
@@ -285,30 +283,30 @@ class OpContractQuote(JQData):
         tick.set_index('time', inplace=True)
 
         if len(tick) != 0:
-            self.code_minute[["a1_p", "b1_p"]] = tick[["a1_p", "b1_p"]].resample(rule='1Min').last()
-            self.code_minute[["a1_v", "b1_v"]] = tick[["a1_v", "b1_v"]].resample(rule='1Min').sum()
+            self.df[["a1_p", "b1_p"]] = tick[["a1_p", "b1_p"]].resample(rule='1Min').last()
+            self.df[["a1_v", "b1_v"]] = tick[["a1_v", "b1_v"]].resample(rule='1Min').sum()
         else:
             tick = get_ticks(code, end_dt=end_date, count=1, fields=['time', "a1_p", "b1_p", "a1_v", "b1_v"])
-            self.code_minute["a1_v"] = tick["a1_v"].tolist()[0]
-            self.code_minute["b1_v"] = tick["b1_v"].tolist()[0]
-            self.code_minute["a1_p"] = tick["a1_p"].tolist()[0]
-            self.code_minute["b1_p"] = tick["b1_p"].tolist()[0]
+            self.df["a1_v"] = tick["a1_v"].tolist()[0]
+            self.df["b1_v"] = tick["b1_v"].tolist()[0]
+            self.df["a1_p"] = tick["a1_p"].tolist()[0]
+            self.df["b1_p"] = tick["b1_p"].tolist()[0]
 
-        df = self.code_minute[["a1_p", "b1_p", "a1_v", "b1_v"]].replace(np.float64(0), np.nan)
+        df = self.df[["a1_p", "b1_p", "a1_v", "b1_v"]].replace(np.float64(0), np.nan)
 
         df.fillna(method='ffill', inplace=True)
         df.fillna(method='bfill', inplace=True)
 
-        self.code_minute[["a1_p", "b1_p", "a1_v", "b1_v"]] = df
+        self.df[["a1_p", "b1_p", "a1_v", "b1_v"]] = df
 
         del tick
         del df
 
     def process_df(self):
-        self.code_minute["symbol_price"] = self.symbol_minute
+        self.df["symbol_price"] = self.symbol_minute
         del self.symbol_minute
-        self.code_minute["code"] = self.code
-        self.code_minute["underlying_symbol"] = self.underlying_symbol
+        self.df["code"] = self.code
+        self.df["underlying_symbol"] = self.underlying_symbol
 
         # print(self.code_minute)
         # print(self.constant)
@@ -317,45 +315,47 @@ class OpContractQuote(JQData):
             for j in range(len(self.constant)):
                 today = pandas.to_datetime(self.constant.index[j].date())
                 tomorrow = pandas.to_datetime(self.constant.index[j].date() + datetime.timedelta(days=1))
-                indexes = self.code_minute[
-                    (self.code_minute.index >= today) & (self.code_minute.index <= tomorrow)].index
-                self.code_minute.loc[indexes, i] = self.constant.iloc[j][i]
+                indexes = self.df[
+                    (self.df.index >= today) & (self.df.index <= tomorrow)].index
+                self.df.loc[indexes, i] = self.constant.iloc[j][i]
 
-        df = self.code_minute[["his_vol", "exercise_price", "contract_type", "days"]].copy()
+        df = self.df[["his_vol", "exercise_price", "contract_type", "days"]].copy()
         df.fillna(method='ffill', inplace=True)
 
-        self.code_minute[["his_vol", "exercise_price", "contract_type", "days"]] = df
+        self.df[["his_vol", "exercise_price", "contract_type", "days"]] = df
 
     def greekiv(self, start, end):
         start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
         end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
-        self.code_minute = self.code_minute[(self.code_minute.index >= start) & (self.code_minute.index <= end)]
+        self.df = self.df[(self.df.index >= start) & (self.df.index <= end)]
 
-        self.code_minute["delta"] = self.g.delta(self.code_minute["symbol_price"], self.code_minute["exercise_price"],
-                                                 self.code_minute["days"], self.code_minute["his_vol"],
-                                                 self.code_minute["contract_type"])
+        g = Greeks()
+        iv = ImpliedVolatility()
 
-        self.code_minute["gamma"] = self.g.gamma(self.code_minute["symbol_price"], self.code_minute["exercise_price"],
-                                                 self.code_minute["days"], self.code_minute["his_vol"])
+        self.df["delta"] = g.delta(self.df["symbol_price"], self.df["exercise_price"], self.df["days"],
+                                   self.df["his_vol"], self.df["contract_type"])
 
-        self.code_minute["vega"] = self.g.vega(self.code_minute["symbol_price"], self.code_minute["exercise_price"],
-                                               self.code_minute["days"], self.code_minute["his_vol"])
+        self.df["gamma"] = g.gamma(self.df["symbol_price"], self.df["exercise_price"], self.df["days"],
+                                   self.df["his_vol"])
 
-        self.code_minute["theta"] = self.g.theta(self.code_minute["symbol_price"], self.code_minute["exercise_price"],
-                                                 self.code_minute["days"], self.code_minute["his_vol"],
-                                                 self.code_minute["contract_type"])
-        self.code_minute["iv"] = 0
+        self.df["vega"] = g.vega(self.df["symbol_price"], self.df["exercise_price"], self.df["days"],
+                                 self.df["his_vol"])
 
-        self.code_minute["iv"] = self.code_minute.apply(
-            lambda x: self.iv.find_vol(x["close"], x["contract_type"], x["symbol_price"], x["exercise_price"],
-                                       x["days"]), axis=1)
+        self.df["theta"] = g.theta(self.df["symbol_price"], self.df["exercise_price"], self.df["days"],
+                                   self.df["his_vol"], self.df["contract_type"])
 
-        self.code_minute["timevalue"] = self.code_minute.apply(
+        self.df["iv"] = 0
+
+        self.df["iv"] = self.df.apply(
+            lambda x: iv.find_vol(x["close"], x["contract_type"], x["symbol_price"], x["exercise_price"],
+                                  x["days"]), axis=1)
+
+        self.df["timevalue"] = self.df.apply(
             lambda x: max(float(0), x["close"] - x["contract_type"] * (x["symbol_price"] - x["exercise_price"])),
             axis=1)
 
-        self.code_minute.drop(["symbol_price", "days", "his_vol", "pre_close"],
-                              axis=1, inplace=True)
+        self.df.drop(["symbol_price", "days", "his_vol", "pre_close"],
+                     axis=1, inplace=True)
 
     def get(self, **kwargs):
         """
@@ -384,18 +384,18 @@ class OpContractQuote(JQData):
         self.process_df()
         self.greekiv(start, end)
 
-        self.code_minute.dropna(how="any", inplace=True)
-        self.code_minute.rename(columns={'code': 'opcode', "underlying_symbol": "targetcode",
-                                         "exercise_price": "strikeprice", "contract_type": "type"}, inplace=True)
+        self.df.dropna(how="any", inplace=True)
+        self.df.rename(columns={'code': 'opcode', "underlying_symbol": "targetcode",
+                                "exercise_price": "strikeprice", "contract_type": "type"}, inplace=True)
 
         tag_columns = ['opcode', 'targetcode', 'type']
 
-        self.code_minute["type"].replace(1, "CO", inplace=True)
-        self.code_minute["type"].replace(-1, "PO", inplace=True)
+        self.df["type"].replace(1, "CO", inplace=True)
+        self.df["type"].replace(-1, "PO", inplace=True)
 
-        self.code_minute.index = pandas.DatetimeIndex(self.code_minute.index, tz='Asia/Shanghai')
+        self.df.index = pandas.DatetimeIndex(self.df.index, tz='Asia/Shanghai')
 
-        return self.code_minute, tag_columns
+        return self.df, tag_columns
 
     def collect_info(self, **kwargs):
         cmd = kwargs.get("cmd", None)
