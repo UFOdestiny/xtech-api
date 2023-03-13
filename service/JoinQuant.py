@@ -41,6 +41,16 @@ class JQData(metaclass=Authentication):
 
         # self.targetcodes = ['510500.XSHG']
 
+    def run_query(self, q):
+        max_retries = 10
+        while max_retries:
+            try:
+                return opt.run_query(q)
+            except TTransportException:
+                print("run_query Wrong Retry")
+                max_retries -= 1
+                time.sleep(3)
+
     def get_adjust(self):
         """
         获取全部合约调整信息
@@ -51,9 +61,10 @@ class JQData(metaclass=Authentication):
                   opt.OPT_ADJUSTMENT.ex_exercise_price,
                   opt.OPT_ADJUSTMENT.ex_contract_unit)
 
-        df = opt.run_query(q)
+        df = self.run_query(q)
         df.dropna(how="any", inplace=True)
         df.drop_duplicates(keep="first", inplace=True)
+
         self.adjust = df
         return df
 
@@ -64,6 +75,7 @@ class JQData(metaclass=Authentication):
                 df = get_price(**kwargs)
                 return df
             except TTransportException:
+                print("get_price Wrong Retry")
                 max_retry -= 1
                 time.sleep(3)
 

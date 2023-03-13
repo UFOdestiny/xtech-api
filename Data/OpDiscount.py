@@ -30,7 +30,7 @@ class OpDiscount(JQData):
         self.dic = dict()
 
         self.result = None
-        self.targetcodes = ["510050.XSHG", "510500.XSHG"]
+        #self.targetcodes = ["510050.XSHG", "510500.XSHG"]
 
         self.baseline = {i: {"price": None, 0: None, 1: None, 2: None} for i in self.targetcodes}
 
@@ -62,14 +62,14 @@ class OpDiscount(JQData):
                   opt.OPT_CONTRACT_INFO.is_adjust).filter(
             or_(opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "510500.XSHG",
-                # opt.OPT_CONTRACT_INFO.underlying_symbol == "510300.XSHG",
-                # opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
-                # opt.OPT_CONTRACT_INFO.underlying_symbol == "159919.XSHE",
-                # opt.OPT_CONTRACT_INFO.underlying_symbol == "159915.XSHE",
-                # opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
-                # opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
-                # opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
-                # opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "510300.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159919.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159915.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
                 ),
             opt.OPT_CONTRACT_INFO.list_date <= start,
             opt.OPT_CONTRACT_INFO.expire_date >= start, )

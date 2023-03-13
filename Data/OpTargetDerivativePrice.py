@@ -19,7 +19,7 @@ class OpTargetDerivativePrice(JQData):
 
         self.pre_dic = dict()
 
-        self.targetcodes = ["510050.XSHG", "510500.XSHG"]
+        # self.targetcodes = ["510050.XSHG", "510500.XSHG"]
 
         self.result_dic = {i: {"1d_price": None, "2h_price": None, "1h_price": None,
                                "5m_price": None, "15m_price": None, "30m_price": None}
