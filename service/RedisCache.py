@@ -29,7 +29,8 @@ class RedisCache(RedisSetting, metaclass=Singleton):
     """
 
     def __init__(self):
-        self.client = StrictRedis(host=self.host, port=self.port, db=self.db)
+        self.client = StrictRedis(host=self.host, port=self.port, db=self.db,
+                                  username=self.username, password=self.password)
         self.expires = timedelta(hours=12)
         self.encoding = 'utf-8'
         self.compress = True
@@ -57,4 +58,5 @@ class RedisCache(RedisSetting, metaclass=Singleton):
 
 if __name__ == "__main__":
     r = RedisCache()
+    r["url"] = "test"
     print(r["url"])
