@@ -23,3 +23,5 @@
 30 20 * * 1-5 /bin/sh /root/api/bash/PutdMinusCalld.sh
 
 0 22 * * 1-5 /bin/sh /root/api/bash/OpDiscountALL.sh
+
+0 23 * * 1-5 /bin/sh /root/api/bash/RedisClear.sh
