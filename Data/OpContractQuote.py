@@ -27,7 +27,7 @@ class OpContractQuote(JQData):
     def __init__(self):
         super().__init__()
         self.df_pre = None
-        self.redis = RedisCache()
+        self.redis = dict()  # RedisCache()
 
         self.symbol_minute = None
         self.tick = None
@@ -216,6 +216,8 @@ class OpContractQuote(JQData):
         self.symbol_minute.index -= pandas.Timedelta(minutes=1)
 
     def get_pre_close(self, code, start, end):
+        start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+        end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
         start_temp = start.replace(hour=9, minute=30, second=0, microsecond=0)
         end_temp = end.replace(hour=9, minute=31, second=0, microsecond=0)
         df_pre = get_price(security=code, frequency='minute', start_date=start_temp, end_date=end_temp,
@@ -280,13 +282,19 @@ class OpContractQuote(JQData):
         # start_date = start_date[:11] + "00:00:00"
 
         self.tick = get_ticks(code, start_dt=start_date, end_dt=end_date,
-                              fields=['time', "a1_p", "a1_v", "b1_p", "b1_v"])  # 'current', 'volume', 'money',
+                              fields=['time', "a1_p", "a1_v", "b1_p", "b1_v"])
 
         self.tick.set_index('time', inplace=True)
-        # print(self.tick)
-        self.code_minute[["a1_p", "b1_p"]] = self.tick[["a1_p", "b1_p"]].resample(rule='1Min').last()
-        self.code_minute[["a1_v", "b1_v"]] = self.tick[["a1_v", "b1_v"]].resample(rule='1Min').sum()
-        # print(self.code_minute)
+
+        if len(self.tick) != 0:
+            self.code_minute[["a1_p", "b1_p"]] = self.tick[["a1_p", "b1_p"]].resample(rule='1Min').last()
+            self.code_minute[["a1_v", "b1_v"]] = self.tick[["a1_v", "b1_v"]].resample(rule='1Min').sum()
+        else:
+            self.tick = get_ticks(code, end_dt=end_date, count=1, fields=['time', "a1_p", "b1_p", "a1_v", "b1_v"])
+            self.code_minute["a1_v"] = self.tick["a1_v"].tolist()[0]
+            self.code_minute["b1_v"] = self.tick["b1_v"].tolist()[0]
+            self.code_minute["a1_p"] = self.tick["a1_p"].tolist()[0]
+            self.code_minute["b1_p"] = self.tick["b1_p"].tolist()[0]
 
         df = self.code_minute[["a1_p", "b1_p", "a1_v", "b1_v"]].replace(np.float64(0), np.nan)
 
@@ -462,10 +470,10 @@ class OpContractQuote(JQData):
 if __name__ == "__main__":
     # pandas.set_option('display.max_columns', None)
     opc = OpContractQuote()
-    start = '2023-03-01 09:54:00'
-    end = '2023-03-02 09:57:00'
+    start = '2023-03-13 10:13:00'
+    end = '2023-03-13 10:24:00'
     # opc.daily_info("10004405.XSHG", '2023-02-01 00:00:00','2023-02-03 00:00:00')
-    code = "10004405.XSHG"
+    code = "MO2309-P-7000.CCFX"
     # print(len(opc.collect_info(start=start, end=end, update=1)))
 
     c, f = opc.get(code=code, start=start, end=end)

@@ -5,8 +5,15 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
 
+import os
+import sys
+
+root_path = os.path.abspath(__file__)
+root_path = '/'.join(root_path.split('/')[:-2])
+sys.path.append(root_path)
 
 import json
+import pickle
 import zlib
 from datetime import timedelta
 
@@ -41,13 +48,21 @@ class RedisCache(RedisSetting, metaclass=Singleton):
         if record:
             if self.compress:
                 record = zlib.decompress(record)
-            return json.loads(record.decode(self.encoding))
+            try:
+                return json.loads(record.decode(self.encoding))
+            except UnicodeDecodeError:
+                return pickle.loads(record)
         else:
             raise KeyError(url + ' does not exist')
 
     def __setitem__(self, url, result):
         """Save static to Redis for given url"""
-        data = bytes(json.dumps(result), self.encoding)
+        try:
+            dump = json.dumps(result)
+            data = bytes(dump, self.encoding)
+        except TypeError:
+            data = pickle.dumps(result)
+
         if self.compress:
             data = zlib.compress(data)
         self.client.setex(url, self.expires, data)
@@ -58,5 +73,5 @@ class RedisCache(RedisSetting, metaclass=Singleton):
 
 if __name__ == "__main__":
     r = RedisCache()
-    r["url"] = "test"
-    print(r["url"])
+    # r["url"] = "test"
+    print(r["MO2312-C-6600.CCFX"])
