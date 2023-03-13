@@ -131,30 +131,36 @@ class CPR(JQData):
             # today CO today PO yes CO yes PO
 
             df_t_c, df_t_p, df_y_c, df_y_p = lst
+            close_t = df_t_c["close"]
+            del df_t_c["close"], df_t_p["close"], df_y_c["close"], df_y_p["close"]
 
-            # print(df_t_c)
-            # print(df_t_p)
-            # print(df_y_c)
-            # print(df_y_p)
-            lst = ['volume', 'money', 'open_interest']
+            # print(1, df_t_c)
+            # print(2, df_t_p)
+            # print(3, df_y_c)
+            # print(4, df_y_p)
+
+            # lst = ['volume', 'money', 'open_interest']
             length_t = len(df_t_c)
             for i in range(length_t - 1, -1, -1):
-                df_t_c.iloc[i][lst] = df_t_c.iloc[:i + 1][lst].sum() / df_t_p.iloc[:i + 1][lst].sum()
+                df_t_c.iloc[i] = df_t_c.iloc[:i + 1].sum() / df_t_p.iloc[:i + 1].sum()
 
-            # print(df_t_c)
-
+            # print(1, df_t_c)
             length_y = len(df_y_c)
             for i in range(length_y - 1, 3, -1):
-                df_y_c.iloc[i][lst] = df_y_c.iloc[i - 3:i + 1][lst].sum() / df_y_p.iloc[i - 3:i + 1][lst].sum()
+                df_y_c.iloc[i] = df_y_c.iloc[i - 3:i + 1].sum() / df_y_p.iloc[i - 3:i + 1].sum()
 
-            # print(df_y_c)
+            # print(2, df_y_c)
+            # df_y_c.drop(columns=["close"], axis=1, inplace=True)
 
-            df_t_c = df_t_c.merge(df_y_c, how='inner', on='time')
-            df_t_c["targetcode"] = target_code
+            df_t_c["close"] = close_t
 
-            df_t_c.drop(columns=["close_y"], axis=1, inplace=True)
+            df_temp = df_t_c.merge(df_y_c, how='inner', on='time')
+            # print(3, df_temp)
+            df_temp["targetcode"] = target_code
 
-            self.df = pandas.concat([df_t_c, self.df])
+            # df_t_c.drop(columns=["close_y"], axis=1, inplace=True)
+
+            self.df = pandas.concat([df_temp, self.df])
 
     def find_valid_yesterday(self, yesterday):
         while True:
@@ -188,7 +194,7 @@ class CPR(JQData):
         # self.df.set_index("time", inplace=True)
         self.df.rename(columns={'volume_x': 'volume', "money_x": 'money', "open_interest_x": 'oi',
                                 'volume_y': 'volume_scroll', "money_y": 'money_scroll',
-                                "open_interest_y": 'oi_scroll', "close_x": "price"}, inplace=True)
+                                "open_interest_y": 'oi_scroll', "close": "price"}, inplace=True)
         tag_columns = ['targetcode']
         # print(self.df)
         return self.df, tag_columns
@@ -198,8 +204,8 @@ if __name__ == "__main__":
     pandas.set_option('display.max_rows', None)
     pandas.set_option('display.max_columns', None)
     op = CPR()
-    start = "2023-02-13 00:00:00"
-    end = "2023-02-14 00:00:00"
+    start = "2023-03-01 00:00:00"
+    end = "2023-03-02 00:00:00"
     # op.get_pre_data()
     # a = op.get_data(start=start, end=end)
     # print(a)
