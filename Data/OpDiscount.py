@@ -30,7 +30,7 @@ class OpDiscount(JQData):
         self.dic = dict()
 
         self.result = None
-        #self.targetcodes = ["510050.XSHG", "510500.XSHG"]
+        # self.targetcodes = ["510050.XSHG", "510500.XSHG"]
 
         self.baseline = {i: {"price": None, 0: None, 1: None, 2: None} for i in self.targetcodes}
 
@@ -185,7 +185,8 @@ class OpDiscount(JQData):
 
             if not self.baseline[code]["price"] or abs((close - self.baseline[code]["price"]) / close) > 0.02:
                 if self.baseline[code]["price"]:
-                    print(abs((close - self.baseline[code]["price"]) / close))
+                    # print(abs((close - self.baseline[code]["price"]) / close))
+                    pass
 
                 self.baseline[code]["price"] = close
                 self.baseline[code][0] = self.takeClosest(self.dic[code]["00"]["CO"], close)

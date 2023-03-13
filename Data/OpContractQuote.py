@@ -27,7 +27,7 @@ class OpContractQuote(JQData):
     def __init__(self):
         super().__init__()
         self.df_pre = None
-        self.redis = dict()  # RedisCache()
+        self.redis = RedisCache()
 
         self.symbol_minute = None
         self.code = None
@@ -102,11 +102,11 @@ class OpContractQuote(JQData):
         """
         # 1、获取制定时间段内的日频价格
         """
-        df = get_price(self.underlying_symbol,
-                       fields=['close'],
-                       frequency='daily',
-                       start_date=start_date,
-                       end_date=end_date, )
+        df = self.get_price(security=self.underlying_symbol,
+                            fields=['close'],
+                            frequency='daily',
+                            start_date=start_date,
+                            end_date=end_date, )
 
         if len(df) == 0:
             self.indicator = None
@@ -200,11 +200,11 @@ class OpContractQuote(JQData):
         :param end_date:
         :return:
         """
-        self.symbol_minute = get_price(security=self.underlying_symbol,
-                                       fields=['close'],
-                                       frequency='minute',
-                                       start_date=start_date,
-                                       end_date=end_date, )
+        self.symbol_minute = self.get_price(security=self.underlying_symbol,
+                                            fields=['close'],
+                                            frequency='minute',
+                                            start_date=start_date,
+                                            end_date=end_date, )
 
         if len(self.symbol_minute) == 0:
             self.indicator = None
@@ -218,8 +218,8 @@ class OpContractQuote(JQData):
         end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
         start_temp = start.replace(hour=9, minute=30, second=0, microsecond=0)
         end_temp = end.replace(hour=9, minute=31, second=0, microsecond=0)
-        df_pre = get_price(security=code, frequency='minute', start_date=start_temp, end_date=end_temp,
-                           fields=['open', 'close', 'high', 'low', 'volume', 'money', 'pre_close'])
+        df_pre = self.get_price(security=code, frequency='minute', start_date=start_temp, end_date=end_temp,
+                                fields=['open', 'close', 'high', 'low', 'volume', 'money', 'pre_close'])
 
         df_pre = df_pre["pre_close"].values.tolist()[0]
         self.df_pre = df_pre
@@ -227,18 +227,9 @@ class OpContractQuote(JQData):
     def get_minute_price(self, code, start, end):
         start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
         end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
-        # df_pre = None
-        # if start.time() > datetime.time(9, 30):
-        #     start_temp = start.replace(hour=9, minute=30, second=0, microsecond=0)
-        #     end_temp = end.replace(hour=9, minute=31, second=0, microsecond=0)
-        #     df_pre = get_price(security=code, frequency='minute', start_date=start_temp, end_date=end_temp,
-        #                        fields=['open', 'close', 'high', 'low', 'volume', 'money', 'pre_close'])
-        #
-        #     df_pre = df_pre["pre_close"].values.tolist()
 
-        # print(start, end)
-        self.df = get_price(security=code, frequency='minute', start_date=start, end_date=end,
-                            fields=['open', 'close', 'high', 'low', 'volume', 'money', 'pre_close'])
+        self.df = self.get_price(security=code, frequency='minute', start_date=start, end_date=end,
+                                 fields=['open', 'close', 'high', 'low', 'volume', 'money', 'pre_close'])
         if len(self.df) == 0:
             print(start, end, code)
             self.indicator = None
@@ -248,8 +239,6 @@ class OpContractQuote(JQData):
         self.df.fillna(method='bfill', inplace=True)
 
         self.df.index -= pandas.Timedelta(minutes=1)
-
-        # print(self.code_minute)
 
         if self.df_pre:
             self.df["pre_close"] = self.df_pre
@@ -263,10 +252,7 @@ class OpContractQuote(JQData):
                 else:
                     self.df.iloc[i, -1] = temp
 
-        # print(self.code_minute)
         self.df["pct"] = (self.df["close"] - self.df["pre_close"]) / self.df["pre_close"]
-        # self.code_minute["pct"] = np.log(self.code_minute["close"].div(self.code_minute["close"].shift()))
-        # self.code_minute["pct"][0] = 0
 
     def get_tick(self, code, start_date, end_date):
         """
@@ -279,14 +265,17 @@ class OpContractQuote(JQData):
         # start_date = start_date[:11] + "00:00:00"
 
         tick = get_ticks(code, start_dt=start_date, end_dt=end_date, fields=['time', "a1_p", "a1_v", "b1_p", "b1_v"])
-
         tick.set_index('time', inplace=True)
 
         if len(tick) != 0:
             self.df[["a1_p", "b1_p"]] = tick[["a1_p", "b1_p"]].resample(rule='1Min').last()
             self.df[["a1_v", "b1_v"]] = tick[["a1_v", "b1_v"]].resample(rule='1Min').sum()
+
         else:
             tick = get_ticks(code, end_dt=end_date, count=1, fields=['time', "a1_p", "b1_p", "a1_v", "b1_v"])
+            tick.set_index('time', inplace=True)
+            tick.index -= pandas.Timedelta(minutes=1)
+
             self.df["a1_v"] = tick["a1_v"].tolist()[0]
             self.df["b1_v"] = tick["b1_v"].tolist()[0]
             self.df["a1_p"] = tick["a1_p"].tolist()[0]
@@ -323,11 +312,12 @@ class OpContractQuote(JQData):
         df.fillna(method='ffill', inplace=True)
 
         self.df[["his_vol", "exercise_price", "contract_type", "days"]] = df
+        # print(self.df)
 
     def greekiv(self, start, end):
-        start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
-        end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
-        self.df = self.df[(self.df.index >= start) & (self.df.index <= end)]
+        # start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+        # end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+        # self.df = self.df[(self.df.index >= start) & (self.df.index <= end)]
 
         g = Greeks()
         iv = ImpliedVolatility()
@@ -344,7 +334,7 @@ class OpContractQuote(JQData):
         self.df["theta"] = g.theta(self.df["symbol_price"], self.df["exercise_price"], self.df["days"],
                                    self.df["his_vol"], self.df["contract_type"])
 
-        self.df["iv"] = 0
+        self.df["iv"] = 0.0
 
         self.df["iv"] = self.df.apply(
             lambda x: iv.find_vol(x["close"], x["contract_type"], x["symbol_price"], x["exercise_price"],
@@ -398,6 +388,9 @@ class OpContractQuote(JQData):
         return self.df, tag_columns
 
     def collect_info(self, **kwargs):
+        if kwargs["start"] in self.redis:
+            return self.redis[kwargs["start"]]
+
         cmd = kwargs.get("cmd", None)
 
         if cmd:
@@ -461,17 +454,17 @@ class OpContractQuote(JQData):
                 result[i][1] = pre_start
                 result[i][2] = kwargs["end"]
 
-        # print(result[0])
+        self.redis[kwargs["start"]] = result
         return result
 
 
 if __name__ == "__main__":
     # pandas.set_option('display.max_columns', None)
     opc = OpContractQuote()
-    start = '2023-03-13 10:13:00'
-    end = '2023-03-13 10:24:00'
+    start = '2023-03-13 13:00:00'
+    end = '2023-03-13 13:11:00'
     # opc.daily_info("10004405.XSHG", '2023-02-01 00:00:00','2023-02-03 00:00:00')
-    code = "MO2309-P-7000.CCFX"
+    code = "10005157.XSHG"
     # print(len(opc.collect_info(start=start, end=end, update=1)))
 
     c, f = opc.get(code=code, start=start, end=end)
