@@ -30,7 +30,6 @@ class OpContractQuote(JQData):
         self.redis = dict()  # RedisCache()
 
         self.symbol_minute = None
-        self.tick = None
         self.code = None
         self.underlying_symbol = None
         self.his_vol = None
@@ -281,20 +280,19 @@ class OpContractQuote(JQData):
         """
         # start_date = start_date[:11] + "00:00:00"
 
-        self.tick = get_ticks(code, start_dt=start_date, end_dt=end_date,
-                              fields=['time', "a1_p", "a1_v", "b1_p", "b1_v"])
+        tick = get_ticks(code, start_dt=start_date, end_dt=end_date, fields=['time', "a1_p", "a1_v", "b1_p", "b1_v"])
 
-        self.tick.set_index('time', inplace=True)
+        tick.set_index('time', inplace=True)
 
-        if len(self.tick) != 0:
-            self.code_minute[["a1_p", "b1_p"]] = self.tick[["a1_p", "b1_p"]].resample(rule='1Min').last()
-            self.code_minute[["a1_v", "b1_v"]] = self.tick[["a1_v", "b1_v"]].resample(rule='1Min').sum()
+        if len(tick) != 0:
+            self.code_minute[["a1_p", "b1_p"]] = tick[["a1_p", "b1_p"]].resample(rule='1Min').last()
+            self.code_minute[["a1_v", "b1_v"]] = tick[["a1_v", "b1_v"]].resample(rule='1Min').sum()
         else:
-            self.tick = get_ticks(code, end_dt=end_date, count=1, fields=['time', "a1_p", "b1_p", "a1_v", "b1_v"])
-            self.code_minute["a1_v"] = self.tick["a1_v"].tolist()[0]
-            self.code_minute["b1_v"] = self.tick["b1_v"].tolist()[0]
-            self.code_minute["a1_p"] = self.tick["a1_p"].tolist()[0]
-            self.code_minute["b1_p"] = self.tick["b1_p"].tolist()[0]
+            tick = get_ticks(code, end_dt=end_date, count=1, fields=['time', "a1_p", "b1_p", "a1_v", "b1_v"])
+            self.code_minute["a1_v"] = tick["a1_v"].tolist()[0]
+            self.code_minute["b1_v"] = tick["b1_v"].tolist()[0]
+            self.code_minute["a1_p"] = tick["a1_p"].tolist()[0]
+            self.code_minute["b1_p"] = tick["b1_p"].tolist()[0]
 
         df = self.code_minute[["a1_p", "b1_p", "a1_v", "b1_v"]].replace(np.float64(0), np.nan)
 
@@ -303,7 +301,7 @@ class OpContractQuote(JQData):
 
         self.code_minute[["a1_p", "b1_p", "a1_v", "b1_v"]] = df
 
-        del self.tick
+        del tick
         del df
 
     def process_df(self):
