@@ -50,29 +50,46 @@ class PutdMinusCalld(JQData):
         # del self.result["close"]
 
     def daily_info(self, start, end):
-        q = query(opt.OPT_CONTRACT_INFO.code,
-                  opt.OPT_CONTRACT_INFO.underlying_symbol,
-                  opt.OPT_CONTRACT_INFO.exercise_price,
-                  opt.OPT_CONTRACT_INFO.contract_type,
-                  opt.OPT_CONTRACT_INFO.contract_unit,
-                  opt.OPT_CONTRACT_INFO.expire_date,
-                  opt.OPT_CONTRACT_INFO.is_adjust).filter(
-            or_(opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
+        q1 = query(opt.OPT_CONTRACT_INFO.code,
+                   opt.OPT_CONTRACT_INFO.underlying_symbol,
+                   opt.OPT_CONTRACT_INFO.exercise_price,
+                   opt.OPT_CONTRACT_INFO.contract_type,
+                   opt.OPT_CONTRACT_INFO.expire_date,
+                   opt.OPT_CONTRACT_INFO.is_adjust).filter(
+            or_(
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "510500.XSHG",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "510300.XSHG",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "159919.XSHE",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "159915.XSHE",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
-                ),
+            ),
             opt.OPT_CONTRACT_INFO.list_date <= start,
             opt.OPT_CONTRACT_INFO.expire_date >= start, )
 
-        self.daily = opt.run_query(q)
-        # print(self.daily)
+        q2 = query(opt.OPT_CONTRACT_INFO.code,
+                   opt.OPT_CONTRACT_INFO.underlying_symbol,
+                   opt.OPT_CONTRACT_INFO.exercise_price,
+                   opt.OPT_CONTRACT_INFO.contract_type,
+                   opt.OPT_CONTRACT_INFO.expire_date,
+                   opt.OPT_CONTRACT_INFO.is_adjust).filter(
+            or_(
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
+            ),
+            opt.OPT_CONTRACT_INFO.list_date <= start,
+            opt.OPT_CONTRACT_INFO.expire_date >= start, )
+
+        df1 = self.run_query(q1)
+        d1 = sorted(df1["expire_date"].unique())
+
+        df2 = self.run_query(q2)
+        d2 = sorted(df2["expire_date"].unique())
+
+        self.daily = pandas.concat([df1, df2])
+        self.daily.reset_index(drop=True, inplace=True)
 
         if len(self.daily) == 0:
             return None
@@ -86,16 +103,18 @@ class PutdMinusCalld(JQData):
 
         self.daily.drop(["is_adjust", "adj_date", "ex_exercise_price", "ex_contract_unit"], inplace=True, axis=1)
 
-        today = datetime.date.today()
-        today_month = today.month
-        if today_month == 12:
-            month_00 = today.replace(year=today.year + 1, month=1, day=1)
-            month_01 = today.replace(year=today.year + 1, month=2, day=1)
-        else:
-            month_00 = today.replace(month=today_month + 1, day=1)
-            month_01 = today.replace(month=today_month + 2, day=1)
+        # today = datetime.date.today()
+        # today_month = today.month
+        # if today_month == 12:
+        #     month_00 = today.replace(year=today.year + 1, month=1, day=1)
+        #     month_01 = today.replace(year=today.year + 1, month=2, day=1)
+        # else:
+        #     month_00 = today.replace(month=today_month + 1, day=1)
+        #     month_01 = today.replace(month=today_month + 2, day=1)
 
-        df_01 = self.daily[(month_00 <= self.daily["expire_date"]) & (self.daily["expire_date"] <= month_01)]
+        # df_01 = self.daily[(month_00 <= self.daily["expire_date"]) & (self.daily["expire_date"] <= month_01)]
+
+        df_01 = self.daily[(self.daily["expire_date"] == d1[1]) | (self.daily["expire_date"] == d2[1])]
 
         # print(df_01)
         self.code = df_01["code"].unique().tolist()
@@ -106,6 +125,7 @@ class PutdMinusCalld(JQData):
         # print(len(self.code))
         co = [f"r[\"opcode\"] == \"{i}\"" for i in self.code]
         co = " or ".join(co)
+        # print(co)
 
         filter_ = f"""|> filter(fn: (r) => {co})"""
         filter_ += f"""|> filter(fn: (r) => r["type"] == "CO" or r["type"] == "PO")
@@ -222,10 +242,11 @@ class PutdMinusCalld(JQData):
 
 if __name__ == "__main__":
     pandas.set_option("display.max_rows", None)
+    pandas.set_option("display.max_columns", None)
 
     opc = PutdMinusCalld()
-    start = '2023-02-23 10:00:00'
-    end = '2023-02-23 10:05:00'
+    start = '2023-03-01 00:00:00'
+    end = '2023-03-02 00:00:00'
 
     a, _ = opc.get(start=start, end=end)
     print(a)

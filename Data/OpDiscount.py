@@ -54,27 +54,46 @@ class OpDiscount(JQData):
         # del self.result["close"]
 
     def daily_info(self, start, end):
-        q = query(opt.OPT_CONTRACT_INFO.code,
-                  opt.OPT_CONTRACT_INFO.underlying_symbol,
-                  opt.OPT_CONTRACT_INFO.exercise_price,
-                  opt.OPT_CONTRACT_INFO.contract_type,
-                  opt.OPT_CONTRACT_INFO.expire_date,
-                  opt.OPT_CONTRACT_INFO.is_adjust).filter(
-            or_(opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
+        q1 = query(opt.OPT_CONTRACT_INFO.code,
+                   opt.OPT_CONTRACT_INFO.underlying_symbol,
+                   opt.OPT_CONTRACT_INFO.exercise_price,
+                   opt.OPT_CONTRACT_INFO.contract_type,
+                   opt.OPT_CONTRACT_INFO.expire_date,
+                   opt.OPT_CONTRACT_INFO.is_adjust).filter(
+            or_(
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "510500.XSHG",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "510300.XSHG",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "159919.XSHE",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "159915.XSHE",
                 opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
-                opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
-                ),
+            ),
             opt.OPT_CONTRACT_INFO.list_date <= start,
             opt.OPT_CONTRACT_INFO.expire_date >= start, )
 
-        self.daily = opt.run_query(q)
+        q2 = query(opt.OPT_CONTRACT_INFO.code,
+                   opt.OPT_CONTRACT_INFO.underlying_symbol,
+                   opt.OPT_CONTRACT_INFO.exercise_price,
+                   opt.OPT_CONTRACT_INFO.contract_type,
+                   opt.OPT_CONTRACT_INFO.expire_date,
+                   opt.OPT_CONTRACT_INFO.is_adjust).filter(
+            or_(
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
+            ),
+            opt.OPT_CONTRACT_INFO.list_date <= start,
+            opt.OPT_CONTRACT_INFO.expire_date >= start, )
+
+        df1 = self.run_query(q1)
+        d1 = sorted(df1["expire_date"].unique())
+
+        df2 = self.run_query(q2)
+        d2 = sorted(df2["expire_date"].unique())
+
+        self.daily = pandas.concat([df1, df2])
+        self.daily.reset_index(drop=True, inplace=True)
 
         temp_adjust = self.adjust[self.adjust["adj_date"] >= InfluxTime.to_date(start)]
         self.daily = pandas.merge(left=self.daily, right=temp_adjust, on="code", how="left")
@@ -92,17 +111,9 @@ class OpDiscount(JQData):
         if len(self.daily) == 0:
             return None
 
-        today = datetime.date.today()
-        today_month = today.month
-
-        month_l1 = today.replace(day=1)
-        month_00 = today.replace(month=today_month + 1, day=1)
-        month_01 = today.replace(month=today_month + 2, day=1)
-        month_02 = today.replace(month=today_month + 3, day=1)
-
-        self.daily_00 = self.daily[(month_l1 <= self.daily["expire_date"]) & (self.daily["expire_date"] <= month_00)]
-        self.daily_01 = self.daily[(month_00 <= self.daily["expire_date"]) & (self.daily["expire_date"] <= month_01)]
-        self.daily_02 = self.daily[(month_01 <= self.daily["expire_date"]) & (self.daily["expire_date"] <= month_02)]
+        self.daily_00 = self.daily[(self.daily["expire_date"] == d1[0]) | (self.daily["expire_date"] == d2[0])]
+        self.daily_01 = self.daily[(self.daily["expire_date"] == d1[1]) | (self.daily["expire_date"] == d2[1])]
+        self.daily_02 = self.daily[(self.daily["expire_date"] == d1[2]) | (self.daily["expire_date"] == d2[2])]
 
         code = self.daily["underlying_symbol"].unique().tolist()
 
