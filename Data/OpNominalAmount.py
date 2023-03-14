@@ -4,13 +4,13 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
-import datetime
 
 import pandas
-from jqdatasdk import opt, query, get_price
+from jqdatasdk import opt, query
+from sqlalchemy import or_
+
 from service.JoinQuant import JQData
 from utils.InfluxTime import SplitTime, InfluxTime
-from sqlalchemy import or_
 
 
 class OpNominalAmount(JQData):
@@ -27,7 +27,8 @@ class OpNominalAmount(JQData):
         self.result = None
 
     def pre_set(self, start, end):
-        self.result = get_price(self.targetcodes, fields=['close'], frequency='60m', start_date=start, end_date=end, )
+        self.result = self.get_price(security=self.targetcodes, fields=['close'], frequency='60m',
+                                     start_date=start, end_date=end, )
         # print(self.targetcodes)
         # print(self.result)
         if len(self.result) == 0:
@@ -127,7 +128,7 @@ class OpNominalAmount(JQData):
         self.code_01 = self.daily_01["code"].values
 
     def vol(self, code, start, end):
-        df = get_price(code, start, end, frequency='60m', fields=['close', 'volume'])
+        df = self.get_price(security=code, start_date=start, end_date=end, frequency='60m', fields=['close', 'volume'])
 
         if len(df) == 0:
             return

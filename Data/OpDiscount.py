@@ -5,17 +5,17 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
 
-import datetime
 import random
 import time
 from bisect import bisect_left
+
 import pandas
 from jqdatasdk import opt, query, get_price
+from sqlalchemy import or_
 from thriftpy2.transport import TTransportException
 
 from service.JoinQuant import JQData
 from utils.InfluxTime import SplitTime, InfluxTime
-from sqlalchemy import or_
 
 
 class OpDiscount(JQData):

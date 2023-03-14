@@ -167,6 +167,6 @@ if __name__ == '__main__':
         # Write(source=OpContractQuote)(start=start, end=end, update=1)
         Write(source=PutdMinusCalld)(start=start, end=end)
         Write(source=OpDiscount)(start=start, end=end)
-        Write(source=CPR)(start=start, end=end)
+        # Write(source=CPR)(start=start, end=end)
         Write(source=OpTargetDerivativeVol)(start=start, end=end)
         Write(source=OpTargetDerivativePrice)(start=start, end=end)

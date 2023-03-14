@@ -461,10 +461,10 @@ class OpContractQuote(JQData):
 if __name__ == "__main__":
     # pandas.set_option('display.max_columns', None)
     opc = OpContractQuote()
-    start = '2023-03-13 13:00:00'
-    end = '2023-03-13 13:11:00'
+    start = '2023-03-14 08:00:00'
+    end = '2023-03-14 09:00:00'
     # opc.daily_info("10004405.XSHG", '2023-02-01 00:00:00','2023-02-03 00:00:00')
-    code = "10005157.XSHG"
+    code = "MO2312-P-6800.CCFX"
     # print(len(opc.collect_info(start=start, end=end, update=1)))
 
     c, f = opc.get(code=code, start=start, end=end)

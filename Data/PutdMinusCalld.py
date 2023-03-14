@@ -4,12 +4,11 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
-import datetime
 
 import numpy as np
 import pandas
 import scipy.interpolate as spi
-from jqdatasdk import opt, query, get_price
+from jqdatasdk import opt, query
 from sqlalchemy import or_
 
 from service.InfluxService import InfluxService
@@ -33,7 +32,8 @@ class PutdMinusCalld(JQData):
         self.iv_delta = dict()
 
     def pre_set(self, start, end):
-        self.result = get_price(self.targetcodes, fields=['close'], frequency='1m', start_date=start, end_date=end)
+        self.result = self.get_price(security=self.targetcodes, fields=['close'],
+                                     frequency='1m', start_date=start, end_date=end)
 
         if len(self.result) == 0:
             return None
