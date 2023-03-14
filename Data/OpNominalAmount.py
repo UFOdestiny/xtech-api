@@ -94,7 +94,7 @@ class OpNominalAmount(JQData):
 
         temp_adjust = self.adjust[self.adjust["adj_date"] >= InfluxTime.to_date(start)]
         self.daily = pandas.merge(left=self.daily, right=temp_adjust, on="code", how="left")
-        #print(self.daily)
+        # print(self.daily)
 
         for i in range(len(self.daily)):
             if self.daily.loc[i, "is_adjust"] == 1:
@@ -102,9 +102,8 @@ class OpNominalAmount(JQData):
                 self.daily.loc[i, "contract_unit"] = self.daily.loc[i, "ex_contract_unit"]
 
         self.daily.drop(["is_adjust", "adj_date", "ex_exercise_price", "ex_contract_unit"], inplace=True, axis=1)
-        print(self.daily)
+        # print(self.daily)
         self.daily.dropna(how="any", inplace=True)
-
 
         if len(self.daily) == 0:
             self.code = None
@@ -122,8 +121,6 @@ class OpNominalAmount(JQData):
 
         self.daily_00 = self.daily[(self.daily["expire_date"] == d1[0]) | (self.daily["expire_date"] == d2[0])]
         self.daily_01 = self.daily[(self.daily["expire_date"] == d1[1]) | (self.daily["expire_date"] == d2[1])]
-
-
 
         self.code = self.daily["code"].values
         self.code_00 = self.daily_00["code"].values

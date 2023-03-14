@@ -63,18 +63,18 @@ class OpTargetDerivativePrice(JQData):
             df_30m.dropna(inplace=True)
             df_30m.reset_index(inplace=True)
 
-            self.pre_dic[code] = [[df_1d, 1, "1d_price"],
-                                  [df_2h, 1, "2h_price"],
-                                  [df_1h, 1, "1h_price"],
+            self.pre_dic[code] = [[df_1d, "1d_price"],
+                                  [df_2h, "2h_price"],
+                                  [df_1h, "1h_price"],
 
-                                  [df_5m, 1, "5m_price"],
-                                  [df_15m, 1, "15m_price"],
-                                  [df_30m, 1, "30m_price"]]
+                                  [df_5m, "5m_price"],
+                                  [df_15m, "15m_price"],
+                                  [df_30m, "30m_price"]]
 
     def process_df(self):
         for code in self.targetcodes:
             for interval in [20, 40, 60, 120]:
-                for df_, multiplier, prefix in self.pre_dic[code]:
+                for df_, prefix in self.pre_dic[code]:
                     print(code, interval, prefix)
                     if len(df_) < 1:
                         continue
@@ -92,7 +92,7 @@ class OpTargetDerivativePrice(JQData):
                         df[column] = 0.0
 
                     for index in range(interval, len(df)):
-                        df.loc[index, columns[0]] = df.loc[index - interval:index, "close"].std() * multiplier
+                        df.loc[index, columns[0]] = df.loc[index - interval:index, "close"].iloc[0]
                         if index >= 2 * interval:
                             df.loc[index, columns[1]] = df.loc[index - interval:index, columns[0]].max()
                             df.loc[index, columns[2]] = df.loc[index - interval:index, columns[0]].min()
@@ -103,9 +103,7 @@ class OpTargetDerivativePrice(JQData):
                     df.drop(index=list(range(2 * interval)), inplace=True, axis=0)
                     # df.drop(columns=["close"], inplace=True, axis=1)
                     # print(df.head().iloc[0])
-
-                    # print(df)
-
+                    print(df)
                     retrieve = self.result_dic[code][prefix]
                     if retrieve is None:
                         self.result_dic[code][prefix] = df
