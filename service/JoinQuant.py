@@ -47,7 +47,7 @@ class JQData(metaclass=Authentication):
             try:
                 return opt.run_query(q)
             except TTransportException:
-                print("run_query Wrong Retry")
+                print(f"run_query error: Retry {max_retries}")
                 max_retries -= 1
                 time.sleep(3)
 
@@ -69,14 +69,14 @@ class JQData(metaclass=Authentication):
         return df
 
     def get_price(self, **kwargs):
-        max_retry = 10
-        while max_retry:
+        max_retries = 10
+        while max_retries:
             try:
                 df = get_price(**kwargs)
                 return df
             except TTransportException:
-                print("get_price Wrong Retry")
-                max_retry -= 1
+                print(f"get_price error: Retry {max_retries}")
+                max_retries -= 1
                 time.sleep(3)
 
 
