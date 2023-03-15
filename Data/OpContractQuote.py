@@ -27,7 +27,7 @@ class OpContractQuote(JQData):
     def __init__(self):
         super().__init__()
         self.df_pre = None
-        self.redis = RedisCache()
+        self.redis = RedisCache(db=1)
 
         self.symbol_minute = None
         self.code = None
@@ -153,7 +153,6 @@ class OpContractQuote(JQData):
         df["his_vol"] = variance
         del df["close"]
 
-        self.redis[end_date] = df
         self.his_vol = df
 
     def process_constant(self):

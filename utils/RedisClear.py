@@ -15,8 +15,11 @@ sys.path.append(root_path)
 
 from config import RedisSetting
 
-conn = redis.Redis(host=RedisSetting.host, port=RedisSetting.port, decode_responses=True, db=RedisSetting.db,
-                   username=RedisSetting.username, password=RedisSetting.password)
+conn_list = []
+for db in [0, 1]:
+    conn_list.append(redis.Redis(host=RedisSetting.host, port=RedisSetting.port, decode_responses=True,
+                                 db=db, username=RedisSetting.username, password=RedisSetting.password))
 
 if __name__ == "__main__":
-    conn.flushdb()
+    for conn in conn_list:
+        conn.flushdb()

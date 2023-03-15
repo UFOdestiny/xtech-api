@@ -33,8 +33,8 @@ class RedisCache(RedisSetting, metaclass=Singleton):
             compress (bool): boolean indicating whether compression with zlib should be used
     """
 
-    def __init__(self):
-        self.client = StrictRedis(host=self.host, port=self.port, db=self.db,
+    def __init__(self, db):
+        self.client = StrictRedis(host=self.host, port=self.port, db=db,
                                   username=self.username, password=self.password)
         self.expires = timedelta(hours=12)
         self.encoding = 'utf-8'

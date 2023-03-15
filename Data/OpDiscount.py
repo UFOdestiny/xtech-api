@@ -4,7 +4,7 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
-
+import datetime
 import random
 import time
 from bisect import bisect_left
@@ -15,11 +15,13 @@ from sqlalchemy import or_
 from thriftpy2.transport import TTransportException
 
 from service.JoinQuant import JQData
+from service.RedisCache import RedisCache
 from utils.InfluxTime import SplitTime, InfluxTime
 
 
 class OpDiscount(JQData):
     def __init__(self):
+        self.redis = RedisCache(db=0)
         super().__init__()
 
         self.indicator = 1
@@ -181,6 +183,19 @@ class OpDiscount(JQData):
         df.index -= pandas.Timedelta(minutes=1)
         return df.iloc[0]["close"]
 
+    def get_pre_close(self, code, time_):
+        start_temp = time_.replace(hour=9, minute=30, second=0, microsecond=0)
+        end_temp = time_.replace(hour=9, minute=31, second=0, microsecond=0)
+
+        df_pre = self.get_price(security=code, frequency='minute', start_date=start_temp, end_date=end_temp,
+                                fields=['pre_close'])
+        if len(df_pre) == 0:
+            return None
+
+        df_pre = df_pre["pre_close"].values.tolist()[0]
+
+        return df_pre
+
     def vol_aggregate(self):
         x = random.randint(0, 100)
         for i in range(len(self.result)):
@@ -194,11 +209,21 @@ class OpDiscount(JQData):
             #     continue
             close = temp["close"]
 
-            if not self.baseline[code]["price"] or abs((close - self.baseline[code]["price"]) / close) > 0.02:
-                if self.baseline[code]["price"]:
-                    # print(abs((close - self.baseline[code]["price"]) / close))
-                    pass
+            if not self.baseline[code]["price"]:
+                if code in self.redis:
+                    self.baseline[code] = self.redis[code]
+                else:
+                    price = self.get_pre_close(code, time_)
+                    if not price:
+                        return None
+                    self.baseline[code]["price"] = price
+                    self.baseline[code][0] = self.takeClosest(self.dic[code]["00"]["CO"], price)
+                    self.baseline[code][1] = self.takeClosest(self.dic[code]["01"]["CO"], price)
+                    self.baseline[code][2] = self.takeClosest(self.dic[code]["02"]["CO"], price)
 
+                    self.redis[code] = self.baseline[code]
+
+            if abs((close - self.baseline[code]["price"]) / close) > 0.02:
                 self.baseline[code]["price"] = close
                 self.baseline[code][0] = self.takeClosest(self.dic[code]["00"]["CO"], close)
                 self.baseline[code][1] = self.takeClosest(self.dic[code]["01"]["CO"], close)
@@ -262,10 +287,12 @@ class OpDiscount(JQData):
 
                 self.result.loc[i, "discount_l_02"] = discount_l_02
                 self.result.loc[i, "discount_s_02"] = discount_s_02
+        return True
 
     def get(self, **kwargs):
         start = kwargs["start"]
         end = kwargs["end"]
+
         times = SplitTime.split(start, end, interval_day=1)
         self.get_adjust()
 
@@ -276,7 +303,9 @@ class OpDiscount(JQData):
                 return None, None
 
             self.daily_info(t[0], t[1])
-            self.vol_aggregate()
+            ind = self.vol_aggregate()
+            if not ind:
+                return None, None
         if not self.indicator:
             return None, None
         if self.result is None:
@@ -298,8 +327,8 @@ if __name__ == "__main__":
     pandas.set_option('display.max_columns', None)
     pandas.set_option('display.max_rows', None)
     opc = OpDiscount()
-    start = '2023-03-08 00:00:00'
-    end = '2023-03-09 00:00:00'
+    start = '2023-03-15 00:00:00'
+    end = '2023-03-15 11:00:00'
 
     a, _ = opc.get(start=start, end=end)
     print(a)
