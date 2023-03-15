@@ -187,7 +187,10 @@ class OpContractQuote(JQData):
             if not self.indicator:
                 return None, None
             self.process_constant()
-            self.get_pre_close(code, start, end)
+
+            ind = self.get_pre_close(code, start, end)
+            if not ind:
+                return None, None
 
             self.redis[code] = {"underlying_symbol": self.underlying_symbol,
                                 "constant": self.constant,
@@ -220,9 +223,11 @@ class OpContractQuote(JQData):
         end_temp = end.replace(hour=9, minute=31, second=0, microsecond=0)
         df_pre = self.get_price(security=code, frequency='minute', start_date=start_temp, end_date=end_temp,
                                 fields=['open', 'close', 'high', 'low', 'volume', 'money', 'pre_close'])
-
+        if len(df_pre) == 0:
+            return False
         df_pre = df_pre["pre_close"].values.tolist()[0]
         self.df_pre = df_pre
+        return True
 
     def get_minute_price(self, code, start, end):
         start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")

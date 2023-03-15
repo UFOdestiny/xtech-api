@@ -103,7 +103,7 @@ class OpTargetDerivativePrice(JQData):
                     df.drop(index=list(range(2 * interval)), inplace=True, axis=0)
                     # df.drop(columns=["close"], inplace=True, axis=1)
                     # print(df.head().iloc[0])
-                    print(df)
+                    # print(df)
                     retrieve = self.result_dic[code][prefix]
                     if retrieve is None:
                         self.result_dic[code][prefix] = df
