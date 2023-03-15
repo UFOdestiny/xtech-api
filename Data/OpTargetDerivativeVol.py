@@ -41,6 +41,7 @@ class OpTargetDerivativeVol(JQData):
             df_temp.set_index("time", inplace=True)
 
             df_1h = df_temp.resample("1H").first()
+            print(df_1h)
             df_2h = df_temp.resample("2H").first()
             df_1d = df_temp.resample("1d").first()
 
@@ -82,7 +83,7 @@ class OpTargetDerivativeVol(JQData):
                     for column in columns:
                         df[column] = 0.0
 
-                    # print(df)
+                    #df.to_excel("1.xlsx")
 
                     for index in range(interval, len(df)):
                         df.loc[index, columns[0]] = df.loc[index - interval:index, "close"].std() * multiplier
@@ -93,6 +94,8 @@ class OpTargetDerivativeVol(JQData):
                             df.loc[index, columns[4]] = df.loc[index - interval:index, columns[0]].quantile(0.8)
                             df.loc[index, columns[5]] = df.loc[index - interval:index, columns[0]].quantile(0.2)
 
+                    #df.to_excel("2.xlsx")
+                    #break
                     # print(df)
 
                     df.drop(index=list(range(2 * interval)), inplace=True, axis=0)

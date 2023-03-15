@@ -41,7 +41,7 @@ class OpContractInfo(JQData):
             opt.OPT_CONTRACT_INFO.list_date >= start,
             opt.OPT_CONTRACT_INFO.list_date <= end, )
 
-        df = opt.run_query(q)
+        df = self.run_query(q)
         return df
 
     def process_df(self, df):

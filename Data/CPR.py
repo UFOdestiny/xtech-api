@@ -81,7 +81,7 @@ class CPR(JQData):
             opt.OPT_CONTRACT_INFO.list_date <= mid,
             opt.OPT_CONTRACT_INFO.expire_date >= end, )
 
-        df1 = opt.run_query(q1)
+        df1 = self.run_query(q1)
         if len(df1) == 0:
             return
 
@@ -90,7 +90,7 @@ class CPR(JQData):
         dic1 = {index: {"CO": df_1[index][0], "PO": df_1[index][1]} for index in df_1.index}
         self.dic1 = dic1
 
-        df2 = opt.run_query(q2)
+        df2 = self.run_query(q2)
         if len(df2) == 0:
             return
 

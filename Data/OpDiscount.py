@@ -204,14 +204,14 @@ class OpDiscount(JQData):
             temp = self.result.iloc[i]
 
             time_ = temp["time"]
+
             code = temp["code"]
-            # if code!="510500.XSHG":
-            #     continue
             close = temp["close"]
+            time_day_code = time_.strftime("%Y-%m-%d") + code
 
             if not self.baseline[code]["price"]:
-                if code in self.redis:
-                    self.baseline[code] = self.redis[code]
+                if time_day_code in self.redis:
+                    self.baseline[code] = self.redis[time_day_code]
                 else:
                     price = self.get_pre_close(code, time_)
                     if not price:
@@ -221,7 +221,7 @@ class OpDiscount(JQData):
                     self.baseline[code][1] = self.takeClosest(self.dic[code]["01"]["CO"], price)
                     self.baseline[code][2] = self.takeClosest(self.dic[code]["02"]["CO"], price)
 
-                    self.redis[code] = self.baseline[code]
+                    self.redis[time_day_code] = self.baseline[code]
 
             if abs((close - self.baseline[code]["price"]) / close) > 0.02:
                 self.baseline[code]["price"] = close
@@ -229,7 +229,7 @@ class OpDiscount(JQData):
                 self.baseline[code][1] = self.takeClosest(self.dic[code]["01"]["CO"], close)
                 self.baseline[code][2] = self.takeClosest(self.dic[code]["02"]["CO"], close)
 
-                self.redis[code] = self.baseline[code]
+                self.redis[time_day_code] = self.baseline[code]
 
             strike_00 = self.baseline[code][0]  # self.takeClosest(self.dic[code]["00"]["CO"], close)
             if strike_00:
@@ -304,6 +304,11 @@ class OpDiscount(JQData):
                 # print(t[0], t[1], "pass")
                 return None, None
 
+            delta = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S") - \
+                    datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+            if delta >= datetime.timedelta(hours=1):
+                self.redis = dict()
+
             self.daily_info(t[0], t[1])
             ind = self.vol_aggregate()
             if not ind:
@@ -330,7 +335,7 @@ if __name__ == "__main__":
     pandas.set_option('display.max_rows', None)
     opc = OpDiscount()
     start = '2023-03-15 00:00:00'
-    end = '2023-03-15 11:00:00'
+    end = '2023-03-15 12:00:00'
 
     a, _ = opc.get(start=start, end=end)
     print(a)

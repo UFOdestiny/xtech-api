@@ -7,7 +7,7 @@
 import time
 from threading import Lock
 
-from jqdatasdk import JQDataClient, auth, query, opt, get_price
+from jqdatasdk import JQDataClient, auth, query, opt, get_price, get_ticks
 from thriftpy2.transport import TTransportException
 
 from config import JoinQuantSetting
@@ -76,6 +76,17 @@ class JQData(metaclass=Authentication):
                 return df
             except TTransportException:
                 print(f"get_price error: Retry {max_retries}")
+                max_retries -= 1
+                time.sleep(3)
+
+    def get_ticks(self, **kwargs):
+        max_retries = 10
+        while max_retries:
+            try:
+                df = get_ticks(**kwargs)
+                return df
+            except TTransportException:
+                print(f"get_ticks error: Retry {max_retries}")
                 max_retries -= 1
                 time.sleep(3)
 

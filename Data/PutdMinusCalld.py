@@ -147,7 +147,6 @@ class PutdMinusCalld(JQData):
 
     @staticmethod
     def group_f(df):
-        # print(df)
         df.drop(df[(df.iv == 0) & (df.delta == 1) & (df.delta == 0)].index, inplace=True)
         df_co = df[df["type"] == "CO"]
         df_po = df[df["type"] == "PO"]
@@ -197,11 +196,21 @@ class PutdMinusCalld(JQData):
             df_.reset_index("_time", inplace=True)
             df_.set_index("_time", inplace=True)
 
-            # print(df)
             df_time = df_.index
+
             index = self.result.loc[(self.result["code"] == tg) &
                                     (self.result["time"] >= df_time[0]) &
                                     (self.result["time"] <= df_time[-1])].index
+
+            # index = self.result.loc[(self.result["code"] == tg)].index
+
+            # pandas.set_option("display.max_rows", None)
+            # pandas.set_option("display.max_columns", None)
+            #
+            # print(len(index))
+            #
+            # print(len(df_))
+            # print(df_)
 
             self.result.loc[index, "calld"] = df_["calld"].values
             self.result.loc[index, "putd"] = df_["putd"].values

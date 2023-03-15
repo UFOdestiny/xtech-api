@@ -13,7 +13,7 @@ import time
 
 import numpy as np
 import pandas
-from jqdatasdk import get_ticks, opt, query
+from jqdatasdk import opt, query
 
 from config import FilePath
 from service.InfluxService import InfluxService
@@ -51,7 +51,7 @@ class OpContractQuote(JQData):
                   opt.OPT_CONTRACT_INFO.expire_date,
                   opt.OPT_CONTRACT_INFO.is_adjust).filter(opt.OPT_CONTRACT_INFO.code == code)
 
-        self.pre_open = opt.run_query(q)
+        self.pre_open = self.run_query(q)
 
         if len(self.pre_open) == 0:
             self.indicator = None
@@ -268,7 +268,8 @@ class OpContractQuote(JQData):
         """
         # start_date = start_date[:11] + "00:00:00"
 
-        tick = get_ticks(code, start_dt=start_date, end_dt=end_date, fields=['time', "a1_p", "a1_v", "b1_p", "b1_v"])
+        tick = self.get_ticks(security=code, start_dt=start_date, end_dt=end_date,
+                              fields=['time', "a1_p", "a1_v", "b1_p", "b1_v"])
         tick.set_index('time', inplace=True)
 
         if len(tick) != 0:
@@ -276,7 +277,8 @@ class OpContractQuote(JQData):
             self.df[["a1_v", "b1_v"]] = tick[["a1_v", "b1_v"]].resample(rule='1Min').sum()
 
         else:
-            tick = get_ticks(code, end_dt=end_date, count=1, fields=['time', "a1_p", "b1_p", "a1_v", "b1_v"])
+            tick = self.get_ticks(security=code, end_dt=end_date, count=1,
+                                  fields=['time', "a1_p", "b1_p", "a1_v", "b1_v"])
             tick.set_index('time', inplace=True)
             tick.index -= pandas.Timedelta(minutes=1)
 
