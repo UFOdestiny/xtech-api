@@ -68,8 +68,11 @@ class RedisCache(RedisSetting, metaclass=Singleton):
     def __contains__(self, item):
         return self.client.exists(item)
 
+    def clear(self):
+        self.client.flushdb()
+
 
 if __name__ == "__main__":
-    r = RedisCache()
+    r = RedisCache(db=3)
     # r["url"] = "test"
     print(r["MO2312-C-6600.CCFX"])

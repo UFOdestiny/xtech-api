@@ -229,6 +229,8 @@ class OpDiscount(JQData):
                 self.baseline[code][1] = self.takeClosest(self.dic[code]["01"]["CO"], close)
                 self.baseline[code][2] = self.takeClosest(self.dic[code]["02"]["CO"], close)
 
+                self.redis[code] = self.baseline[code]
+
             strike_00 = self.baseline[code][0]  # self.takeClosest(self.dic[code]["00"]["CO"], close)
             if strike_00:
                 codes_00 = self.daily_00[(self.daily_00["exercise_price"] == strike_00) &
