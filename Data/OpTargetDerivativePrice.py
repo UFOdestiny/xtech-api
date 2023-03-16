@@ -92,13 +92,15 @@ class OpTargetDerivativePrice(JQData):
                         df[column] = 0.0
 
                     for index in range(interval, len(df)):
-                        df.loc[index, columns[0]] = df.loc[index - interval:index, "close"].iloc[0]
+                        df.loc[index, columns[0]] = df.loc[index + 1 - interval:index, "close"].iloc[0]
                         if index >= 2 * interval:
-                            df.loc[index, columns[1]] = df.loc[index - interval:index, columns[0]].max()
-                            df.loc[index, columns[2]] = df.loc[index - interval:index, columns[0]].min()
-                            df.loc[index, columns[3]] = df.loc[index - interval:index, columns[0]].mean()
-                            df.loc[index, columns[4]] = df.loc[index - interval:index, columns[0]].quantile(0.8)
-                            df.loc[index, columns[5]] = df.loc[index - interval:index, columns[0]].quantile(0.2)
+                            df.loc[index, columns[1]] = df.loc[index + 1 - interval:index, columns[0]].max()
+                            df.loc[index, columns[2]] = df.loc[index + 1 - interval:index, columns[0]].min()
+                            df.loc[index, columns[3]] = df.loc[index + 1 - interval:index, columns[0]].mean()
+                            df.loc[index, columns[4]] = df.loc[index + 1 - interval:index, columns[0]].quantile(0.8)
+                            df.loc[index, columns[5]] = df.loc[index + 1 - interval:index, columns[0]].quantile(0.2)
+
+                    # df.to_excel(f"{code} {interval} {prefix}.xlsx")
 
                     df.drop(index=list(range(2 * interval)), inplace=True, axis=0)
                     # df.drop(columns=["close"], inplace=True, axis=1)

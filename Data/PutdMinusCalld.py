@@ -27,6 +27,8 @@ class PutdMinusCalld(JQData):
         self.month1 = None
         self.result = None
         self.iv_delta = dict()
+
+        self.count = 1
         # self.iv = ImpliedVolatility()
 
     def pre_set(self, start, end):
@@ -151,11 +153,6 @@ class PutdMinusCalld(JQData):
 
         co_delta, co_iv = df_co_["delta"].to_list(), df_co_["iv"].to_list()
         po_delta, po_iv = df_po_["delta"].to_list(), df_po_["iv"].to_list()
-        # print("__________________")
-        # print(co_delta)
-        # print(co_iv)
-        # print(po_delta)
-        # print(po_iv)
 
         if len(co_delta) <= 1 or len(po_delta) <= 1:
             putd, calld, putd_calld, c25iv, c50iv, p25iv, p50iv = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
@@ -216,15 +213,16 @@ class PutdMinusCalld(JQData):
                 return None, None
             self.aggregate()
 
-            # self.result["time"] = pandas.to_datetime(self.result.index).values.astype(object)
-            # self.result.reset_index(drop=True, inplace=True)
-
         if self.result is None:
             return None, None
 
         self.result.set_index("time", inplace=True)
         self.result.index = pandas.DatetimeIndex(self.result.index, tz='Asia/Shanghai')
         self.result.rename(columns={"code": "targetcode", "close": "price"}, inplace=True)
+
+        zero = self.result[self.result["c25iv"] == 0.0].index
+        self.result.drop(zero, inplace=True)
+
         self.result.dropna(how="any", inplace=True)
         tag_columns = ['targetcode']
 
@@ -236,8 +234,8 @@ if __name__ == "__main__":
     pandas.set_option("display.max_columns", None)
 
     opc = PutdMinusCalld()
-    start = '2023-03-01 00:00:00'
-    end = '2023-03-01 10:00:00'
+    start = '2023-03-16 13:00:00'
+    end = '2023-03-17 00:00:00'
 
     a, _ = opc.get(start=start, end=end)
     print(a)

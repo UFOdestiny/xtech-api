@@ -19,7 +19,7 @@ class OpTargetDerivativeVol(JQData):
 
         self.pre_dic = dict()
 
-        # self.targetcodes = ["510050.XSHG", "510500.XSHG"]
+        self.targetcodes = ["510050.XSHG", "510500.XSHG"]
 
         self.result_dic = {i: {"1d_volatility": None, "2h_volatility": None, "1h_volatility": None}
                            for i in self.targetcodes}
@@ -40,18 +40,17 @@ class OpTargetDerivativeVol(JQData):
             df_temp = df[df["code"] == code]
             df_temp.set_index("time", inplace=True)
 
-            df_1h = df_temp.resample("1H").first()
-            print(df_1h)
-            df_2h = df_temp.resample("2H").first()
-            df_1d = df_temp.resample("1d").first()
+            df_1h = df_temp.resample("1H").first().dropna(how="any")
+            df_2h = df_temp.resample("2H").first().dropna(how="any")
+            df_1d = df_temp.resample("1d").first().dropna(how="any")
 
             df_1d["price"] = df_1d["close"]
             df_2h["price"] = df_2h["close"]
             df_1h["price"] = df_1h["close"]
 
-            df_1d["close"] = (df_1d["close"].shift() - df_1d["close"]).div(df_1d["close"].shift())
-            df_2h["close"] = (df_2h["close"].shift() - df_2h["close"]).div(df_2h["close"].shift())
-            df_1h["close"] = (df_1h["close"].shift() - df_1h["close"]).div(df_1h["close"].shift())
+            df_1d["close"] = (df_1d["close"] - df_1d["close"].shift()).div(df_1d["close"].shift())
+            df_2h["close"] = (df_2h["close"] - df_2h["close"].shift()).div(df_2h["close"].shift())
+            df_1h["close"] = (df_1h["close"] - df_1h["close"].shift()).div(df_1h["close"].shift())
 
             df_1d.dropna(inplace=True)
             df_1d.reset_index(inplace=True)
@@ -83,19 +82,19 @@ class OpTargetDerivativeVol(JQData):
                     for column in columns:
                         df[column] = 0.0
 
-                    #df.to_excel("1.xlsx")
+                    # df.to_excel(f"{code}{interval}{prefix}_1.xlsx")
 
                     for index in range(interval, len(df)):
-                        df.loc[index, columns[0]] = df.loc[index - interval:index, "close"].std() * multiplier
+                        df.loc[index, columns[0]] = df.loc[index + 1 - interval:index, "close"].std() * multiplier
                         if index >= 2 * interval:
-                            df.loc[index, columns[1]] = df.loc[index - interval:index, columns[0]].max()
-                            df.loc[index, columns[2]] = df.loc[index - interval:index, columns[0]].min()
-                            df.loc[index, columns[3]] = df.loc[index - interval:index, columns[0]].mean()
-                            df.loc[index, columns[4]] = df.loc[index - interval:index, columns[0]].quantile(0.8)
-                            df.loc[index, columns[5]] = df.loc[index - interval:index, columns[0]].quantile(0.2)
+                            df.loc[index, columns[1]] = df.loc[index + 1 - interval:index, columns[0]].max()
+                            df.loc[index, columns[2]] = df.loc[index + 1 - interval:index, columns[0]].min()
+                            df.loc[index, columns[3]] = df.loc[index + 1 - interval:index, columns[0]].mean()
+                            df.loc[index, columns[4]] = df.loc[index + 1 - interval:index, columns[0]].quantile(0.8)
+                            df.loc[index, columns[5]] = df.loc[index + 1 - interval:index, columns[0]].quantile(0.2)
 
-                    #df.to_excel("2.xlsx")
-                    #break
+                    df.to_excel(f"{code} {interval} {prefix}.xlsx")
+                    # break
                     # print(df)
 
                     df.drop(index=list(range(2 * interval)), inplace=True, axis=0)
@@ -159,16 +158,13 @@ if __name__ == "__main__":
     pandas.set_option('display.max_rows', None)
     pandas.set_option('display.max_columns', None)
     op = OpTargetDerivativeVol()
-    start = "2023-03-06 00:00:00"
-    end = "2023-03-07 00:00:00"
+    start = "2023-03-15 00:00:00"
+    end = "2023-03-16 00:00:00"
 
     a, b = op.get(start=start, end=end)
     x, y, z = a
-    print(x[0].columns)
-    print(y[0].columns)
-    print(z[0].columns)
-
-    print(x[0])
-    # a = op.get_data(start, end)
-    # df = get_bars(security="510050.XSHG", unit='1m', count=10, fields=['close'])
-    # print(df)
+    # print(x[0].columns)
+    # print(y[0].columns)
+    # print(z[0].columns)
+    #
+    # print(x[0])
