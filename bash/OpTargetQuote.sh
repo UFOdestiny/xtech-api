@@ -1,1 +1,1 @@
-/root/anaconda3/bin/python /root/api/Data/WriteData.py --source=OpTargetQuote --time=minute
+/root/anaconda3/bin/python /root/api/Data/WriteData.py --source=OpTargetQuote --time=2

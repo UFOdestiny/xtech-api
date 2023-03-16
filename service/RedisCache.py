@@ -74,5 +74,6 @@ class RedisCache(RedisSetting, metaclass=Singleton):
 
 if __name__ == "__main__":
     r = RedisCache(db=0)
+    r.clear()
     # r["url"] = "test"
     print(r["2023-03-16510050.XSHG"])

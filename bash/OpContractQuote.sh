@@ -1,1 +1,1 @@
-/root/anaconda3/bin/python /root/api/Data/WriteData.py --source=OpContractQuote --time=minutex
+/root/anaconda3/bin/python /root/api/Data/WriteData.py --source=OpContractQuote --time=7

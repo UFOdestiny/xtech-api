@@ -146,19 +146,18 @@ if source:
     time_ = args.time
     if time_ == "today":
         start, end = InfluxTime.today()
-    elif time_ == "minute":
-        start, end = InfluxTime.last_minute()
     else:
-        start, end = InfluxTime.last_minute(5)
+        start, end = InfluxTime.last_minute(int(time_))
 
     Write(source=eval(source))(start=start, end=end, update=args.update)
-    if source == "OpContractQuote":
-        Write(source=PutdMinusCalld)(start=start, end=end, update=args.update)
+    # if source == "OpContractQuote":
+    #     start, end = InfluxTime.last_minute(10)
+    #     Write(source=PutdMinusCalld)(start=start, end=end, update=args.update)
 
 if __name__ == '__main__':
     if not source:
-        start = "2023-01-01 00:00:00"
-        end = '2023-03-01 00:00:00'
+        start = "2023-03-16 00:00:00"
+        end = '2023-03-17 00:00:00'
 
         # Write(source=OpContractInfo)(start=start, end=end)
         # Write(source=OpTargetQuote)(start=start, end=end, update='1')
