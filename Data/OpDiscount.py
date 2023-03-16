@@ -34,7 +34,7 @@ class OpDiscount(JQData):
         self.result = None
         # self.targetcodes = ["510050.XSHG", "510500.XSHG"]
 
-        self.baseline = {i: {"price": None, 0: None, 1: None, 2: None} for i in self.targetcodes}
+        self.baseline = {i: {"price": None, '0': None, '1': None, '2': None} for i in self.targetcodes}
 
     def pre_set(self, start, end):
         self.result = get_price(self.targetcodes, fields=['close'], frequency='1m', start_date=start, end_date=end, )
@@ -217,21 +217,21 @@ class OpDiscount(JQData):
                     if not price:
                         return None
                     self.baseline[code]["price"] = price
-                    self.baseline[code][0] = self.takeClosest(self.dic[code]["00"]["CO"], price)
-                    self.baseline[code][1] = self.takeClosest(self.dic[code]["01"]["CO"], price)
-                    self.baseline[code][2] = self.takeClosest(self.dic[code]["02"]["CO"], price)
+                    self.baseline[code]['0'] = self.takeClosest(self.dic[code]["00"]["CO"], price)
+                    self.baseline[code]['1'] = self.takeClosest(self.dic[code]["01"]["CO"], price)
+                    self.baseline[code]['2'] = self.takeClosest(self.dic[code]["02"]["CO"], price)
 
                     self.redis[time_day_code] = self.baseline[code]
 
             if abs((close - self.baseline[code]["price"]) / close) > 0.02:
                 self.baseline[code]["price"] = close
-                self.baseline[code][0] = self.takeClosest(self.dic[code]["00"]["CO"], close)
-                self.baseline[code][1] = self.takeClosest(self.dic[code]["01"]["CO"], close)
-                self.baseline[code][2] = self.takeClosest(self.dic[code]["02"]["CO"], close)
+                self.baseline[code]['0'] = self.takeClosest(self.dic[code]["00"]["CO"], close)
+                self.baseline[code]['1'] = self.takeClosest(self.dic[code]["01"]["CO"], close)
+                self.baseline[code]['2'] = self.takeClosest(self.dic[code]["02"]["CO"], close)
 
                 self.redis[time_day_code] = self.baseline[code]
 
-            strike_00 = self.baseline[code][0]  # self.takeClosest(self.dic[code]["00"]["CO"], close)
+            strike_00 = self.baseline[code]['0']  # self.takeClosest(self.dic[code]["00"]["CO"], close)
             if strike_00:
                 codes_00 = self.daily_00[(self.daily_00["exercise_price"] == strike_00) &
                                          (self.daily_00["underlying_symbol"] == code)]
@@ -250,7 +250,7 @@ class OpDiscount(JQData):
                 self.result.loc[i, "discount_l_00"] = discount_l_00
                 self.result.loc[i, "discount_s_00"] = discount_s_00
 
-            strike_01 = self.baseline[code][1]  # self.takeClosest(self.dic[code]["01"]["CO"], close)
+            strike_01 = self.baseline[code]['1']  # self.takeClosest(self.dic[code]["01"]["CO"], close)
             if strike_01:
                 codes_01 = self.daily_01[(self.daily_01["exercise_price"] == strike_01) &
                                          (self.daily_01["underlying_symbol"] == code)]
@@ -268,7 +268,7 @@ class OpDiscount(JQData):
                 self.result.loc[i, "discount_l_01"] = discount_l_01
                 self.result.loc[i, "discount_s_01"] = discount_s_01
 
-            strike_02 = self.baseline[code][2]  # self.takeClosest(self.dic[code]["02"]["CO"], close)
+            strike_02 = self.baseline[code]['2']  # self.takeClosest(self.dic[code]["02"]["CO"], close)
 
             if strike_02:
                 codes_02 = self.daily_02[(self.daily_02["exercise_price"] == strike_02) &

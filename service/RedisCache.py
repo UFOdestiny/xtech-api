@@ -73,6 +73,6 @@ class RedisCache(RedisSetting, metaclass=Singleton):
 
 
 if __name__ == "__main__":
-    r = RedisCache(db=3)
+    r = RedisCache(db=0)
     # r["url"] = "test"
-    print(r["MO2312-C-6600.CCFX"])
+    print(r["2023-03-16510050.XSHG"])
