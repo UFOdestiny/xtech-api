@@ -19,7 +19,7 @@ class OpTargetDerivativeVol(JQData):
 
         self.pre_dic = dict()
 
-        self.targetcodes = ["510050.XSHG", "510500.XSHG"]
+        # self.targetcodes = ["510050.XSHG", "510500.XSHG"]
 
         self.result_dic = {i: {"1d_volatility": None, "2h_volatility": None, "1h_volatility": None}
                            for i in self.targetcodes}

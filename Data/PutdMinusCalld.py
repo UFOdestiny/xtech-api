@@ -155,7 +155,7 @@ class PutdMinusCalld(JQData):
         po_delta, po_iv = df_po_["delta"].to_list(), df_po_["iv"].to_list()
 
         if len(co_delta) <= 1 or len(po_delta) <= 1:
-            putd, calld, putd_calld, c25iv, c50iv, p25iv, p50iv = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
+            putd, calld, putdcalld, c25iv, c50iv, p25iv, p50iv = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
         else:
             tck1 = spi.splrep(co_delta, co_iv, k=1)
             ivc0 = spi.splev([0.25, 0.5], tck1, ext=0)
@@ -167,9 +167,9 @@ class PutdMinusCalld(JQData):
 
             putd = ivp0[0] - ivp0[1]
             calld = ivc0[0] - ivc0[1]
-            putd_calld = putd - calld
+            putdcalld = putd - calld
 
-        return pandas.DataFrame({"putd": [putd], "calld": [calld], "putd_calld": [putd_calld],
+        return pandas.DataFrame({"putd": [putd], "calld": [calld], "putd_calld": [putdcalld],
                                  "c25iv": [c25iv], "c50iv": [c50iv], "p25iv": [p25iv], "p50iv": [p50iv]})
 
     def aggregate(self):
