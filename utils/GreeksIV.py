@@ -63,7 +63,7 @@ class ImpliedVolatility:
         d1 = (np.log(S / K) + (self.r + v * v / 2.) * T) / (v * np.sqrt(T))
 
         d2 = d1 - v * np.sqrt(T)
-        if cp_flag == 1:
+        if cp_flag == 1 or cp_flag == "CO":
             price = S * np.exp(-q * T) * self.N(d1) - K * np.exp(-self.r * T) * self.N(d2)
         else:
             price = K * np.exp(-self.r * T) * self.N(-d2) - S * np.exp(-q * T) * self.N(-d1)

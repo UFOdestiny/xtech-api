@@ -135,7 +135,6 @@ class Write:
         self.multitask(kw)
 
 
-start_ = time.time()
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', type=str, default=None, help='measurement')
 parser.add_argument('--update', type=str, default='True', help='update?')
@@ -158,8 +157,8 @@ if source:
 
 if __name__ == '__main__':
     if not source:
-        start = "2023-03-14 00:00:00"
-        end = '2023-03-14 12:00:00'
+        start = "2023-01-01 00:00:00"
+        end = '2023-03-01 00:00:00'
 
         # Write(source=OpContractInfo)(start=start, end=end)
         # Write(source=OpTargetQuote)(start=start, end=end, update='1')

@@ -13,6 +13,7 @@ from sqlalchemy import or_
 
 from service.InfluxService import InfluxService
 from service.JoinQuant import JQData
+# from utils.GreeksIV import ImpliedVolatility
 from utils.InfluxTime import InfluxTime
 from utils.InfluxTime import SplitTime
 
@@ -21,15 +22,12 @@ class PutdMinusCalld(JQData):
     def __init__(self):
         super().__init__()
         self.db = InfluxService()
-
         self.code = None
-
         self.daily = None
-
         self.month1 = None
         self.result = None
-
         self.iv_delta = dict()
+        # self.iv = ImpliedVolatility()
 
     def pre_set(self, start, end):
         self.result = self.get_price(security=self.targetcodes, fields=['close'],
@@ -43,9 +41,14 @@ class PutdMinusCalld(JQData):
         # self.result.index -= pandas.Timedelta(minutes=1)
 
         # self.result["targetcode"] = code
-        self.result["putd"] = 0
-        self.result["calld"] = 0
-        self.result["putd_calld"] = 0
+        self.result["putd"] = 0.0
+        self.result["calld"] = 0.0
+        self.result["putd_calld"] = 0.0
+
+        self.result["c25iv"] = 0.0
+        self.result["c50iv"] = 0.0
+        self.result["p25iv"] = 0.0
+        self.result["p50iv"] = 0.0
 
         # del self.result["close"]
 
@@ -103,17 +106,6 @@ class PutdMinusCalld(JQData):
 
         self.daily.drop(["is_adjust", "adj_date", "ex_exercise_price", "ex_contract_unit"], inplace=True, axis=1)
 
-        # today = datetime.date.today()
-        # today_month = today.month
-        # if today_month == 12:
-        #     month_00 = today.replace(year=today.year + 1, month=1, day=1)
-        #     month_01 = today.replace(year=today.year + 1, month=2, day=1)
-        # else:
-        #     month_00 = today.replace(month=today_month + 1, day=1)
-        #     month_01 = today.replace(month=today_month + 2, day=1)
-
-        # df_01 = self.daily[(month_00 <= self.daily["expire_date"]) & (self.daily["expire_date"] <= month_01)]
-
         df_01 = self.daily[(self.daily["expire_date"] == d1[1]) | (self.daily["expire_date"] == d2[1])]
 
         # print(df_01)
@@ -166,27 +158,22 @@ class PutdMinusCalld(JQData):
         # print(po_iv)
 
         if len(co_delta) <= 1 or len(po_delta) <= 1:
-            putd, calld, putd_calld = np.nan, np.nan, np.nan
+            putd, calld, putd_calld, c25iv, c50iv, p25iv, p50iv = np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
         else:
             tck1 = spi.splrep(co_delta, co_iv, k=1)
-
             ivc0 = spi.splev([0.25, 0.5], tck1, ext=0)
-            # print(ivc0)
+            c25iv, c50iv = ivc0
 
             tck2 = spi.splrep(po_delta, po_iv, k=1)
-
             ivp0 = spi.splev([-0.25, -0.5], tck2, ext=0)
-            # print(ivp0)
+            p25iv, p50iv = ivp0
 
             putd = ivp0[0] - ivp0[1]
             calld = ivc0[0] - ivc0[1]
             putd_calld = putd - calld
 
-            # print(putd)
-            # print(calld)
-            # print(putd_calld)
-
-        return pandas.DataFrame({"putd": [putd], "calld": [calld], "putd_calld": [putd_calld]})
+        return pandas.DataFrame({"putd": [putd], "calld": [calld], "putd_calld": [putd_calld],
+                                 "c25iv": [c25iv], "c50iv": [c50iv], "p25iv": [p25iv], "p50iv": [p50iv]})
 
     def aggregate(self):
         for tg in self.iv_delta:
@@ -202,19 +189,14 @@ class PutdMinusCalld(JQData):
                                     (self.result["time"] >= df_time[0]) &
                                     (self.result["time"] <= df_time[-1])].index
 
-            # index = self.result.loc[(self.result["code"] == tg)].index
-
-            # pandas.set_option("display.max_rows", None)
-            # pandas.set_option("display.max_columns", None)
-            #
-            # print(len(index))
-            #
-            # print(len(df_))
-            # print(df_)
-
             self.result.loc[index, "calld"] = df_["calld"].values
             self.result.loc[index, "putd"] = df_["putd"].values
             self.result.loc[index, "putd_calld"] = df_["putd_calld"].values
+
+            self.result.loc[index, "c25iv"] = df_["c25iv"].values
+            self.result.loc[index, "c50iv"] = df_["c50iv"].values
+            self.result.loc[index, "p25iv"] = df_["p25iv"].values
+            self.result.loc[index, "p50iv"] = df_["p50iv"].values
 
     def get(self, **kwargs):
         start_ = kwargs["start"]
@@ -255,7 +237,7 @@ if __name__ == "__main__":
 
     opc = PutdMinusCalld()
     start = '2023-03-01 00:00:00'
-    end = '2023-03-02 00:00:00'
+    end = '2023-03-01 10:00:00'
 
     a, _ = opc.get(start=start, end=end)
     print(a)
