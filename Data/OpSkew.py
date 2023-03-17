@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-# @Name     : OpTargetQuote.py
-# @Date     : 2022/9/9 9:51
+# @Name     : OpSkew.py
+# @Date     : 2023/3/17 13:31
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
-
+import math
 
 import pandas
 
@@ -13,13 +13,78 @@ from service.JoinQuant import JQData
 import datetime
 
 
-class OpTargetQuote(JQData):
+class OpSkew(JQData):
     def __init__(self):
         # self.code = normalize_code(self.code_pre)
         super().__init__()
         self.df = None
         # self.targetcodes = ["510050.XSHG"]
         self.indicator = True
+
+    def get_his_vol(self, code_s, start_date, end_date):
+        b = datetime.datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S") - datetime.timedelta(days=90)
+        start_date = str(b)
+
+        """
+        # 1、获取制定时间段内的日频价格
+        """
+        df = self.get_price(security=code_s,
+                            fields=['close'],
+                            frequency='daily',
+                            start_date=start_date,
+                            end_date=end_date, )
+
+        if len(df) == 0:
+            self.indicator = None
+            return
+
+        close = df["close"].to_list()
+
+        """
+        # 2、计算收益率，收益率=ln(后一天的价格/前一天的价格)
+        """
+        length = len(close)
+        rts = [0]
+        for i in range(1, length):
+            rts.append(math.log(close[i] / close[i - 1]))
+
+        df["pct"] = rts
+        """
+        # 3、计算某一天的前30天的平均收益率
+        """
+        # sum(rts[1:]) / (length - 1)
+
+        avg = [0.0] * 31
+        avg0 = sum(rts[1:31]) / 30
+        avg.append(avg0)
+
+        for i in range(32, length):
+            avg_i = avg[-1] + (rts[i - 1] - rts[i - 31]) / 30
+            avg.append(avg_i)
+
+        df["pct_avg"] = avg
+
+        """
+        # 4、计算某一天的前30天的历史收益率
+        """
+
+        variance = [0.0] * 31
+        for i in range(31, length):
+            v = 0
+            # 方差
+            for j in range(i - 30, i):
+                v += (rts[j] - avg[i]) ** 2
+            # 年化，乘根号252
+            # v = (v * 252 / 30) ** 0.5
+
+            variance.append(v)
+
+        df["std"] = variance
+
+        df.drop(df[df["pct_avg"] == 0.0].index, inplace=True)
+        df["S"] = 100 - 10 * ((df["pct"] - df["pct_avg"]) / df["std"])
+
+        return df
 
     def get_data(self, start, end):
         start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
@@ -30,12 +95,12 @@ class OpTargetQuote(JQData):
             start_temp = start.replace(hour=9, minute=30, second=0, microsecond=0)
             end_temp = end.replace(hour=9, minute=31, second=0, microsecond=0)
             df_pre = self.get_price(security=self.targetcodes, start_date=start_temp, end_date=end_temp, fq='pre',
-                               frequency='minute', fields=['pre_close'], panel=False)
+                                    frequency='minute', fields=['pre_close'], panel=False)
 
             df_pre = df_pre[["code", "pre_close"]].values.tolist()
 
         df = self.get_price(security=self.targetcodes, start_date=start, end_date=end, fq='pre', frequency='minute',
-                       fields=['close', 'pre_close'], panel=False)
+                            fields=['close', 'pre_close'], panel=False)
         # print(df)
         if len(df) == 0:
             return
@@ -89,10 +154,8 @@ class OpTargetQuote(JQData):
 
 if __name__ == "__main__":
     pandas.set_option('display.max_rows', None)
-    op = OpTargetQuote()
-    start = "2023-02-20 14:58:00"
-    end = "2023-02-21 09:33:00"
-    a = op.get(start=start, end=end)
+    op = OpSkew()
+    start = "2023-03-15 00:00:00"
+    end = "2023-03-16 00:00:00"
+    a = op.get_his_vol(start_date=start, end_date=end, code_s="510050.XSHG")
     print(a)
-    # df = get_bars(security="510050.XSHG", unit='1m', count=10, fields=['close'])
-    # print(df)

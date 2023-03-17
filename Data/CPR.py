@@ -107,11 +107,12 @@ class CPR(JQData):
             lst = []
             for s, e, d in [(start, end, self.dic2), (yesterday, end, self.dic1), ]:
                 for type_ in ["CO", "PO"]:
-                    print(target_code, s, e, type_)
+                    # print(target_code, s, e, type_)
 
                     df1 = self.get_price(security=d[target_code][type_], start_date=s, end_date=e, fq='pre',
                                          frequency='60m', fields=['volume', 'money', 'open_interest'],
                                          panel=False)
+                    # print(df1)
 
                     df2 = self.get_price(security=target_code, start_date=s, end_date=e, fq='pre',
                                          frequency='60m', fields=['close'],
@@ -134,8 +135,8 @@ class CPR(JQData):
             close_t = df_t_c["close"]
             del df_t_c["close"], df_t_p["close"], df_y_c["close"], df_y_p["close"]
 
-            print(1, df_t_c)
-            print(2, df_t_p)
+            # print(1, df_t_c)
+            # print(2, df_t_p)
             # print(3, df_y_c)
             # print(4, df_y_p)
 
@@ -144,7 +145,7 @@ class CPR(JQData):
             for i in range(length_t - 1, -1, -1):
                 df_t_c.iloc[i] = df_t_c.iloc[:i + 1].sum() / df_t_p.iloc[:i + 1].sum()
 
-            print(5, df_t_c)
+            # print(5, df_t_c)
             length_y = len(df_y_c)
             for i in range(length_y - 1, 3, -1):
                 df_y_c.iloc[i] = df_y_c.iloc[i - 3:i + 1].sum() / df_y_p.iloc[i - 3:i + 1].sum()
