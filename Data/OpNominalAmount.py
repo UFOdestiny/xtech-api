@@ -120,8 +120,8 @@ class OpNominalAmount(JQData):
         # self.daily_00 = self.daily[(self.daily["expire_date"] >= month_l1) & (self.daily["expire_date"] <= month_00)]
         # self.daily_01 = self.daily[(month_00 <= self.daily["expire_date"]) & (self.daily["expire_date"] <= month_01)]
 
-        self.daily_00 = self.daily[(self.daily["expire_date"] == d1[0]) | (self.daily["expire_date"] == d2[0])]
-        self.daily_01 = self.daily[(self.daily["expire_date"] == d1[1]) | (self.daily["expire_date"] == d2[1])]
+        self.daily_00 = self.daily[(self.daily["expire_date"] == d1[0]) | (self.daily["expire_date"] == d2[0])].copy()
+        self.daily_01 = self.daily[(self.daily["expire_date"] == d1[1]) | (self.daily["expire_date"] == d2[1])].copy()
 
         self.code = self.daily["code"].values
         self.code_00 = self.daily_00["code"].values

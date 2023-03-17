@@ -108,7 +108,7 @@ class PutdMinusCalld(JQData):
 
         self.daily.drop(["is_adjust", "adj_date", "ex_exercise_price", "ex_contract_unit"], inplace=True, axis=1)
 
-        df_01 = self.daily[(self.daily["expire_date"] == d1[1]) | (self.daily["expire_date"] == d2[1])]
+        df_01 = self.daily[(self.daily["expire_date"] == d1[1]) | (self.daily["expire_date"] == d2[1])].copy()
 
         # print(df_01)
         self.code = df_01["code"].unique().tolist()
