@@ -15,7 +15,6 @@ import datetime
 
 class OpSkew(JQData):
     def __init__(self):
-        # self.code = normalize_code(self.code_pre)
         super().__init__()
         self.df = None
         # self.targetcodes = ["510050.XSHG"]

@@ -142,8 +142,11 @@ class OpVix(JQData):
     def get_preset(self, start, end):
         self.df = self.get_price(security=self.targetcodes, fields=['close'], frequency='1m',
                                  start_date=start, end_date=end)
+        if len(self.df) == 0:
+            return None
+
         self.df["vix"] = 0.0
-        # self.df.set_index("time", inplace=True)
+        return True
 
     def figure_sigma(self, start, end):
         for i in self.dic:
@@ -271,7 +274,9 @@ class OpVix(JQData):
         # times = SplitTime.split(start, end, interval_day=1)
 
         self.get_adjust()
-        self.get_preset(start=start, end=end)
+        ind = self.get_preset(start=start, end=end)
+        if not ind:
+            return None, None
         self.daily_info(start=start, end=end)
         self.figure_sigma(start=start, end=end)
 
