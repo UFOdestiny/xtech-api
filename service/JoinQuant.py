@@ -4,9 +4,10 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     : 聚宽API的验权，数据获取的父类。
+
 import time
 from threading import Lock
-
+from bisect import bisect_left
 from jqdatasdk import JQDataClient, auth, query, opt, get_price, get_ticks
 from thriftpy2.transport import TTransportException
 
@@ -89,6 +90,28 @@ class JQData(metaclass=Authentication):
                 print(f"get_ticks error: Retry {max_retries}")
                 max_retries -= 1
                 time.sleep(3)
+
+    @staticmethod
+    def takeClosest(lst, target):
+        if not lst:
+            return None
+        if target > lst[-1]:
+            return lst[-1]
+        if target < lst[0]:
+            return lst[0]
+
+        pos = bisect_left(lst, target)
+        if pos == 0:
+            return lst[0]
+        if pos == len(lst):
+            return lst[-1]
+
+        before = lst[pos - 1]
+        after = lst[pos]
+        if after - target < target - before:
+            return after
+        else:
+            return before
 
 
 if __name__ == "__main__":

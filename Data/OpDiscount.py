@@ -7,7 +7,6 @@
 import datetime
 import random
 import time
-from bisect import bisect_left
 
 import pandas
 from jqdatasdk import opt, query, get_price
@@ -144,28 +143,6 @@ class OpDiscount(JQData):
 
             # print(df_temp_02)
             self.dic[c]["02"] = {"CO": df_co_02, "PO": df_po_02}
-
-    @staticmethod
-    def takeClosest(lst, target):
-        if not lst:
-            return None
-        if target > lst[-1]:
-            return lst[-1]
-        if target < lst[0]:
-            return lst[0]
-
-        pos = bisect_left(lst, target)
-        if pos == 0:
-            return lst[0]
-        if pos == len(lst):
-            return lst[-1]
-
-        before = lst[pos - 1]
-        after = lst[pos]
-        if after - target < target - before:
-            return after
-        else:
-            return before
 
     def get_pp_pc(self, code, minute):
         # time_ = datetime.datetime.strptime(minute, "%Y-%m-%d %H:%M:%S")
