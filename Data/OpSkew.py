@@ -4,11 +4,14 @@
 # @Auth     : Yu Dahai
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
+
 import math
 
 import pandas
+from jqdatasdk import opt, query
+from sqlalchemy import or_
 
-from utils.InfluxTime import SplitTime
+from utils.InfluxTime import SplitTime, InfluxTime
 from service.JoinQuant import JQData
 import datetime
 
@@ -16,127 +19,269 @@ import datetime
 class OpSkew(JQData):
     def __init__(self):
         super().__init__()
+        self.daily = None
+        self.daily_00 = None
+        self.daily_01 = None
+        self.daily_02 = None
+
+        self.dic = dict()
+
         self.df = None
-        # self.targetcodes = ["510050.XSHG"]
+        #self.targetcodes = ["510050.XSHG", "510500.XSHG"]
+
         self.indicator = True
+        self.scroll = dict()
+        self.r = 0.015
 
-    def get_his_vol(self, code_s, start_date, end_date):
-        b = datetime.datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S") - datetime.timedelta(days=90)
-        start_date = str(b)
+        self.df = None
+        self.res = None
 
-        """
-        # 1、获取制定时间段内的日频价格
-        """
-        df = self.get_price(security=code_s,
-                            fields=['close'],
-                            frequency='daily',
-                            start_date=start_date,
-                            end_date=end_date, )
+    def daily_info(self, start, end):
+        q1 = query(opt.OPT_CONTRACT_INFO.code,
+                   opt.OPT_CONTRACT_INFO.underlying_symbol,
+                   opt.OPT_CONTRACT_INFO.exercise_price,
+                   opt.OPT_CONTRACT_INFO.contract_type,
+                   opt.OPT_CONTRACT_INFO.expire_date,
+                   opt.OPT_CONTRACT_INFO.is_adjust).filter(
+            or_(
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "510050.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "510500.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "510300.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159901.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159919.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159915.XSHE",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "159922.XSHE",
+            ),
+            opt.OPT_CONTRACT_INFO.list_date <= start,
+            opt.OPT_CONTRACT_INFO.expire_date >= start, )
 
-        if len(df) == 0:
-            self.indicator = None
-            return
+        q2 = query(opt.OPT_CONTRACT_INFO.code,
+                   opt.OPT_CONTRACT_INFO.underlying_symbol,
+                   opt.OPT_CONTRACT_INFO.exercise_price,
+                   opt.OPT_CONTRACT_INFO.contract_type,
+                   opt.OPT_CONTRACT_INFO.expire_date,
+                   opt.OPT_CONTRACT_INFO.is_adjust).filter(
+            or_(
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000852.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000300.XSHG",
+                opt.OPT_CONTRACT_INFO.underlying_symbol == "000016.XSHG",
+            ),
+            opt.OPT_CONTRACT_INFO.list_date <= start,
+            opt.OPT_CONTRACT_INFO.expire_date >= start, )
 
-        close = df["close"].to_list()
+        df1 = self.run_query(q1)
+        d1 = sorted(df1["expire_date"].unique())
 
-        """
-        # 2、计算收益率，收益率=ln(后一天的价格/前一天的价格)
-        """
-        length = len(close)
-        rts = [0]
-        for i in range(1, length):
-            rts.append(math.log(close[i] / close[i - 1]))
+        df2 = self.run_query(q2)
+        d2 = sorted(df2["expire_date"].unique())
 
-        df["pct"] = rts
-        """
-        # 3、计算某一天的前30天的平均收益率
-        """
-        # sum(rts[1:]) / (length - 1)
+        self.daily = pandas.concat([df1, df2])
+        self.daily.reset_index(drop=True, inplace=True)
 
-        avg = [0.0] * 31
-        avg0 = sum(rts[1:31]) / 30
-        avg.append(avg0)
+        temp_adjust = self.adjust[self.adjust["adj_date"] >= InfluxTime.to_date(start)]
+        self.daily = pandas.merge(left=self.daily, right=temp_adjust, on="code", how="left")
 
-        for i in range(32, length):
-            avg_i = avg[-1] + (rts[i - 1] - rts[i - 31]) / 30
-            avg.append(avg_i)
+        for i in range(len(self.daily)):
+            if self.daily.loc[i, "is_adjust"] == 1:
+                self.daily.loc[i, "exercise_price"] = self.daily.loc[i, "ex_exercise_price"]
+                self.daily.loc[i, "contract_unit"] = self.daily.loc[i, "ex_contract_unit"]
 
-        df["pct_avg"] = avg
+        self.daily.drop(columns=["is_adjust", "adj_date", "ex_exercise_price", "ex_contract_unit", "contract_unit"],
+                        inplace=True, axis=1)
 
-        """
-        # 4、计算某一天的前30天的历史收益率
-        """
+        self.daily.dropna(how="any", inplace=True)
 
-        variance = [0.0] * 31
-        for i in range(31, length):
-            v = 0
-            # 方差
-            for j in range(i - 30, i):
-                v += (rts[j] - avg[i]) ** 2
-            # 年化，乘根号252
-            # v = (v * 252 / 30) ** 0.5
+        if len(self.daily) == 0:
+            return None
 
-            variance.append(v)
+        self.daily_00 = self.daily[(self.daily["expire_date"] == d1[0]) | (self.daily["expire_date"] == d2[0])].copy()
+        self.daily_01 = self.daily[(self.daily["expire_date"] == d1[1]) | (self.daily["expire_date"] == d2[1])].copy()
+        self.daily_02 = self.daily[(self.daily["expire_date"] == d1[2]) | (self.daily["expire_date"] == d2[2])].copy()
 
-        df["std"] = variance
+        start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S").date()
 
-        df.drop(df[df["pct_avg"] == 0.0].index, inplace=True)
-        df["S"] = 100 - 10 * ((df["pct"] - df["pct_avg"]) / df["std"])
+        self.daily_00["days"] = self.daily_00["expire_date"].apply(lambda x: (x - start).days / 365)
+        self.daily_01["days"] = self.daily_01["expire_date"].apply(lambda x: (x - start).days / 365)
+        self.daily_02["days"] = self.daily_02["expire_date"].apply(lambda x: (x - start).days / 365)
+
+        code = self.daily["underlying_symbol"].unique().tolist()
+
+        for c in code:
+            self.dic[c] = dict()
+
+            df_temp_00 = self.daily_00[self.daily_00["underlying_symbol"] == c]
+            if df_temp_00["days"].min() > 8 * 1440:
+                df_co_00 = df_temp_00[df_temp_00["contract_type"] == "CO"]["exercise_price"].unique().tolist()
+                df_po_00 = df_temp_00[df_temp_00["contract_type"] == "PO"]["exercise_price"].unique().tolist()
+                df_co_00.sort()
+                df_po_00.sort()
+                self.dic[c]["00"] = {"CO": df_co_00, "PO": df_po_00, "df": df_temp_00}
+
+                df_temp_01 = self.daily_01[self.daily_01["underlying_symbol"] == c]
+                df_co_01 = df_temp_01[df_temp_01["contract_type"] == "CO"]["exercise_price"].unique().tolist()
+                df_po_01 = df_temp_01[df_temp_01["contract_type"] == "PO"]["exercise_price"].unique().tolist()
+                df_co_01.sort()
+                df_po_01.sort()
+                self.dic[c]["01"] = {"CO": df_co_01, "PO": df_po_01, "df": df_temp_01}
+            else:
+                df_temp_01 = self.daily_01[self.daily_01["underlying_symbol"] == c]
+                df_co_01 = df_temp_01[df_temp_01["contract_type"] == "CO"]["exercise_price"].unique().tolist()
+                df_po_01 = df_temp_01[df_temp_01["contract_type"] == "PO"]["exercise_price"].unique().tolist()
+                df_co_01.sort()
+                df_po_01.sort()
+                self.dic[c]["00"] = {"CO": df_co_01, "PO": df_po_01, "df": df_temp_01}
+
+                df_temp_02 = self.daily_02[self.daily_02["underlying_symbol"] == c]
+                df_co_02 = df_temp_02[df_temp_02["contract_type"] == "CO"]["exercise_price"].unique().tolist()
+                df_po_02 = df_temp_02[df_temp_02["contract_type"] == "PO"]["exercise_price"].unique().tolist()
+                df_co_02.sort()
+                df_po_02.sort()
+                self.dic[c]["01"] = {"CO": df_co_02, "PO": df_po_02, "df": df_temp_02}
+
+    def get_preset(self, start, end):
+        self.df = self.get_price(security=self.targetcodes, fields=['close'], frequency='1m',
+                                 start_date=start, end_date=end)
+        if len(self.df) == 0:
+            return None
+
+        self.df["skew"] = 0.0
+        return True
+
+    def figure_sigma(self, start, end):
+        for i in self.dic:
+            df_temp_00 = self.dic[i]["00"]["df"]
+            df_temp_01 = self.dic[i]["01"]["df"]
+            # df_temp_02 = self.dic[i]["02"]["df"]
+
+            sigma00t00 = self.process_df(df_temp_00, start, end)
+            sigma00t00.reset_index(inplace=True)
+            # sigma00t00.set_index("time", inplace=True)
+            del sigma00t00["level_1"]
+
+            sigma01t01 = self.process_df(df_temp_01, start, end)
+            sigma01t01.reset_index(inplace=True)
+            # sigma01t01.set_index("time", inplace=True)
+            del sigma01t01["level_1"]
+
+            df_sigma = sigma00t00.merge(sigma01t01, how="inner", on="time")
+            # df_sigma.set_index("time", inplace=True)
+            df_sigma["skew"] = 0.0
+
+            n30 = 30 / 365
+
+            for j in df_sigma.index:
+                s0, s1, t00, t01 = df_sigma.loc[j][["s_x", "s_y", "days_x", "days_y"]]
+                w = (t01 - n30) / (t01 - t00)
+                skew = 100 - 10 * (w * s0 + (1 - w) * s1)
+                df_sigma.loc[j, "skew"] = skew
+
+            # df = df_sigma[["vix"]]
+            # df["targetcode"] = i
+            index = self.df[self.df["code"] == i].index
+
+            self.df.loc[index, "skew"] = df_sigma["skew"].tolist()
+            # print(self.df)
+
+    def process_df(self, df, start, end):
+        g = df.groupby("exercise_price")
+        df = g.apply(self.group_f1, start=start, end=end)
+        df.reset_index(inplace=True)
+        df.rename(columns={"level_1": "time"}, inplace=True)
+        df.set_index("time", inplace=True)
+
+        g2 = df.groupby(df.index)
+        df = g2.apply(self.group_f2)
 
         return df
 
-    def get_data(self, start, end):
-        start = datetime.datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
-        end = datetime.datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
-        df_pre = None
-        #############
-        if start.time() > datetime.time(9, 30):
-            start_temp = start.replace(hour=9, minute=30, second=0, microsecond=0)
-            end_temp = end.replace(hour=9, minute=31, second=0, microsecond=0)
-            df_pre = self.get_price(security=self.targetcodes, start_date=start_temp, end_date=end_temp, fq='pre',
-                                    frequency='minute', fields=['pre_close'], panel=False)
+    def group_f1(self, df, start, end):
+        df.dropna(inplace=True)
 
-            df_pre = df_pre[["code", "pre_close"]].values.tolist()
+        co_code = df[df["contract_type"] == "CO"].iloc[0]["code"]
+        po_code = df[df["contract_type"] == "PO"].iloc[0]["code"]
 
-        df = self.get_price(security=self.targetcodes, start_date=start, end_date=end, fq='pre', frequency='minute',
-                            fields=['close', 'pre_close'], panel=False)
+        co = self.get_price(security=co_code, fields=['close'], frequency='1m', start_date=start, end_date=end)
+        po = self.get_price(security=po_code, fields=['close'], frequency='1m', start_date=start, end_date=end)
+
+        co_price = co["close"]
+        po_price = po["close"]
+        difference = abs(co_price - po_price)
+
+        return pandas.DataFrame({"diff": difference, "CO": co_price, "PO": po_price, "days": df.iloc[0]["days"]})
+
+    def group_f2(self, df):
+        # df.set_index("exercise_price",inplace=True)
+        least = df["diff"].min()
+
+        min_ = df[df["diff"] == least].iloc[0]
+        diff = min_["diff"]
+        exe_price = min_["exercise_price"]
+
+        f = exe_price + diff * math.exp(self.r * min_["days"])
+        # print(f)
+        df["avg"] = (df["CO"] + df["PO"]) / 2
+        days = df.iloc[0]['days']
+
+        # df_time = df.set_index("time")
+        # g2 = df_time.groupby(df_time.index)
+        # df_final = g2.apply(self.group_f2)
+
+        price_list = df[["exercise_price", "avg"]].values.tolist()
+
+        # print(df_t)
+
+        df.set_index("exercise_price", inplace=True)
+        df.sort_index(inplace=True)
+
+        exercise_price_list = df.index[::-1]
+        k = exercise_price_list[-1]
+        for i in exercise_price_list:
+            if i < f:
+                k = i
+                break
+
         # print(df)
-        if len(df) == 0:
-            return
+        # print(k)
+        k_f = k / f
+        f_k = f / k
 
-        df["time"] -= pandas.Timedelta(minutes=1)
+        p1 = f_k - 1 - math.log(f_k)
+        p2 = 2 * math.log(k_f) * (f_k - 1) + math.log(k_f) ** 2 / 2
+        p3 = 3 * math.log(k_f) ** 2 * (f_k - 1 + math.log(f_k) / 3)
+        ert = math.exp(self.r * days)
 
-        if df_pre:
-            for i, j in df_pre:
-                indexes = df[df["code"] == i].index
-                df.loc[indexes, "pre_close"] = j
-        else:
-            temp = df.iloc[0]["time"]
-            for i in range(len(df)):
-                if datetime.time(9, 30) == df.iloc[i]["time"].time():
-                    temp = df.iloc[i]["pre_close"]
-                else:
-                    df.iloc[i, 3] = temp
+        n_co = len(price_list)
+        for i in range(n_co):
+            k_, q = price_list[i]
+            k_f = k_ / f
 
-        df = df[(df["time"] >= start) & (df["time"] <= end)]
+            if i == 0:
+                delta_k = price_list[1][0] - k_
+            elif i == n_co - 1:
+                delta_k = k_ - price_list[i - 1][0]
+            else:
+                delta_k = (price_list[i + 1][0] - price_list[i - 1][0]) / 2
 
-        return df
+            p1 += ert * (-delta_k * q / k_ ** 2)
+            p2 += ert * (2 / k_ ** 2 * (1 - math.log(k_f) * delta_k * q))
+            p3 += ert * (3 / k_ ** 2 * (2 * math.log(k_f) - math.log(k_f) ** 2 * delta_k * q))
 
-    def process_df(self, df):
-        df["pct"] = (df["close"] - df["pre_close"]) / df["pre_close"]
-        del df["pre_close"]
+        s = (p3 - 3 * p1 * p2 + 2 * p1 ** 3) / (p2 - p1 ** 2) ** (3 / 2)
 
-        print(len(df))
-        if df is not None and len(df) > 0:
-            self.df = pandas.concat([self.df, df])
+        return pandas.DataFrame({"s": [s], "days": [days]})
 
     def get(self, **kwargs):
-        times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=30)
-        for t in times:
-            print(t)
-            df = self.get_data(t[0], t[1])
-            if df is not None:
-                self.process_df(df)
+        start = kwargs["start"]
+        end = kwargs["end"]
+
+        # times = SplitTime.split(start, end, interval_day=1)
+
+        self.get_adjust()
+        ind = self.get_preset(start=start, end=end)
+        if not ind:
+            return None, None
+        self.daily_info(start=start, end=end)
+        self.figure_sigma(start=start, end=end)
 
         if self.df is None:
             return None, None
@@ -146,15 +291,13 @@ class OpSkew(JQData):
         self.df.rename(columns={'code': 'targetcode', "close": 'price'}, inplace=True)
         tag_columns = ['targetcode']
 
-        # print(self.df)
-
         return self.df, tag_columns
 
 
 if __name__ == "__main__":
     pandas.set_option('display.max_rows', None)
     op = OpSkew()
-    start = "2023-03-15 00:00:00"
-    end = "2023-03-16 00:00:00"
-    a = op.get_his_vol(start_date=start, end_date=end, code_s="510050.XSHG")
+    start = "2023-03-15 10:00:00"
+    end = "2023-03-15 10:01:00"
+    a, b = op.get(start=start, end=end)
     print(a)

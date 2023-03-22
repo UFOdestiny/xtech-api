@@ -186,7 +186,7 @@ class OpVix(JQData):
 
             self.df.loc[index, "vix"] = df_sigma["vix"].tolist()
 
-            print(self.df)
+            # print(self.df)
 
     def group_f1(self, df, start, end):
         df.dropna(inplace=True)

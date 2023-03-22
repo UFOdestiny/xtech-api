@@ -20,16 +20,19 @@ sys.path.append(root_path)
 
 from service.InfluxService import InfluxService
 from utils.Logger import Logger
+from utils.InfluxTime import SplitTime, InfluxTime
+
 from Data.OpTargetQuote import OpTargetQuote
 from Data.OpContractInfo import OpContractInfo
 from Data.OpContractQuote import OpContractQuote
 from Data.OpNominalAmount import OpNominalAmount
 from Data.PutdMinusCalld import PutdMinusCalld
 from Data.OpDiscount import OpDiscount
-from Data.CPR import CPR
 from Data.OpTargetDerivativeVol import OpTargetDerivativeVol
 from Data.OpTargetDerivativePrice import OpTargetDerivativePrice
-from utils.InfluxTime import SplitTime, InfluxTime
+from Data.CPR import CPR
+from Data.OpVix import OpVix
+from Data.OpSkew import OpSkew
 
 
 class Write:
@@ -86,7 +89,8 @@ class Write:
                 msg += self.db.write_pandas(df=df_, tag_columns=tag_columns, measurement=m, method="syn")
                 msg += " "
         else:
-            if self.measurement in ["opcontractquote", "opnominalamount", "putdminuscalld", "opdiscount", "cpr"]:
+            if self.measurement in ["opcontractquote", "opnominalamount", "putdminuscalld", "opdiscount", "cpr",
+                                    "opvix", "opskew"]:
                 method = "syn"
             else:
                 method = "batch"
@@ -127,7 +131,7 @@ class Write:
                 length = len(lst)
                 kw = [{"code": c, "start": kwargs["start"], "end": kwargs["end"], "length": length} for c in lst]
 
-        elif self.source in [OpNominalAmount, PutdMinusCalld, OpDiscount, CPR]:
+        elif self.source in [OpNominalAmount, PutdMinusCalld, OpDiscount, CPR, OpVix, OpSkew]:
             times = SplitTime.split(kwargs["start"], kwargs["end"], interval_day=1, reverse=True)
             length = len(times)
             kw = [{"start": t[0], "end": t[1], "length": length} for t in times]
@@ -150,9 +154,6 @@ if source:
         start, end = InfluxTime.last_minute(int(time_))
 
     Write(source=eval(source))(start=start, end=end, update=args.update)
-    # if source == "OpContractQuote":
-    #     start, end = InfluxTime.last_minute(10)
-    #     Write(source=PutdMinusCalld)(start=start, end=end, update=args.update)
 
 if __name__ == '__main__':
     if not source:
@@ -166,5 +167,7 @@ if __name__ == '__main__':
         # Write(source=PutdMinusCalld)(start=start, end=end)
         # Write(source=OpDiscount)(start=start, end=end)
         # Write(source=CPR)(start=start, end=end)
-        Write(source=OpTargetDerivativeVol)(start=start, end=end)
-        Write(source=OpTargetDerivativePrice)(start=start, end=end)
+        # Write(source=OpTargetDerivativeVol)(start=start, end=end)
+        # Write(source=OpTargetDerivativePrice)(start=start, end=end)
+        Write(source=OpSkew)(start=start, end=end)
+        Write(source=OpVix)(start=start, end=end)

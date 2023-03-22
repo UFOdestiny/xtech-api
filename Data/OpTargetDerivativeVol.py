@@ -93,7 +93,7 @@ class OpTargetDerivativeVol(JQData):
                             df.loc[index, columns[4]] = df.loc[index + 1 - interval:index, columns[0]].quantile(0.8)
                             df.loc[index, columns[5]] = df.loc[index + 1 - interval:index, columns[0]].quantile(0.2)
 
-                    df.to_excel(f"{code} {interval} {prefix}.xlsx")
+                    # df.to_excel(f"{code} {interval} {prefix}.xlsx")
                     # break
                     # print(df)
 
