@@ -27,7 +27,7 @@ class OpSkew(JQData):
         self.dic = dict()
 
         self.df = None
-        #self.targetcodes = ["510050.XSHG", "510500.XSHG"]
+        # self.targetcodes = ["510050.XSHG", "510500.XSHG"]
 
         self.indicator = True
         self.scroll = dict()
@@ -153,33 +153,35 @@ class OpSkew(JQData):
             df_temp_01 = self.dic[i]["01"]["df"]
             # df_temp_02 = self.dic[i]["02"]["df"]
 
-            sigma00t00 = self.process_df(df_temp_00, start, end)
-            sigma00t00.reset_index(inplace=True)
+            s00t00 = self.process_df(df_temp_00, start, end)
+            s00t00.reset_index(inplace=True)
             # sigma00t00.set_index("time", inplace=True)
-            del sigma00t00["level_1"]
+            del s00t00["level_1"]
 
-            sigma01t01 = self.process_df(df_temp_01, start, end)
-            sigma01t01.reset_index(inplace=True)
+            s01t01 = self.process_df(df_temp_01, start, end)
+            s01t01.reset_index(inplace=True)
             # sigma01t01.set_index("time", inplace=True)
-            del sigma01t01["level_1"]
+            del s01t01["level_1"]
 
-            df_sigma = sigma00t00.merge(sigma01t01, how="inner", on="time")
+            df_skew = s00t00.merge(s01t01, how="inner", on="time")
             # df_sigma.set_index("time", inplace=True)
-            df_sigma["skew"] = 0.0
+            df_skew["skew"] = 0.0
 
             n30 = 30 / 365
 
-            for j in df_sigma.index:
-                s0, s1, t00, t01 = df_sigma.loc[j][["s_x", "s_y", "days_x", "days_y"]]
+            for j in df_skew.index:
+                s0, s1, t00, t01 = df_skew.loc[j][["s_x", "s_y", "days_x", "days_y"]]
                 w = (t01 - n30) / (t01 - t00)
                 skew = 100 - 10 * (w * s0 + (1 - w) * s1)
-                df_sigma.loc[j, "skew"] = skew
 
+                df_skew.loc[j, "skew"] = skew
+
+            # print(df_skew)
             # df = df_sigma[["vix"]]
             # df["targetcode"] = i
             index = self.df[self.df["code"] == i].index
 
-            self.df.loc[index, "skew"] = df_sigma["skew"].tolist()
+            self.df.loc[index, "skew"] = df_skew["skew"].tolist()
             # print(self.df)
 
     def process_df(self, df, start, end):
