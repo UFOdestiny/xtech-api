@@ -10,6 +10,10 @@
 
 */5 9,10,11,13,14,15 * * 1-5 /bin/sh /root/api/bash/PutdMinusCalld.sh
 
+*/2 9,10,11,13,14,15 * * 1-5 /bin/sh /root/api/bash/OpVix.sh
+
+*/2 9,10,11,13,14,15 * * 1-5 /bin/sh /root/api/bash/OpSkew.sh
+
 #every hour
 5 9,10,11,13,14,19 * * 1-5 /bin/sh /root/api/bash/OpTargetDerivativeVol.sh
 
@@ -24,6 +28,10 @@
 
 30 20 * * 1-5 /bin/sh /root/api/bash/PutdMinusCalldALL.sh
 
-0 22 * * 1-5 /bin/sh /root/api/bash/OpDiscountALL.sh
+0 21 * * 1-5 /bin/sh /root/api/bash/PutdMinusCalldALL.sh
+
+0 21 * * 1-5 /bin/sh /root/api/bash/OpVixALL.sh
+
+0 22 * * 1-5 /bin/sh /root/api/bash/OpSkewALL.sh
 
 0 23 * * 1-5 /bin/sh /root/api/bash/RedisClear.sh
