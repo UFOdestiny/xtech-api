@@ -172,8 +172,8 @@ class OpSkew(JQData):
                 if t00 > 30 / 365:
                     time_3060 *= 2
 
-                w = (t01 - time_3060) / (t01 - t00)
-                skew = - 10 * (w * s0 + (1 - w) * s1)
+                # w = (t01 - time_3060) / (t01 - t00)
+                skew = 100 - 10 * (s0 * (t01 - time_3060) / (t01 - t00) + s1 * (time_3060 - t00) / (t01 - t00))
 
                 df_skew.loc[j, "skew"] = skew
 
@@ -255,19 +255,19 @@ class OpSkew(JQData):
 
         n_co = len(price_list)
         for i in range(n_co):
-            k_, q = price_list[i]
-            k_f = k_ / f
+            ki, q = price_list[i]
+            k_f = ki / f
 
             if i == 0:
-                delta_k = price_list[1][0] - k_
+                delta_k = price_list[1][0] - ki
             elif i == n_co - 1:
-                delta_k = k_ - price_list[i - 1][0]
+                delta_k = ki - price_list[i - 1][0]
             else:
                 delta_k = (price_list[i + 1][0] - price_list[i - 1][0]) / 2
 
-            p1 += ert * (-delta_k * q / k_ ** 2)
-            p2 += ert * (2 / k_ ** 2 * (1 - math.log(k_f) * delta_k * q))
-            p3 += ert * (3 / k_ ** 2 * (2 * math.log(k_f) - math.log(k_f) ** 2 * delta_k * q))
+            p1 += ert * (-delta_k * q / ki ** 2)
+            p2 += ert * (2 * delta_k * q / ki ** 2 * (1 - math.log(k_f)))
+            p3 += ert * (3 * delta_k * q / ki ** 2 * (2 * math.log(k_f) - math.log(k_f) ** 2))
 
         s = (p3 - 3 * p1 * p2 + 2 * p1 ** 3) / (p2 - p1 ** 2) ** (3 / 2)
 
