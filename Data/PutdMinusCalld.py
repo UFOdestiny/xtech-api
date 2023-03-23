@@ -132,7 +132,6 @@ class PutdMinusCalld(JQData):
             return False
 
         df.set_index("_time", inplace=True)
-
         targetcode = df["targetcode"].unique().tolist()
         for tc in targetcode:
             df_temp = df[df["targetcode"] == tc]

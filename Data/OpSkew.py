@@ -250,7 +250,7 @@ class OpSkew(JQData):
 
         p1 = f_k - 1 - math.log(f_k)
         p2 = 2 * math.log(k_f) * (f_k - 1) + math.log(k_f) ** 2 / 2
-        p3 = 3 * math.log(k_f) ** 2 * (f_k - 1 + math.log(f_k) / 3)
+        p3 = 3 * math.log(k_f) ** 2 * (f_k - 1 + math.log(k_f) / 3)
         ert = math.exp(self.r * days)
 
         n_co = len(price_list)
