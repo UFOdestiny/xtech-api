@@ -203,14 +203,17 @@ class OpSkew(JQData):
 
         co_price = co["close"]
         po_price = po["close"]
+
+        # 认沽认购差的绝对值
         difference = abs(co_price - po_price)
+        # 认沽认购的差
         diff2 = co_price - po_price
 
-        return pandas.DataFrame({"diff": difference, "CO": co_price, "PO": po_price, "days": df.iloc[0]["days"],
-                                 "diff2": diff2})
+        return pandas.DataFrame({"diff": difference, "days": df.iloc[0]["days"], "diff2": diff2, "co": co_price,
+                                 "po": po_price})
 
     def group_f2(self, df):
-        # df.set_index("exercise_price",inplace=True)
+        df["mix"] = 0.0
         least = df["diff"].min()
 
         min_ = df[df["diff"] == least].iloc[0]
@@ -218,17 +221,9 @@ class OpSkew(JQData):
         exe_price = min_["exercise_price"]
 
         f = exe_price + diff * math.exp(self.r * min_["days"])
-        # print(f)
+
         df["avg"] = (df["CO"] + df["PO"]) / 2
         days = df.iloc[0]['days']
-
-        # df_time = df.set_index("time")
-        # g2 = df_time.groupby(df_time.index)
-        # df_final = g2.apply(self.group_f2)
-
-        price_list = df[["exercise_price", "avg"]].values.tolist()
-
-        # print(df_t)
 
         df.set_index("exercise_price", inplace=True)
         df.sort_index(inplace=True)
@@ -240,8 +235,17 @@ class OpSkew(JQData):
                 k = i
                 break
 
-        # print(df)
-        # print(k)
+        for i in df.index:
+            if i < k:
+                df.loc[i, "mix"] = df.loc[i, "po"]
+            elif i == k:
+                df.loc[i, "mix"] = (df.loc[i, "po"] + df.loc[i, "co"]) / 2
+            else:
+                df.loc[i, "mix"] = df.loc[i, "co"]
+
+        df.reset_index(inplace=True)
+        price_list = df[["exercise_price", "mix"]].values.tolist()
+
         k_f = k / f
         f_k = f / k
 

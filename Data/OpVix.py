@@ -202,13 +202,13 @@ class OpVix(JQData):
         difference = abs(co_price - po_price)
         # 认沽认购的差
         diff2 = co_price - po_price
-        # 买卖中间件
-        avg = (co_price + po_price) / 2
 
-        return pandas.DataFrame({"diff": difference, "avg": avg, "days": df.iloc[0]["days"], "diff2": diff2})
+        return pandas.DataFrame({"diff": difference, "days": df.iloc[0]["days"], "diff2": diff2, "co": co_price,
+                                 "po": po_price})
 
     def group_f2(self, df):
         # 取出认沽认购差的绝对值最小的一组
+        df["mix"] = 0.0
         least = df["diff"].min()
         min_ = df[df["diff"] == least].iloc[0]
         # 差
@@ -220,7 +220,6 @@ class OpVix(JQData):
         # 取出到期时间（年化）
         days = df.iloc[0]['days']
 
-        price_list = df[["exercise_price", "avg"]].values.tolist()
         df.set_index("exercise_price", inplace=True)
         df.sort_index(inplace=True)
 
@@ -232,6 +231,18 @@ class OpVix(JQData):
                 k = i
                 break
 
+        for i in df.index:
+            if i < k:
+                df.loc[i, "mix"] = df.loc[i, "po"]
+            elif i == k:
+                df.loc[i, "mix"] = (df.loc[i, "po"] + df.loc[i, "co"]) / 2
+            else:
+                df.loc[i, "mix"] = df.loc[i, "co"]
+
+        df.reset_index(inplace=True)
+
+        price_list = df[["exercise_price", "mix"]].values.tolist()
+
         # 计算sigma
         sigma = 0
 
@@ -240,21 +251,21 @@ class OpVix(JQData):
         for i in range(n_co):
 
             # ki和Q
-            k_, q = price_list[i]
+            ki, q = price_list[i]
 
             # 计算delta
             if i == 0:
                 # 第一个
-                delta_k = price_list[1][0] - k_
+                delta_k = price_list[1][0] - ki
 
             elif i == n_co - 1:
                 # 最后一个
-                delta_k = k_ - price_list[i - 1][0]
+                delta_k = ki - price_list[i - 1][0]
             else:
                 # 中间的
                 delta_k = (price_list[i + 1][0] - price_list[i - 1][0]) / 2
 
-            sigma += (delta_k / k_ ** 2) * q
+            sigma += (delta_k / ki ** 2) * q
 
         sigma = (2 * math.exp(self.r * days) / days * sigma) - (f / k - 1) ** 2 / days
 
