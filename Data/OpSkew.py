@@ -5,15 +5,15 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
 
+import datetime
 import math
 
 import pandas
 from jqdatasdk import opt, query
 from sqlalchemy import or_
 
-from utils.InfluxTime import SplitTime, InfluxTime
 from service.JoinQuant import JQData
-import datetime
+from utils.InfluxTime import InfluxTime
 
 
 class OpSkew(JQData):
@@ -173,7 +173,7 @@ class OpSkew(JQData):
                     time_3060 *= 2
 
                 w = (t01 - time_3060) / (t01 - t00)
-                skew = 100 - 10 * (w * s0 + (1 - w) * s1)
+                skew = - 10 * (w * s0 + (1 - w) * s1)
 
                 df_skew.loc[j, "skew"] = skew
 
@@ -222,7 +222,6 @@ class OpSkew(JQData):
 
         f = exe_price + diff * math.exp(self.r * min_["days"])
 
-        df["avg"] = (df["CO"] + df["PO"]) / 2
         days = df.iloc[0]['days']
 
         df.set_index("exercise_price", inplace=True)

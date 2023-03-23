@@ -5,15 +5,15 @@
 # @Email    : yudahai@pku.edu.cn
 # @Desc     :
 
+import datetime
 import math
 
 import pandas
 from jqdatasdk import opt, query
 from sqlalchemy import or_
 
-from utils.InfluxTime import SplitTime, InfluxTime
 from service.JoinQuant import JQData
-import datetime
+from utils.InfluxTime import InfluxTime
 
 
 class OpVix(JQData):
