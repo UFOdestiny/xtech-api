@@ -110,7 +110,7 @@ class OpSkew(JQData):
             self.dic[c] = dict()
 
             df_temp_00 = self.daily_00[self.daily_00["underlying_symbol"] == c]
-            if df_temp_00["days"].min() > 8 * 1440:
+            if df_temp_00["days"].min() > 8 / 365:
                 df_co_00 = df_temp_00[df_temp_00["contract_type"] == "CO"]["exercise_price"].unique().tolist()
                 df_po_00 = df_temp_00[df_temp_00["contract_type"] == "PO"]["exercise_price"].unique().tolist()
                 df_co_00.sort()
@@ -151,38 +151,34 @@ class OpSkew(JQData):
         for i in self.dic:
             df_temp_00 = self.dic[i]["00"]["df"]
             df_temp_01 = self.dic[i]["01"]["df"]
-            # df_temp_02 = self.dic[i]["02"]["df"]
 
             s00t00 = self.process_df(df_temp_00, start, end)
             s00t00.reset_index(inplace=True)
-            # sigma00t00.set_index("time", inplace=True)
             del s00t00["level_1"]
 
             s01t01 = self.process_df(df_temp_01, start, end)
             s01t01.reset_index(inplace=True)
-            # sigma01t01.set_index("time", inplace=True)
             del s01t01["level_1"]
 
             df_skew = s00t00.merge(s01t01, how="inner", on="time")
-            # df_sigma.set_index("time", inplace=True)
             df_skew["skew"] = 0.0
 
             n30 = 30 / 365
 
             for j in df_skew.index:
                 s0, s1, t00, t01 = df_skew.loc[j][["s_x", "s_y", "days_x", "days_y"]]
-                w = (t01 - n30) / (t01 - t00)
+                time_3060 = n30
+                # 如果本月合约到期日大于30天（即取下月合约的情况），则到期日按照60天计算
+                if t00 > 30 / 365:
+                    time_3060 *= 2
+
+                w = (t01 - time_3060) / (t01 - t00)
                 skew = 100 - 10 * (w * s0 + (1 - w) * s1)
 
                 df_skew.loc[j, "skew"] = skew
 
-            # print(df_skew)
-            # df = df_sigma[["vix"]]
-            # df["targetcode"] = i
             index = self.df[self.df["code"] == i].index
-
             self.df.loc[index, "skew"] = df_skew["skew"].tolist()
-            # print(self.df)
 
     def process_df(self, df, start, end):
         g = df.groupby("exercise_price")
@@ -208,15 +204,17 @@ class OpSkew(JQData):
         co_price = co["close"]
         po_price = po["close"]
         difference = abs(co_price - po_price)
+        diff2 = co_price - po_price
 
-        return pandas.DataFrame({"diff": difference, "CO": co_price, "PO": po_price, "days": df.iloc[0]["days"]})
+        return pandas.DataFrame({"diff": difference, "CO": co_price, "PO": po_price, "days": df.iloc[0]["days"],
+                                 "diff2": diff2})
 
     def group_f2(self, df):
         # df.set_index("exercise_price",inplace=True)
         least = df["diff"].min()
 
         min_ = df[df["diff"] == least].iloc[0]
-        diff = min_["diff"]
+        diff = min_["diff2"]
         exe_price = min_["exercise_price"]
 
         f = exe_price + diff * math.exp(self.r * min_["days"])

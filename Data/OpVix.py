@@ -30,7 +30,7 @@ class OpVix(JQData):
         # self.targetcodes = ["510050.XSHG", "510500.XSHG"]
 
         self.indicator = True
-        self.scroll = dict()
+        self.scroll = False
         self.r = 0.015
 
         self.df = None
@@ -111,7 +111,7 @@ class OpVix(JQData):
             self.dic[c] = dict()
 
             df_temp_00 = self.daily_00[self.daily_00["underlying_symbol"] == c]
-            if df_temp_00["days"].min() > 8 * 1440:
+            if df_temp_00["days"].min() > 8 / 365:
                 df_co_00 = df_temp_00[df_temp_00["contract_type"] == "CO"]["exercise_price"].unique().tolist()
                 df_po_00 = df_temp_00[df_temp_00["contract_type"] == "PO"]["exercise_price"].unique().tolist()
                 df_co_00.sort()
@@ -124,7 +124,9 @@ class OpVix(JQData):
                 df_co_01.sort()
                 df_po_01.sort()
                 self.dic[c]["01"] = {"CO": df_co_01, "PO": df_po_01, "df": df_temp_01}
+
             else:
+                self.scroll = True
                 df_temp_01 = self.daily_01[self.daily_01["underlying_symbol"] == c]
                 df_co_01 = df_temp_01[df_temp_01["contract_type"] == "CO"]["exercise_price"].unique().tolist()
                 df_po_01 = df_temp_01[df_temp_01["contract_type"] == "PO"]["exercise_price"].unique().tolist()
@@ -152,41 +154,37 @@ class OpVix(JQData):
         for i in self.dic:
             df_temp_00 = self.dic[i]["00"]["df"]
             df_temp_01 = self.dic[i]["01"]["df"]
-            # df_temp_02 = self.dic[i]["02"]["df"]
 
             sigma00t00 = self.process_df(df_temp_00, start, end)
             sigma00t00.reset_index(inplace=True)
-            # sigma00t00.set_index("time", inplace=True)
             del sigma00t00["level_1"]
 
             sigma01t01 = self.process_df(df_temp_01, start, end)
             sigma01t01.reset_index(inplace=True)
-            # sigma01t01.set_index("time", inplace=True)
             del sigma01t01["level_1"]
 
             df_sigma = sigma00t00.merge(sigma01t01, how="inner", on="time")
-            # df_sigma.set_index("time", inplace=True)
             df_sigma["vix"] = 0.0
 
-            n365_30 = 365 / 30
             n30 = 30 / 365
-
+            # 计算部分 #######
             for j in df_sigma.index:
+                # sigma指的是算出的sigma值，days指的是剩余日期（年化），x后缀为本月合约的，y后缀为下月合约的
                 sigma00, sigma01, t00, t01 = df_sigma.loc[j][["sigma_x", "sigma_y", "days_x", "days_y"]]
+                time_3060 = n30
+                # 如果本月合约到期日大于30天（即取下月合约的情况），则到期日按照60天计算
+                if t00 > 30 / 365:
+                    time_3060 *= 2
 
-                part1 = t00 * sigma00 * ((t01 - n30) / (t01 - t00))
-                part2 = t01 * sigma01 * ((n30 - t00) / (t01 - t00))
+                # 最后的计算公式根据，根号内分成两部分part1和part2
+                part1 = t00 * sigma00 * ((t01 - time_3060) / (t01 - t00))
+                part2 = t01 * sigma01 * ((time_3060 - t00) / (t01 - t00))
 
-                vix = 100 * (n365_30 * (part1 + part2)) ** 0.5
+                vix = 100 * ((part1 + part2) / time_3060) ** 0.5
                 df_sigma.loc[j, "vix"] = vix
 
-            # df = df_sigma[["vix"]]
-            # df["targetcode"] = i
             index = self.df[self.df["code"] == i].index
-
             self.df.loc[index, "vix"] = df_sigma["vix"].tolist()
-
-            # print(self.df)
 
     def group_f1(self, df, start, end):
         df.dropna(inplace=True)
@@ -199,34 +197,34 @@ class OpVix(JQData):
 
         co_price = co["close"]
         po_price = po["close"]
-        difference = abs(co_price - po_price)
 
-        return pandas.DataFrame({"diff": difference, "CO": co_price, "PO": po_price, "days": df.iloc[0]["days"]})
+        # 认沽认购差的绝对值
+        difference = abs(co_price - po_price)
+        # 认沽认购的差
+        diff2 = co_price - po_price
+        # 买卖中间件
+        avg = (co_price + po_price) / 2
+
+        return pandas.DataFrame({"diff": difference, "avg": avg, "days": df.iloc[0]["days"], "diff2": diff2})
 
     def group_f2(self, df):
-        # df.set_index("exercise_price",inplace=True)
+        # 取出认沽认购差的绝对值最小的一组
         least = df["diff"].min()
-
         min_ = df[df["diff"] == least].iloc[0]
-        diff = min_["diff"]
+        # 差
+        diff = min_["diff2"]
+        # 行权价
         exe_price = min_["exercise_price"]
-
+        # 计算f值
         f = exe_price + diff * math.exp(self.r * min_["days"])
-        # print(f)
-        df["avg"] = (df["CO"] + df["PO"]) / 2
+        # 取出到期时间（年化）
         days = df.iloc[0]['days']
 
-        # df_time = df.set_index("time")
-        # g2 = df_time.groupby(df_time.index)
-        # df_final = g2.apply(self.group_f2)
-
         price_list = df[["exercise_price", "avg"]].values.tolist()
-
-        # print(df_t)
-
         df.set_index("exercise_price", inplace=True)
         df.sort_index(inplace=True)
 
+        # 取出比f小的第一个行权价，记为k
         exercise_price_list = df.index[::-1]
         k = exercise_price_list[-1]
         for i in exercise_price_list:
@@ -234,25 +232,31 @@ class OpVix(JQData):
                 k = i
                 break
 
-        # print(df)
-        # print(k)
-
-        sigma = -((f / k - 1) ** 2) / days
+        # 计算sigma
+        sigma = 0
 
         n_co = len(price_list)
-        for i in range(n_co):
-            t = 2 / days
 
+        for i in range(n_co):
+
+            # ki和Q
             k_, q = price_list[i]
 
+            # 计算delta
             if i == 0:
+                # 第一个
                 delta_k = price_list[1][0] - k_
+
             elif i == n_co - 1:
+                # 最后一个
                 delta_k = k_ - price_list[i - 1][0]
             else:
+                # 中间的
                 delta_k = (price_list[i + 1][0] - price_list[i - 1][0]) / 2
 
-            sigma += t * (delta_k / k_ ** 2) * math.exp(self.r * days) * q
+            sigma += (delta_k / k_ ** 2) * q
+
+        sigma = (2 * math.exp(self.r * days) / days * sigma) - (f / k - 1) ** 2 / days
 
         return pandas.DataFrame({"sigma": [sigma], "days": [days]})
 
@@ -270,9 +274,6 @@ class OpVix(JQData):
     def get(self, **kwargs):
         start = kwargs["start"]
         end = kwargs["end"]
-
-        # times = SplitTime.split(start, end, interval_day=1)
-
         self.get_adjust()
         ind = self.get_preset(start=start, end=end)
         if not ind:
